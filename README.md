@@ -36,7 +36,7 @@ Performance comparisons are highly dependent on the nature of the JSON string to
 
 * More typically, this library is 3 – 4x slower than `JSON.parse()`, but around twice as fast Crockford's reference implementation (which wasn't optimised for speed). Parsing JSON is fast, so unless you are regularly parsing very large JSON strings, the difference probably isn't very important.
 
-I compared several alternative approaches to number and string parsing, which can be seen in comments in [the source](parse.json). The implementations currently used are the ones I found to be fastest in most scenarios. If you figure out something faster, I'd be glad to hear about it.
+I compared several alternative approaches to number and string parsing, which can be seen in comments in [the source](src/parse.mjs). The implementations currently used are the ones I found to be fastest in most scenarios. If you figure out something faster, I'd be glad to hear about it.
 
 The minified source is nice and small — 1.9 KB for the ESM version — so it won't slow down startup.
 
