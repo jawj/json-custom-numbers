@@ -2,9 +2,9 @@
 
 https://github.com/jawj/json-custom-numbers
 
-This is a modified version of [Douglas Crockford's recursive-descent JSON parser](https://github.com/douglascrockford/JSON-js/blob/03157639c7a7cddd2e9f032537f346f1a87c0f6d/json_parse.js). All modifications (except for the conversion from [IIFE](https://developer.mozilla.org/en-US/docs/Glossary/IIFE) to [ESM](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules)) are flagged in the source. 
+This is a modified version of [Douglas Crockford's recursive-descent JSON parser](https://github.com/douglascrockford/JSON-js/blob/03157639c7a7cddd2e9f032537f346f1a87c0f6d/json_parse.js). 
 
-Crucially, these modifications:
+Crucially, the modifications:
 
 * **enable custom number parsing**, by supplying a custom function at parse time
 
@@ -30,13 +30,13 @@ When full string checking is not explicitly turned off, the `parse()` function m
 
 Performance comparisons are highly dependent on the nature of the JSON string to be parsed. Performance was tested on Node.js 18.10 only.
 
-* The best case is JSON that contains mainly long strings. With full string checking turned off, this library may be up to 5x **faster** than `JSON.parse()` in that case. With full string checking turned on (the default), it's still around 1.5x faster.
+* The best case is JSON that contains mainly long strings. This library may then be up to 5x **faster** than `JSON.parse()`, if full string checking is turned off. Even with full string checking turned on, which is the default, it's still around 1.5x faster.
 
-* The worst case is JSON that contains mainly short numeric values or `true`/`false`/`null`. This library may be 6 – 7x slower than `JSON.parse()` in that case.
+* The worst case is JSON that contains mainly short numeric values, `true`, `false` or `null`. This library may be 6 – 7x slower than `JSON.parse()` in that case.
 
-* More typically, this library is 3 – 4x slower than `JSON.parse()`. Parsing JSON is fast, so unless you are regularly parsing very large JSON strings, the difference probably isn't very important.
+* More typically, this library is 3 – 4x slower than `JSON.parse()`. Unless you're regularly parsing very large JSON strings, the difference probably isn't very important.
 
-I compared several alternative approaches to number and string parsing  . The implementations currently used are the ones I found to be fastest in most scenarios. If you figure out something faster, I'd be glad to hear about it.
+I compared several alternative approaches to number and string parsing. The implementations currently used are the ones I found to be fastest in most scenarios. If you figure out something reliably faster, I'd be glad to hear about it.
 
 The minified source is nice and small, at around 2 KB, so it won't slow down startup.
 
@@ -74,4 +74,4 @@ Public Domain.
 
 NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
 
-Except: tests in the [`test_parsing`](./test_parsing/) folder are mostly from Nicolas Seriot's [JSON Test Suite](https://github.com/nst/JSONTestSuite), which are MIT licenced.
+Except: tests in the [`test_parsing`](./test_parsing/) folder are mostly from Nicolas Seriot's [JSON Test Suite](https://github.com/nst/JSONTestSuite), which is MIT licenced.
