@@ -1,5 +1,6 @@
 /*
-  2023-05-19 / George MacKerron (mackerron.com)
+  2023-05-20 / George MacKerron (mackerron.com)
+  Based on https://github.com/douglascrockford/JSON-js/blob/03157639c7a7cddd2e9f032537f346f1a87c0f6d/json_parse.js
   Public Domain
   NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
 */
