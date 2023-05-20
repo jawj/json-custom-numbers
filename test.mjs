@@ -5,7 +5,7 @@ import crockford from './test_comparison/crockford.mjs';
 import { performance } from 'perf_hooks';
 
 const folderPath = 'test_parsing';
-const repetitions = 10000;
+const repetitions = 5000;
 
 const filenames = fs
   .readdirSync(folderPath)
@@ -44,7 +44,7 @@ for (const filename of filenames) {
     console.log(filename, json);
     console.log(jpGotErr ? jpGotErr.message : weGotErr.message);
     console.log(`  FAIL: JSON.parse ${jpGotErr ? 'error' : 'OK'}, parse ${weGotErr ? 'error' : 'OK'}\n`);
-    // process.exit();
+    process.exit();
     fails += 1;
     continue;
   }
@@ -52,7 +52,7 @@ for (const filename of filenames) {
   if (JSON.stringify(weResult) !== JSON.stringify(jpResult)) {
     console.log(filename, json);
     console.log(`${filename} FAIL: JSON.parse (${JSON.stringify(jpResult)}) !== parse (${JSON.stringify(weResult)})\n`);
-    // process.exit();
+    process.exit();
     fails += 1;
     continue;
   }

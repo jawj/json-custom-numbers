@@ -7,7 +7,7 @@
 
 "use strict";
 
-// note: these assignments will be overwritten, but establish variable type
+// note: these assignments will be overwritten, but may help establish variable type
 let at = 0;     // the index of the current character
 let ch = " ";   // the current character
 let text = "";
@@ -25,177 +25,134 @@ const escapee = {
   t: "\t"
 };
 const illegalStringChars = /[\n\t\u0000-\u001f]/;
-const numRegExp = /(-)?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?/y;
+const wordRegExp = /true|false|null|-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?/y;
 
 export class JSONParseError extends Error { }
 
 function error(m) {
-  throw new JSONParseError(`JSON parse error: ${m}\nAt character ${at} in JSON: ${text}`);
+  throw new JSONParseError(`${m}\nAt character ${at} in JSON: ${text}`);
 };
 
-function next() {
-  ch = text.charAt(at++);
-  return ch;
-};
+function word() {
+  let value;
 
-function nextExpect(c) {
-  if (c && c !== ch) error("Expected '" + c + "' instead of '" + ch + "'");
-  ch = text.charAt(at++);
-  return ch;
-};
+  wordRegExp.lastIndex = at - 1;
+  const matched = wordRegExp.test(text);
+  if (!matched) error("Unexpected value");
 
-function number() {
-  numRegExp.lastIndex = at - 1;
-  const matched = numRegExp.test(text);
-  if (!matched) error("Bad number");
-  const { lastIndex } = numRegExp;
-  const string = text.slice(at - 1, lastIndex);
-  const value = numericReviverFn ? numericReviverFn(string) : +string;
-  at = lastIndex;
-  next();
+  const { lastIndex } = wordRegExp;
+  if (ch < "f") {
+    const string = text.slice(at - 1, lastIndex);
+    value = numericReviverFn ? numericReviverFn(string) : +string;
+  } else {
+    value = ch === "t" ? true : ch === "f" ? false : null;
+  }
+
+  ch = text.charAt(lastIndex);
+  at = lastIndex + 1;
   return value;
 };
 
 function string() {
-  let value = "";
+  let value = '';
+  for (; ;) {
+    const nextQuote = text.indexOf('"', at);
+    if (nextQuote === -1) error("Unterminated string");
 
-  if (ch === '"') {
-    parseloop:
-    while (next()) {
-      if (ch === '"') {
-        next();
-        return value;
-      }
+    if (nextQuote === at) { // empty string: we're done
+      at = nextQuote + 1;
+      ch = text.charAt(at++);
+      return value;
+    }
 
-      if (ch === "\\") {
-        next();
+    let chunk = text.slice(at, nextQuote);
+    const nextBackslash = chunk.indexOf("\\");
+    if (nextBackslash === -1) {  // no backslashes up to end quote: we're done
+      if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) error("Bad character in string");
+      value += chunk;
+      at = nextQuote + 1;
+      ch = text.charAt(at++);
+      return value;
 
-        if (ch === "u") {
-          let uffff = 0;
-          for (let i = 0; i < 4; i += 1) {
-            const hex = parseInt(next(), 16);
-            if (!isFinite(hex)) break parseloop;
-            uffff = uffff * 16 + hex;
-          }
-          value += String.fromCharCode(uffff);
+    } else {  // deal with backslash escapes
+      chunk = chunk.slice(0, nextBackslash);
+      if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) error("Bad character in string");
+      value += chunk;
+      at += nextBackslash + 1;
+      ch = text.charAt(at++);
 
-        } else if (escapee[ch]) {
-          value += escapee[ch];
+      const escape = escapee[ch];
+      if (escape) {
+        value += escape;
 
-        } else {
-          break;
+      } else if (ch === "u") {
+        let uffff = 0;
+        for (let i = 0; i < 4; i += 1) {
+          const hex = parseInt(ch = text.charAt(at++), 16);
+          if (!isFinite(hex)) error("Bad unicode escape in string");
+          uffff = uffff * 16 + hex;
         }
+        value += String.fromCharCode(uffff);
 
       } else {
-        const nextQuote = text.indexOf('"', at);
-        if (nextQuote === -1) break;  // -> unterminated string
-        let chunk = text.slice(at - 1, nextQuote);
-        const nextBackslash = chunk.indexOf("\\");
-        if (nextBackslash === -1) {
-          at = nextQuote;
-        } else {
-          chunk = chunk.slice(0, nextBackslash);
-          at += nextBackslash - 1;
-        }
-        if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) break;
-        value += chunk;
+        error("Bad escape sequence in string: '\\" + ch + "'")
       }
     }
   }
-
-  error("Bad string");
-};
-
-function white() {
-  // "!" follows " ": using `< "!"` can usually short-circuit the next 4 comparisons
-  while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) next();
-};
-
-function word() {
-  switch (ch) {
-    case "t":
-      nextExpect("t");
-      nextExpect("r");
-      nextExpect("u");
-      nextExpect("e");
-      return true;
-    case "f":
-      nextExpect("f");
-      nextExpect("a");
-      nextExpect("l");
-      nextExpect("s");
-      nextExpect("e");
-      return false;
-    case "n":
-      nextExpect("n");
-      nextExpect("u");
-      nextExpect("l");
-      nextExpect("l");
-      return null;
-  }
-  error("Unexpected '" + ch + "'");
 };
 
 function array() {
   const arr = [];
   let i = 0;
-
-  if (ch === "[") {
-    nextExpect("[");
-    white();
-    if (ch === "]") {
-      nextExpect("]");
-      return arr;  // empty array
-    }
-    while (ch) {
-      arr[i++] = value();
-      white();
-      if (ch === "]") {
-        nextExpect("]");
-        return arr;
-      }
-      nextExpect(",");
-      white();
-    }
+  do { ch = text.charAt(at++) } while (ch <= " " && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t"));
+  if (ch === "]") {
+    ch = text.charAt(at++)
+    return arr;  // empty array
   }
-  error("Bad array");
+  while (ch) {
+    arr[i++] = value();
+    while (ch <= " " && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
+    if (ch === "]") {
+      ch = text.charAt(at++)
+      return arr;
+    }
+    if (ch !== ",") error("Expected ',', got '" + ch + "' between array elements");
+    do { ch = text.charAt(at++) } while (ch <= " " && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t"));
+  }
+  error("Array ends with '[' or ','");
 };
 
 function object() {
   const obj = {};
-
-  if (ch === "{") {
-    nextExpect("{");
-    white();
-    if (ch === "}") {
-      nextExpect("}");
-      return obj;  // empty object
-    }
-    while (ch) {
-      const key = string();
-      white();
-      nextExpect(":");
-      obj[key] = value();
-      white();
-      if (ch === "}") {
-        nextExpect("}");
-        return obj;
-      }
-      nextExpect(",");
-      white();
-    }
+  do { ch = text.charAt(at++) } while (ch <= " " && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t"));
+  if (ch === "}") {
+    ch = text.charAt(at++);
+    return obj;  // empty object
   }
-  error("Bad object");
+  while (ch) {
+    const key = string();
+    while (ch <= " " && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
+    if (ch !== ":") error("Expected ':', got '" + ch + "' between object key and value");
+    ch = text.charAt(at++);
+    obj[key] = value();
+    while (ch <= " " && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
+    if (ch === "}") {
+      ch = text.charAt(at++);
+      return obj;
+    }
+    if (ch !== ",") error("Expected ',', got '" + ch + "' between items in object");
+    do { ch = text.charAt(at++) } while (ch <= " " && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t"));
+  }
+  error("Object ends with '{' or ','");
 };
 
 function value() {
-  white();
+  while (ch <= " " && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
   switch (ch) {
+    case '"': return string();
     case "{": return object();
     case "[": return array();
-    case '"': return string();
-    case "-": return number();
-    default: return (ch >= "0" && ch <= "9") ? number() : word();
+    default: return word();
   }
 };
 
@@ -210,8 +167,8 @@ export default function (source, reviver, numericReviver, fastStrings) {
   numericReviverFn = numericReviver;
 
   const result = value();
-  white();
-  if (ch) error("Syntax error");
+  while (ch <= " " && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
+  if (ch) error("Additional data at end");
 
   return (typeof reviver === "function")
     ? (function walk(holder, key) {
