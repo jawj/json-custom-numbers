@@ -9,10 +9,10 @@
   },
   "main": "index.js",
   "scripts": {
-    "test": "npm run buildEsm && node test.mjs",
+    "test": "node test.mjs",
     "buildEsm": "esbuild src/parse.mjs --bundle --platform=neutral --target=es2015 --minify --format=esm --outfile=dist/index.mjs",
     "buildCjs": "esbuild src/parse.mjs --bundle --platform=neutral --target=es2015 --minify --format=cjs --outfile=dist/index.js",
-    "build": "npm run buildEsm && npm run buildCjs"
+    "build": "npm run test && npm run buildEsm && npm run buildCjs"
   },
   "author": "George MacKerron",
   "license": "MIT",

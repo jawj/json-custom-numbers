@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import { parse } from './dist/index.mjs';
+import parse from './src/parse.mjs';
+import crockford from './test_comparison/crockford.mjs';
 import { performance } from 'perf_hooks';
 
 const folderPath = 'test_parsing';
@@ -43,13 +44,15 @@ for (const filename of filenames) {
     console.log(filename, json);
     console.log(jpGotErr ? jpGotErr.message : weGotErr.message);
     console.log(`  FAIL: JSON.parse ${jpGotErr ? 'error' : 'OK'}, parse ${weGotErr ? 'error' : 'OK'}\n`);
+    // process.exit();
     fails += 1;
     continue;
   }
 
   if (JSON.stringify(weResult) !== JSON.stringify(jpResult)) {
     console.log(filename, json);
-    console.log(`${filename} FAIL: JSON.parse !== parse\n`);
+    console.log(`${filename} FAIL: JSON.parse (${JSON.stringify(jpResult)}) !== parse (${JSON.stringify(weResult)})\n`);
+    // process.exit();
     fails += 1;
     continue;
   }
@@ -72,10 +75,12 @@ function nr(s) {
 
 const revived = parse(bigNumJson, null, nr);
 console.log(bigNumJson, '->', revived);
+
 const bigNumPass = typeof revived[0] === 'number' &&
   typeof revived[1] === 'number' && 
   typeof revived[2] === 'number' && 
   typeof revived[3] === 'bigint';
+
 console.log(bigNumPass ? 'Pass' : 'FAIL');
 
 console.log(`\nRunning perf tests ...\n`);
@@ -87,6 +92,10 @@ for (const filename in perftests) {
   for (let i = 0; i < repetitions; i++) JSON.parse(json);
   const jpt = performance.now() - jpt0;
 
+  const ct0 = performance.now();
+  for (let i = 0; i < repetitions; i++) crockford(json);
+  const ct = performance.now() - ct0;
+
   const wet0 = performance.now();
   for (let i = 0; i < repetitions; i++) parse(json);
   const wet = performance.now() - wet0;
@@ -95,7 +104,7 @@ for (const filename in perftests) {
   for (let i = 0; i < repetitions; i++) parse(json, null, null, true);
   const weft = performance.now() - weft0;
 
-  console.log(`${filename} x ${repetitions}: JSON.parse = ${jpt.toFixed()}ms, parse = ${wet.toFixed()}ms (${(jpt / wet).toFixed(2)}x), parse (fastStrings) = ${weft.toFixed()}ms (${(jpt / weft).toFixed(2)}x)`);
+  console.log(`${filename} x ${repetitions}: JSON.parse = ${jpt.toFixed()}ms, crockford = ${ct.toFixed()}ms (${(jpt  / ct).toFixed(2)}x), parse = ${wet.toFixed()}ms (${(jpt / wet).toFixed(2)}x), parse (fastStrings) = ${weft.toFixed()}ms (${(jpt / weft).toFixed(2)}x)`);
 }
 
 process.exit(bigNumPass && fails === 0 ? 0 : 1);

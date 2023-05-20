@@ -6,15 +6,14 @@
 
 "use strict";
 
-// note: these assignments will be overwritten, but establish variable type
-let at = 0;     // the index of the current character
-let ch = " ";   // the current character
-let text = "";
-let skipIllegalStringCharCheck = false;
+let at;     // The index of the current character
+let ch;     // The current character
+let text;
 let numericReviverFn;
+let skipIllegalStringCharCheck;
 
 const escapee = {
-  '"': '"',
+  "\"": "\"",
   "\\": "\\",
   "/": "/",
   b: "\b",
@@ -32,14 +31,10 @@ function error(m) {
   throw new JSONParseError(`JSON parse error: ${m}\nAt character ${at} in JSON: ${text}`);
 };
 
-function next() {
-  ch = text.charAt(at++);
-  return ch;
-};
-
-function nextExpect(c) {
+function next(c) {
   if (c && c !== ch) error("Expected '" + c + "' instead of '" + ch + "'");
-  ch = text.charAt(at++);
+  ch = text.charAt(at);
+  at += 1;
   return ch;
 };
 
@@ -57,47 +52,43 @@ function number() {
 
 function string() {
   let value = "";
+  let start = at;
 
-  if (ch === '"') {
+  if (ch === "\"") {
     parseloop:
     while (next()) {
-      if (ch === '"') {
+      if (ch === "\"") {
+        const chunk = text.slice(start, at - 1);
+        if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) break;
+        value += chunk;
+
         next();
         return value;
       }
 
       if (ch === "\\") {
+        const chunk = text.slice(start, at - 1);
+        if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) break;
+        value += chunk;
+
         next();
 
         if (ch === "u") {
           let uffff = 0;
-          for (let i = 0; i < 4; i += 1) {
+          for (let i = 0; i < 4; i++) {
             const hex = parseInt(next(), 16);
             if (!isFinite(hex)) break parseloop;
             uffff = uffff * 16 + hex;
           }
           value += String.fromCharCode(uffff);
 
-        } else if (escapee[ch]) {
+        } else if (typeof escapee[ch] === "string") {
           value += escapee[ch];
 
         } else {
           break;
         }
-
-      } else {
-        const nextQuote = text.indexOf('"', at);
-        if (nextQuote === -1) break;  // -> unterminated string
-        let chunk = text.slice(at - 1, nextQuote);
-        const nextBackslash = chunk.indexOf("\\");
-        if (nextBackslash === -1) {
-          at = nextQuote;
-        } else {
-          chunk = chunk.slice(0, nextBackslash);
-          at += nextBackslash - 1;
-        }
-        if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) break;
-        value += chunk;
+        start = at;
       }
     }
   }
@@ -106,30 +97,29 @@ function string() {
 };
 
 function white() {
-  // "!" follows " ": using `< "!"` can usually short-circuit the next 4 comparisons
-  while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) next();
+  while (ch === " " || ch === "\n" || ch === "\r" || ch === "\t") next();
 };
 
 function word() {
   switch (ch) {
     case "t":
-      nextExpect("t");
-      nextExpect("r");
-      nextExpect("u");
-      nextExpect("e");
+      next("t");
+      next("r");
+      next("u");
+      next("e");
       return true;
     case "f":
-      nextExpect("f");
-      nextExpect("a");
-      nextExpect("l");
-      nextExpect("s");
-      nextExpect("e");
+      next("f");
+      next("a");
+      next("l");
+      next("s");
+      next("e");
       return false;
     case "n":
-      nextExpect("n");
-      nextExpect("u");
-      nextExpect("l");
-      nextExpect("l");
+      next("n");
+      next("u");
+      next("l");
+      next("l");
       return null;
   }
   error("Unexpected '" + ch + "'");
@@ -137,23 +127,22 @@ function word() {
 
 function array() {
   const arr = [];
-  let i = 0;
 
   if (ch === "[") {
-    nextExpect("[");
+    next("[");
     white();
     if (ch === "]") {
-      nextExpect("]");
-      return arr;  // empty array
+      next("]");
+      return arr;   // empty array
     }
     while (ch) {
-      arr[i++] = value();
+      arr.push(value());
       white();
       if (ch === "]") {
-        nextExpect("]");
+        next("]");
         return arr;
       }
-      nextExpect(",");
+      next(",");
       white();
     }
   }
@@ -164,23 +153,23 @@ function object() {
   const obj = {};
 
   if (ch === "{") {
-    nextExpect("{");
+    next("{");
     white();
     if (ch === "}") {
-      nextExpect("}");
-      return obj;  // empty object
+      next("}");
+      return obj;   // empty object
     }
     while (ch) {
       const key = string();
       white();
-      nextExpect(":");
+      next(":");
       obj[key] = value();
       white();
       if (ch === "}") {
-        nextExpect("}");
+        next("}");
         return obj;
       }
-      nextExpect(",");
+      next(",");
       white();
     }
   }
@@ -190,23 +179,31 @@ function object() {
 function value() {
   white();
   switch (ch) {
-    case "{": return object();
-    case "[": return array();
-    case '"': return string();
-    case "-": return number();
-    default: return (ch >= "0" && ch <= "9") ? number() : word();
+    case "{":
+      return object();
+    case "[":
+      return array();
+    case "\"":
+      return string();
+    case "-":
+      return number();
+    default:
+      return (ch >= "0" && ch <= "9")
+        ? number()
+        : word();
   }
 };
 
-export default function (source, reviver, numericReviver, fastStrings) {
+export function parse(source, reviver, numericReviver, fastStrings) {
 
   if (typeof source !== 'string') error("JSON source is not a string");
 
+  text = source;
+  numericReviverFn = numericReviver;
+  skipIllegalStringCharCheck = fastStrings;
+
   at = 0;
   ch = " ";
-  text = source;
-  skipIllegalStringCharCheck = fastStrings;
-  numericReviverFn = numericReviver;
 
   const result = value();
   white();
@@ -214,11 +211,13 @@ export default function (source, reviver, numericReviver, fastStrings) {
 
   return (typeof reviver === "function")
     ? (function walk(holder, key) {
-      const val = holder[key];
+      var k;
+      var v;
+      var val = holder[key];
       if (val && typeof val === "object") {
-        for (const k in val) {
+        for (k in val) {
           if (Object.prototype.hasOwnProperty.call(val, k)) {
-            const v = walk(val, k);
+            v = walk(val, k);
             if (v !== undefined) {
               val[k] = v;
             } else {
