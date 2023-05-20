@@ -1,13 +1,13 @@
 {
   "name": "json-custom-numbers",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "JSON parser enabling custom number parsing",
   "exports": {
     "require": "./dist/index.js",
     "import": "./dist/index.mjs",
     "types": "./dist/index.d.ts"
   },
-  "main": "index.js",
+  "main": "/dist/index.js",
   "scripts": {
     "test": "node test.mjs",
     "buildEsm": "esbuild src/parse.mjs --bundle --platform=neutral --target=es2015 --minify --format=esm --outfile=dist/index.mjs",
