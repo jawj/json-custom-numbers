@@ -38,9 +38,9 @@ On Node.js 18.10 (V8):
 
 * Typically, this library is 2 – 4x slower than `JSON.parse()`. Unless you're regularly parsing very large JSON strings, the difference probably isn't very important.
 
-On Bun 0.6.1:
+On Bun 0.6.1 (JavaScriptCore):
 
-* Performance on Bun (JavaScriptCore) is less variable than Node, and is generally 2 - 5x slower than `JSON.parse`.
+* Performance on Bun is less variable than Node. It's generally 2 - 5x slower than `JSON.parse`.
 
 I compared several alternative approaches to number and string parsing. The implementations currently used are the ones I found to be fastest in most scenarios. If you figure out something reliably faster, I'd be glad to hear about it.
 
