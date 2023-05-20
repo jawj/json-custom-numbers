@@ -10,7 +10,7 @@ Crucially, the modifications:
 
 Less interestingly, they also:
 
-* accelerate parsing of long strings, which otherwise can be pathologically slow
+* accelerate parsing of long strings
 
 * allow duplicate object keys (last value wins), matching `JSON.parse()`
 
@@ -30,15 +30,13 @@ When full string checking is not explicitly turned off, the `parse()` function m
 
 Performance comparisons are highly dependent on the nature of the JSON string to be parsed. Performance was tested on Node.js 18.10 only.
 
-* The best case is JSON that contains mainly long strings. This library may then be up to 5x **faster** than `JSON.parse()`, if full string checking is turned off. Even with full string checking turned on, which is the default, it's still around 1.5x faster.
+* The best case is JSON that contains mainly long strings. This library may then be up to 7x **faster** than `JSON.parse()`, if full string checking is turned off. Even with full string checking turned on, which is the default, it's still around 1.5x faster.
 
-* The worst case is JSON that contains mainly short numeric values, `true`, `false` or `null`. This library may be 6 – 7x slower than `JSON.parse()` in that case.
+* The worst case is JSON that contains mainly short numeric values, `true`, `false` or `null`. This library may be around 5 – 6x slower than `JSON.parse()` in that case.
 
-* More typically, this library is 3 – 4x slower than `JSON.parse()`. Unless you're regularly parsing very large JSON strings, the difference probably isn't very important.
+* More typically, this library is 2 – 3x slower than `JSON.parse()`. Unless you're regularly parsing very large JSON strings, the difference probably isn't very important.
 
 I compared several alternative approaches to number and string parsing. The implementations currently used are the ones I found to be fastest in most scenarios. If you figure out something reliably faster, I'd be glad to hear about it.
-
-The minified source is nice and small, at around 2 KB, so it won't slow down startup.
 
 ## Usage
 
