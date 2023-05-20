@@ -28,13 +28,19 @@ When full string checking is not explicitly turned off, the `parse()` function m
 
 ## Performance
 
-Performance comparisons are highly dependent on the nature of the JSON string to be parsed. Performance was tested on Node.js 18.10 only.
+Performance comparisons are highly dependent on the nature of the JSON string to be parsed and the JavaScript enging used. 
 
-* The best case is JSON that contains mainly long strings. This library may then be up to 7x **faster** than `JSON.parse()`, if full string checking is turned off. Even with full string checking turned on, which is the default, it's still around 1.5x faster.
+On Node.js 18.10 (V8):
 
-* The worst case is JSON that contains mainly short numeric values, `true`, `false` or `null`. This library may be around 5 – 6x slower than `JSON.parse()` in that case.
+* The best case is JSON that contains mainly long strings. This library may then be up to 7x **faster** than `JSON.parse()` if full string checking is turned off. With full string checking turned on, which is the default, it's still around 1.5x faster.
 
-* More typically, this library is 2 – 3x slower than `JSON.parse()`. Unless you're regularly parsing very large JSON strings, the difference probably isn't very important.
+* The worst case is JSON that contains only short numeric values, `true`, `false` or `null`. This library may then be around 4 - 5x slower than `JSON.parse()`.
+
+* Typically, this library is 2 – 4x slower than `JSON.parse()`. Unless you're regularly parsing very large JSON strings, the difference probably isn't very important.
+
+On Bun 0.6.1:
+
+* Performance on Bun (JavaScriptCore) is less variable than Node, and is generally 2 - 5x slower than `JSON.parse`.
 
 I compared several alternative approaches to number and string parsing. The implementations currently used are the ones I found to be fastest in most scenarios. If you figure out something reliably faster, I'd be glad to hear about it.
 
