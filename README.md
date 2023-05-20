@@ -10,13 +10,13 @@ Crucially, these modifications:
 
 Less interestingly, they also:
 
-* accelerate parsing of long strings — by using `indexOf()` and `slice()` to reduce `string += string` operations
+* accelerate parsing of long strings, which otherwise can be pathologically slow
 
 * allow duplicate object keys (last value wins), matching `JSON.parse()`
 
 * are strict about whitespace characters and unicode escapes, like `JSON.parse()`
 
-* are strict about number formats (e.g. `.5`, `5.`, `05` are all errors), as with `JSON.parse()`
+* are strict about number formats (e.g. `.5`, `5.`, `05` are all errors), like `JSON.parse()`
 
 Lastly (though this slows things down a little, and can be switched off), they:
 
@@ -30,15 +30,15 @@ When full string checking is not explicitly turned off, the `parse()` function m
 
 Performance comparisons are highly dependent on the nature of the JSON string to be parsed. Performance was tested on Node.js 18.10 only.
 
-* The best case is JSON that contains mainly long strings. With full string checking turned off, this library may be up to 6x **faster** than `JSON.parse()` in that case. With full string checking turned on (the default), it's still around 1.5x faster.
+* The best case is JSON that contains mainly long strings. With full string checking turned off, this library may be up to 5x **faster** than `JSON.parse()` in that case. With full string checking turned on (the default), it's still around 1.5x faster.
 
 * The worst case is JSON that contains mainly short numeric values or `true`/`false`/`null`. This library may be 6 – 7x slower than `JSON.parse()` in that case.
 
-* More typically, this library is 3 – 4x slower than `JSON.parse()`, but around twice as fast as Crockford's reference implementation (which wasn't optimised for speed). Parsing JSON is fast, so unless you are regularly parsing very large JSON strings, the difference probably isn't very important.
+* More typically, this library is 3 – 4x slower than `JSON.parse()`. Parsing JSON is fast, so unless you are regularly parsing very large JSON strings, the difference probably isn't very important.
 
-I compared several alternative approaches to number and string parsing, which can be seen in comments in [the source](src/parse.mjs). The implementations currently used are the ones I found to be fastest in most scenarios. If you figure out something faster, I'd be glad to hear about it.
+I compared several alternative approaches to number and string parsing  . The implementations currently used are the ones I found to be fastest in most scenarios. If you figure out something faster, I'd be glad to hear about it.
 
-The minified source is nice and small — 1.9 KB for the ESM version — so it won't slow down startup.
+The minified source is nice and small, at around 2 KB, so it won't slow down startup.
 
 ## Usage
 
