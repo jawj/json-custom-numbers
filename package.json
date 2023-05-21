@@ -1,6 +1,6 @@
 {
   "name": "json-custom-numbers",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "JSON parser enabling custom number parsing",
   "exports": {
     "require": "./dist/index.js",
@@ -18,5 +18,6 @@
   "license": "MIT",
   "devDependencies": {
     "esbuild": "^0.17.19"
-  }
+  },
+  "keywords": ["json", "bigint", "parse", "custom", "crockford"]
 }
