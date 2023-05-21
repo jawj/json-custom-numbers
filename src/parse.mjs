@@ -1,5 +1,5 @@
 /*
-  2023-05-20 / George MacKerron (mackerron.com)
+  2023-05-21 / George MacKerron (mackerron.com)
   Based on https://github.com/douglascrockford/JSON-js/blob/03157639c7a7cddd2e9f032537f346f1a87c0f6d/json_parse.js
   Public Domain
   NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
@@ -7,14 +7,14 @@
 
 "use strict";
 
-// note: these assignments will be overwritten, but may help establish variable type
-let at = 0;     // the index of the current character
-let ch = " ";   // the current character
-let text = "";
-let skipIllegalStringCharCheck = false;
+// global state
+let at;  // the index of the current character
+let ch;  // the current character
+let text;  // JSON source
+let skipIllegalStringCharCheck;
 let numericReviverFn;
 
-const escapee = {
+const escapes = {
   '"': '"',
   "\\": "\\",
   "/": "/",
@@ -41,10 +41,11 @@ function word() {
   if (!matched) error("Unexpected value");
 
   const { lastIndex } = wordRegExp;
-  if (ch < "f") {
+  if (ch < "f") {  // numbers
     const string = text.slice(at - 1, lastIndex);
     value = numericReviverFn ? numericReviverFn(string) : +string;
-  } else {
+
+  } else {  // true/false/null
     value = ch === "t" ? true : ch === "f" ? false : null;
   }
 
@@ -65,10 +66,12 @@ function string() {
       return value;
     }
 
-    let chunk = text.slice(at, nextQuote);
+    let chunk = text.slice(at, nextQuote); // non-empty string: let's retrieve it
+
     const nextBackslash = chunk.indexOf("\\");
     if (nextBackslash === -1) {  // no backslashes up to end quote: we're done
       if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) error("Bad character in string");
+      
       value += chunk;
       at = nextQuote + 1;
       ch = text.charAt(at++);
@@ -77,20 +80,21 @@ function string() {
     } else {  // deal with backslash escapes
       chunk = chunk.slice(0, nextBackslash);
       if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) error("Bad character in string");
+      
       value += chunk;
       at += nextBackslash + 1;
       ch = text.charAt(at++);
 
-      const escape = escapee[ch];
-      if (escape) {
-        value += escape;
+      const esc = escapes[ch];
+      if (esc) {
+        value += esc;
 
       } else if (ch === "u") {
         let uffff = 0;
         for (let i = 0; i < 4; i += 1) {
           const hex = parseInt(ch = text.charAt(at++), 16);
           if (!isFinite(hex)) error("Bad unicode escape in string");
-          uffff = uffff * 16 + hex;
+          uffff = (uffff << 4) + hex;
         }
         value += String.fromCharCode(uffff);
 
@@ -104,50 +108,51 @@ function string() {
 function array() {
   const arr = [];
   let i = 0;
-  do { ch = text.charAt(at++) } while (ch <= " " && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t"));
+  // the '< "!"' helps performance by short-circuiting the four other conditions in most cases
+  do { ch = text.charAt(at++) } while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t"));
   if (ch === "]") {
     ch = text.charAt(at++)
     return arr;  // empty array
   }
   while (ch) {
     arr[i++] = value();
-    while (ch <= " " && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
+    while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
     if (ch === "]") {
       ch = text.charAt(at++)
       return arr;
     }
     if (ch !== ",") error("Expected ',', got '" + ch + "' between array elements");
-    do { ch = text.charAt(at++) } while (ch <= " " && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t"));
+    do { ch = text.charAt(at++) } while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t"));
   }
   error("Array ends with '[' or ','");
 };
 
 function object() {
   const obj = {};
-  do { ch = text.charAt(at++) } while (ch <= " " && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t"));
+  do { ch = text.charAt(at++) } while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t"));
   if (ch === "}") {
     ch = text.charAt(at++);
     return obj;  // empty object
   }
   while (ch) {
     const key = string();
-    while (ch <= " " && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
+    while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
     if (ch !== ":") error("Expected ':', got '" + ch + "' between object key and value");
     ch = text.charAt(at++);
     obj[key] = value();
-    while (ch <= " " && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
+    while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
     if (ch === "}") {
       ch = text.charAt(at++);
       return obj;
     }
     if (ch !== ",") error("Expected ',', got '" + ch + "' between items in object");
-    do { ch = text.charAt(at++) } while (ch <= " " && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t"));
+    do { ch = text.charAt(at++) } while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t"));
   }
   error("Object ends with '{' or ','");
 };
 
 function value() {
-  while (ch <= " " && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
+  while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
   switch (ch) {
     case '"': return string();
     case "{": return object();
@@ -157,7 +162,6 @@ function value() {
 };
 
 export default function (source, reviver, numericReviver, fastStrings) {
-
   if (typeof source !== 'string') error("JSON source is not a string");
 
   at = 0;
@@ -167,7 +171,7 @@ export default function (source, reviver, numericReviver, fastStrings) {
   numericReviverFn = numericReviver;
 
   const result = value();
-  while (ch <= " " && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
+  while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
   if (ch) error("Additional data at end");
 
   return (typeof reviver === "function")

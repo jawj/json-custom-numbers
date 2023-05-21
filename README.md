@@ -2,25 +2,15 @@
 
 https://github.com/jawj/json-custom-numbers
 
-This is a modified version of [Douglas Crockford's recursive-descent JSON parser](https://github.com/douglascrockford/JSON-js/blob/03157639c7a7cddd2e9f032537f346f1a87c0f6d/json_parse.js). 
+This is a heavily modified version of [Douglas Crockford's recursive-descent JSON parser](https://github.com/douglascrockford/JSON-js/blob/03157639c7a7cddd2e9f032537f346f1a87c0f6d/json_parse.js). 
 
-Crucially, the modifications:
+These modifications:
 
-* **enable custom number parsing**, by supplying a custom function at parse time
+* **enable custom number parsing**, via a function you supply at parse time
 
-Less interestingly, they also:
+* accelerate parsing in general, especially of long strings (by using `indexOf`), and by inlining short functions
 
-* accelerate parsing of long strings
-
-* allow duplicate object keys (last value wins), matching `JSON.parse()`
-
-* are strict about whitespace characters and unicode escapes, like `JSON.parse()`
-
-* are strict about number formats (e.g. `.5`, `5.`, `05` are all errors), like `JSON.parse()`
-
-Lastly (though this slows things down a little, and can be switched off), they:
-
-* throw errors on unescaped `\t`, `\n` and control characters in strings, again like `JSON.parse()`
+* match `JSON.parse` behaviour, by allowing duplicate object keys (last value wins) and by being strict about whitespace characters, number formats (`.5`, `5.` and `05` are errors), unicode escapes, and (optionally) unescaped `\t`, `\n` and control characters in strings.
 
 ## Conformance and compatibility
 
@@ -28,19 +18,19 @@ When full string checking is not explicitly turned off, the `parse()` function m
 
 ## Performance
 
-Performance comparisons are highly dependent on the nature of the JSON string to be parsed and the JavaScript enging used. 
+Performance comparisons are very dependent on the nature of the JSON string to be parsed and the JavaScript engine used. 
 
-On Node.js 18.10 (V8):
+On Node.js 18.10 and 20.0 (V8 engine):
 
-* The best case is JSON that contains mainly long strings. This library may then be up to 7x **faster** than `JSON.parse()` if full string checking is turned off. With full string checking turned on, which is the default, it's still around 1.5x faster.
+* The best case is JSON that contains mainly long strings, without lots of escape sequences. This library may then be over 10x **faster** than `JSON.parse()` if full string checking is turned off. With full string checking turned on, which is the default, it's still around 2x faster.
 
-* The worst case is JSON that contains only short numeric values, `true`, `false` or `null`. This library may then be around 4 - 5x slower than `JSON.parse()`.
+* The worst case is JSON that contains only short numeric values, `true`, `false` or `null`. This library may then be 4 - 5x slower than `JSON.parse()`.
 
-* Typically, this library is 2 – 4x slower than `JSON.parse()`. Unless you're regularly parsing very large JSON strings, the difference probably isn't very important.
+* Typically, this library is probably 2 – 3x slower than `JSON.parse()`. Unless you're regularly parsing very large JSON strings, the difference probably isn't very important.
 
-On Bun 0.6.1 (JavaScriptCore):
+On Bun 0.6.1 (JavaScriptCore engine):
 
-* Performance on Bun is less variable than Node. It's generally 2 - 5x slower than `JSON.parse`.
+* Performance on Bun is somwehat more consistent across JSON strings than Node. It's typically 2 - 4x slower than `JSON.parse`.
 
 I compared several alternative approaches to number and string parsing. The implementations currently used are the ones I found to be fastest in most scenarios. If you figure out something reliably faster, I'd be glad to hear about it.
 
@@ -61,7 +51,7 @@ JSON.parse("9007199254740993"); // => 9007199254740992
 parse("9007199254740991"); // => 9007199254740991
 parse("9007199254740993"); // => 9007199254740992
 
-// this `numberReviver` function converts large integers to `BigInt`
+// this `numberReviver` function converts only large integers to `BigInt`
 function nr(s) {
   const n = +s;
   if (n >= Number.MIN_SAFE_INTEGER && n <= Number.MAX_SAFE_INTEGER) return n;
