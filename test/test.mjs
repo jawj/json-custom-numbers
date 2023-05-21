@@ -83,7 +83,12 @@ const bigNumPass = typeof revived[0] === 'number' &&
 
 console.log(bigNumPass ? 'Pass' : 'FAIL');
 
+if (!bigNumPass || fails > 0) process.exit(1);
+
 console.log(`\nRunning perf tests ...\n`);
+
+const lJust = (s, len) => s + ' '.repeat(Math.max(0, len - s.length));
+const rJust = (s, len) => ' '.repeat(Math.max(0, len - s.length)) + s;
 
 for (const filename in perftests) {
   const json = perftests[filename];
@@ -104,7 +109,11 @@ for (const filename in perftests) {
   for (let i = 0; i < repetitions; i++) parse(json, null, null, true);
   const weft = performance.now() - weft0;
 
-  console.log(`${filename} x ${repetitions}: JSON.parse = ${jpt.toFixed()}ms, crockford = ${ct.toFixed()}ms (${(jpt  / ct).toFixed(2)}x), parse = ${wet.toFixed()}ms (${(jpt / wet).toFixed(2)}x), parse (fastStrings) = ${weft.toFixed()}ms (${(jpt / weft).toFixed(2)}x)`);
-}
+  const title = lJust(`${filename} x ${repetitions}`, 33);
+  const jptResult = `JSON.parse ${rJust(jpt.toFixed(), 4)}ms`;
+  const ctResult = `Crockford ${rJust(ct.toFixed(), 5)}ms (${rJust((jpt / ct).toFixed(2), 5)}x)`;
+  const wetResult = `parse ${rJust(wet.toFixed(), 5)}ms (${rJust((jpt / wet).toFixed(2), 5)}x)`;
+  const weftResult = `parse (lax strings) ${rJust(weft.toFixed(), 5)}ms (${rJust((jpt / weft).toFixed(2), 5)}x)`;
 
-process.exit(bigNumPass && fails === 0 ? 0 : 1);
+  console.log(`${title} | ${jptResult} | ${ctResult} | ${weftResult} | ${wetResult}`);
+}

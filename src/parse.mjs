@@ -16,6 +16,7 @@ let text;  // JSON source
 let skipIllegalStringCharCheck;
 let numericReviverFn;
 
+const illegalStringMessage = "Invalid character in string";
 const escapes = {
   '"': '"',
   "\\": "\\",
@@ -49,8 +50,8 @@ function word() {
     value = ch === "t" ? true : ch === "f" ? false : null;
   }
 
-  ch = text.charAt(lastIndex);
-  at = lastIndex + 1;
+  at = lastIndex;
+  ch = text.charAt(at++);
   return value;
 };
 
@@ -70,7 +71,7 @@ function string() {  // note: it's on you to check that ch == '"' before you cal
 
     const nextBackslash = chunk.indexOf("\\");
     if (nextBackslash === -1) {  // no backslashes up to end quote: we're done
-      if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) error("Forbidden character in string");
+      if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) error(illegalStringMessage);
       
       value += chunk;
       at = nextQuote + 1;
@@ -79,7 +80,7 @@ function string() {  // note: it's on you to check that ch == '"' before you cal
 
     } else {  // deal with backslash escapes
       chunk = chunk.slice(0, nextBackslash);
-      if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) error("Forbidden character in string");
+      if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) error(illegalStringMessage);
       
       value += chunk;
       at += nextBackslash + 1;
@@ -91,10 +92,10 @@ function string() {  // note: it's on you to check that ch == '"' before you cal
 
       } else if (ch === "u") {
         let uffff = 0;
-        for (let i = 0; i < 4; i += 1) {
+        for (let i = 0; i < 4; i ++) {
           const hex = parseInt(ch = text.charAt(at++), 16);
-          if (!isFinite(hex)) error("Invalid \\uXXXX escape in string");
-          uffff = (uffff << 4) + hex;
+          if (isNaN(hex)) error("Invalid \\uXXXX escape in string");
+          uffff = (uffff << 4) | hex;
         }
         value += String.fromCharCode(uffff);
 
@@ -137,7 +138,7 @@ function object() {
   while (ch === '"') {
     const key = string();
     while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
-    if (ch !== ":") error("Expected ':', got '" + ch + "' between object key and value");
+    if (ch !== ":") error("Expected ':', got '" + ch + "' between key and value in object");
     ch = text.charAt(at++);
     obj[key] = value();
     while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
