@@ -34,6 +34,18 @@ On Bun 0.6.1 (JavaScriptCore engine):
 
 I compared several alternative approaches to number and string parsing. The implementations currently used are the ones I found to be fastest in most scenarios. If you figure out something reliably faster, I'd be glad to hear about it.
 
+This is an example of performance test output (from a 2020 Intel MacBook Pro):
+
+```
+perf_bool_null.json x 10000       | JSON.parse   17ms | Crockford    63ms ( 0.27x) | parse (lax strings)    58ms ( 0.30x) | parse    44ms ( 0.39x)
+perf_long_numbers.json x 10000    | JSON.parse   21ms | Crockford   104ms ( 0.21x) | parse (lax strings)    49ms ( 0.44x) | parse    59ms ( 0.36x)
+perf_long_strings.json x 10000    | JSON.parse  666ms | Crockford  6421ms ( 0.10x) | parse (lax strings)    40ms (16.57x) | parse   311ms ( 2.14x)
+perf_short_numbers.json x 10000   | JSON.parse   22ms | Crockford   109ms ( 0.20x) | parse (lax strings)   102ms ( 0.21x) | parse    97ms ( 0.23x)
+perf_short_strings.json x 10000   | JSON.parse   20ms | Crockford    40ms ( 0.51x) | parse (lax strings)    39ms ( 0.52x) | parse    46ms ( 0.44x)
+perf_typical_i.json x 10000       | JSON.parse  135ms | Crockford   597ms ( 0.23x) | parse (lax strings)   255ms ( 0.53x) | parse   312ms ( 0.43x)
+perf_typical_ii.json x 10000      | JSON.parse   18ms | Crockford    66ms ( 0.28x) | parse (lax strings)    53ms ( 0.34x) | parse    58ms ( 0.31x)
+```
+
 ## Usage
 
 For usage, see [the type definitions](dist/index.d.ts).

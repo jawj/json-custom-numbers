@@ -101,19 +101,19 @@ for (const filename in perftests) {
   for (let i = 0; i < repetitions; i++) crockford(json);
   const ct = performance.now() - ct0;
 
-  const wet0 = performance.now();
-  for (let i = 0; i < repetitions; i++) parse(json);
-  const wet = performance.now() - wet0;
-
   const weft0 = performance.now();
   for (let i = 0; i < repetitions; i++) parse(json, null, null, true);
   const weft = performance.now() - weft0;
 
+  const wet0 = performance.now();
+  for (let i = 0; i < repetitions; i++) parse(json);
+  const wet = performance.now() - wet0;
+
   const title = lJust(`${filename} x ${repetitions}`, 33);
   const jptResult = `JSON.parse ${rJust(jpt.toFixed(), 4)}ms`;
   const ctResult = `Crockford ${rJust(ct.toFixed(), 5)}ms (${rJust((jpt / ct).toFixed(2), 5)}x)`;
-  const wetResult = `parse ${rJust(wet.toFixed(), 5)}ms (${rJust((jpt / wet).toFixed(2), 5)}x)`;
   const weftResult = `parse (lax strings) ${rJust(weft.toFixed(), 5)}ms (${rJust((jpt / weft).toFixed(2), 5)}x)`;
-
+  const wetResult = `parse ${rJust(wet.toFixed(), 5)}ms (${rJust((jpt / wet).toFixed(2), 5)}x)`;
+  
   console.log(`${title} | ${jptResult} | ${ctResult} | ${weftResult} | ${wetResult}`);
 }
