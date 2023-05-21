@@ -7,6 +7,8 @@
 
 "use strict";
 
+export class JSONParseError extends Error { }
+
 // global state
 let at;  // the index of the current character
 let ch;  // the current character
@@ -26,8 +28,6 @@ const escapes = {
 };
 const illegalStringChars = /[\n\t\u0000-\u001f]/;
 const wordRegExp = /true|false|null|-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?/y;
-
-export class JSONParseError extends Error { }
 
 function error(m) {
   throw new JSONParseError(`${m}\nAt character ${at} in JSON: ${text}`);
@@ -55,7 +55,7 @@ function word() {
 };
 
 function string() {  // note: it's on you to check that ch == '"' before you call this
-  let value = '';
+  let value = "";
   for (; ;) {
     const nextQuote = text.indexOf('"', at);
     if (nextQuote === -1) error("Unterminated string");
@@ -161,8 +161,8 @@ function value() {
   }
 };
 
-export default function (source, reviver, numericReviver, fastStrings) {
-  if (typeof source !== 'string') error("JSON source is not a string");
+export function parse(source, reviver, numericReviver, fastStrings) {
+  if (typeof source !== "string") error("JSON source is not a string");
 
   at = 0;
   ch = " ";

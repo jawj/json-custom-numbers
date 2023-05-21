@@ -53,7 +53,7 @@
     prototype, push, r, t, text
 */
 
-export default (function () {
+export const parse = (function () {
     "use strict";
 
 // This is a function that can parse a JSON text, producing a JavaScript
