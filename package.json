@@ -9,7 +9,7 @@
   },
   "main": "/dist/index.js",
   "scripts": {
-    "test": "node test.mjs",
+    "test": "node test/test.mjs",
     "buildEsm": "esbuild src/parse.mjs --bundle --platform=neutral --target=es2015 --minify --format=esm --outfile=dist/index.mjs",
     "buildCjs": "esbuild src/parse.mjs --bundle --platform=neutral --target=es2015 --minify --format=cjs --outfile=dist/index.js",
     "build": "npm run test && npm run buildEsm && npm run buildCjs"

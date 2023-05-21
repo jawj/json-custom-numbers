@@ -54,7 +54,7 @@ function word() {
   return value;
 };
 
-function string() {
+function string() {  // note: it's on you to check that ch == '"' before you call this
   let value = '';
   for (; ;) {
     const nextQuote = text.indexOf('"', at);
@@ -70,7 +70,7 @@ function string() {
 
     const nextBackslash = chunk.indexOf("\\");
     if (nextBackslash === -1) {  // no backslashes up to end quote: we're done
-      if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) error("Bad character in string");
+      if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) error("Forbidden character in string");
       
       value += chunk;
       at = nextQuote + 1;
@@ -79,7 +79,7 @@ function string() {
 
     } else {  // deal with backslash escapes
       chunk = chunk.slice(0, nextBackslash);
-      if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) error("Bad character in string");
+      if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) error("Forbidden character in string");
       
       value += chunk;
       at += nextBackslash + 1;
@@ -93,13 +93,13 @@ function string() {
         let uffff = 0;
         for (let i = 0; i < 4; i += 1) {
           const hex = parseInt(ch = text.charAt(at++), 16);
-          if (!isFinite(hex)) error("Bad unicode escape in string");
+          if (!isFinite(hex)) error("Invalid \\uXXXX escape in string");
           uffff = (uffff << 4) + hex;
         }
         value += String.fromCharCode(uffff);
 
       } else {
-        error("Bad escape sequence in string: '\\" + ch + "'")
+        error("Invalid escape in string: '\\" + ch + "'")
       }
     }
   }
@@ -124,7 +124,7 @@ function array() {
     if (ch !== ",") error("Expected ',', got '" + ch + "' between array elements");
     do { ch = text.charAt(at++) } while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t"));
   }
-  error("Array ends with '[' or ','");
+  error("Invalid array");
 };
 
 function object() {
@@ -134,7 +134,7 @@ function object() {
     ch = text.charAt(at++);
     return obj;  // empty object
   }
-  while (ch) {
+  while (ch === '"') {
     const key = string();
     while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
     if (ch !== ":") error("Expected ':', got '" + ch + "' between object key and value");
@@ -148,7 +148,7 @@ function object() {
     if (ch !== ",") error("Expected ',', got '" + ch + "' between items in object");
     do { ch = text.charAt(at++) } while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t"));
   }
-  error("Object ends with '{' or ','");
+  error("Invalid object");
 };
 
 function value() {
@@ -172,7 +172,7 @@ export default function (source, reviver, numericReviver, fastStrings) {
 
   const result = value();
   while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
-  if (ch) error("Additional data at end");
+  if (ch) error("Unexpected data at end");
 
   return (typeof reviver === "function")
     ? (function walk(holder, key) {
