@@ -16,19 +16,9 @@ let text;  // JSON source
 let skipIllegalStringCharCheck;
 let numericReviverFn;
 
-const illegalStringMessage = "Invalid character in string";
-const escapes = {
-  '"': '"',
-  "\\": "\\",
-  "/": "/",
-  b: "\b",
-  f: "\f",
-  n: "\n",
-  r: "\r",
-  t: "\t"
-};
 const illegalStringChars = /[\n\t\u0000-\u001f]/;
 const wordRegExp = /true|false|null|-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?/y;
+const escapes = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "\"", "", "", "", "", "", "", "", "", "", "", "", "", "/", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "\\", "", "", "", "", "", "\b", "", "", "", "\f", "", "", "", "", "", "", "", "\n", "", "", "", "\r", "", "\t"];
 
 function error(m) {
   throw new JSONParseError(`${m}\nAt character ${at} in JSON: ${text}`);
@@ -38,8 +28,7 @@ function word() {
   let value;
 
   wordRegExp.lastIndex = at - 1;
-  const matched = wordRegExp.test(text);
-  if (!matched) error("Unexpected value");
+  wordRegExp.test(text) || error("Unexpected value");
 
   const { lastIndex } = wordRegExp;
   if (ch < "f") {  // numbers
@@ -68,11 +57,10 @@ function string() {  // note: it's on you to check that ch == '"' before you cal
     }
 
     let chunk = text.slice(at, nextQuote); // non-empty string: let's retrieve it
-
     const nextBackslash = chunk.indexOf("\\");
+
     if (nextBackslash === -1) {  // no backslashes up to end quote: we're done
-      if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) error(illegalStringMessage);
-      
+      if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) error("Invalid character in string");
       value += chunk;
       at = nextQuote + 1;
       ch = text.charAt(at++);
@@ -80,27 +68,26 @@ function string() {  // note: it's on you to check that ch == '"' before you cal
 
     } else {  // deal with backslash escapes
       chunk = chunk.slice(0, nextBackslash);
-      if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) error(illegalStringMessage);
-      
+      if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) error("Invalid character in string");
       value += chunk;
       at += nextBackslash + 1;
-      ch = text.charAt(at++);
 
-      const esc = escapes[ch];
-      if (esc) {
-        value += esc;
-
-      } else if (ch === "u") {
+      let code = text.charCodeAt(at++);
+      if (code === 117 /* u */) {
         let uffff = 0;
-        for (let i = 0; i < 4; i ++) {
-          const hex = parseInt(ch = text.charAt(at++), 16);
-          if (isNaN(hex)) error("Invalid \\uXXXX escape in string");
-          uffff = (uffff << 4) | hex;
+        for (let shift = 12; shift >= 0; shift -= 4) {  // unrolling this loop isn't measurably faster
+          code = text.charCodeAt(at++);
+          uffff |= (code > 47 && code < 58 ? code - 48  /* 0 - 9 */ :
+            code > 64 && code < 71 ? code - 55 /* A - F */ :
+              code > 96 && code < 103 ? code - 87 /* a - f */ :
+                error("Invalid \\uXXXX escape in string")) << shift;
         }
         value += String.fromCharCode(uffff);
 
       } else {
-        error("Invalid escape in string: '\\" + ch + "'")
+        let esc = escapes[code];
+        if (!esc) error("Invalid escape in string");
+        value += esc;
       }
     }
   }

@@ -2,7 +2,6 @@ import fs from 'fs';
 import path from 'path';
 import { parse } from '../src/parse.mjs';
 import { parse as crockford } from './test_comparison/crockford.mjs';
-import { performance } from 'perf_hooks';
 
 const folderPath = 'test/test_parsing';
 const repetitions = 10000;
@@ -111,9 +110,9 @@ for (const filename in perftests) {
 
   const title = lJust(`${filename} x ${repetitions}`, 33);
   const jptResult = `JSON.parse ${rJust(jpt.toFixed(), 4)}ms`;
-  const ctResult = `Crockford ${rJust(ct.toFixed(), 5)}ms (${rJust((jpt / ct).toFixed(2), 5)}x)`;
-  const weftResult = `parse (lax strings) ${rJust(weft.toFixed(), 5)}ms (${rJust((jpt / weft).toFixed(2), 5)}x)`;
-  const wetResult = `parse ${rJust(wet.toFixed(), 5)}ms (${rJust((jpt / wet).toFixed(2), 5)}x)`;
+  const ctResult = `Crockford ${rJust(ct.toFixed(), 5)}ms ${rJust('(' + (jpt / ct).toFixed(2), 6)}x)`;
+  const weftResult = `parse (lax strings) ${rJust(weft.toFixed(), 5)}ms ${rJust('(' + (jpt / weft).toFixed(2), 6)}x)`;
+  const wetResult = `parse ${rJust(wet.toFixed(), 5)}ms ${rJust('(' + (jpt / wet).toFixed(2), 6)}x)`;
   
   console.log(`${title} | ${jptResult} | ${ctResult} | ${weftResult} | ${wetResult}`);
 }
