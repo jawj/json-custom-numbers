@@ -15,7 +15,11 @@
     "build": "npm run test && npm run buildEsm && npm run buildCjs"
   },
   "author": "George MacKerron",
-  "license": "MIT",
+  "license": "Public domain",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jawj/json-custom-numbers"
+  },
   "devDependencies": {
     "esbuild": "^0.17.19"
   },
