@@ -26,25 +26,27 @@ On Node.js 18.10 and 20.0 (V8 engine):
 
 * The worst case is JSON that contains strings comprised entirely of escape sequences. This library may then be up to 10x slower than `JSON.parse()`.
 
-* Typically, this library is 2 – 3x slower than `JSON.parse()`. Unless you're regularly parsing very large JSON strings, the difference probably isn't very important.
+* Typically, this library is 2 – 4x slower than `JSON.parse()`. Unless you're regularly parsing very large JSON strings, the difference probably isn't very important.
 
 On Bun 0.6.1 (JavaScriptCore engine):
 
-* Performance on Bun is somwehat more consistent across different JSON strings than Node. It's typically 2 - 4x slower than `JSON.parse`.
+* Performance on Bun is somwehat more consistent across different JSON strings than Node, and also typically 2 - 4x slower than `JSON.parse`.
 
 I compared several alternative approaches to number and string parsing. The implementations currently used are the ones I found to be fastest in most scenarios. If you figure out something reliably faster, I'd be glad to hear about it.
 
 This is an example of performance test output (on a 2020 Intel MacBook Pro):
 
 ```
-perf_bool_null.json x 10000       | JSON.parse   12ms | Crockford    79ms  (0.15x) | parse (lax strings)    61ms  (0.20x) | parse    44ms  (0.27x)
-perf_long_numbers.json x 10000    | JSON.parse   21ms | Crockford   116ms  (0.18x) | parse (lax strings)    53ms  (0.40x) | parse    47ms  (0.45x)
-perf_long_strings.json x 10000    | JSON.parse  550ms | Crockford  8228ms  (0.07x) | parse (lax strings)    38ms (14.55x) | parse   300ms  (1.83x)
-perf_short_numbers.json x 10000   | JSON.parse   23ms | Crockford   130ms  (0.18x) | parse (lax strings)   109ms  (0.21x) | parse   101ms  (0.23x)
-perf_short_strings.json x 10000   | JSON.parse   21ms | Crockford    64ms  (0.33x) | parse (lax strings)    38ms  (0.56x) | parse    46ms  (0.46x)
-perf_string_escapes.json x 10000  | JSON.parse   10ms | Crockford   140ms  (0.07x) | parse (lax strings)    67ms  (0.14x) | parse    80ms  (0.12x)
-perf_typical_i.json x 10000       | JSON.parse  117ms | Crockford   903ms  (0.13x) | parse (lax strings)   262ms  (0.45x) | parse   342ms  (0.34x)
-perf_typical_ii.json x 10000      | JSON.parse   19ms | Crockford    83ms  (0.23x) | parse (lax strings)    52ms  (0.37x) | parse    59ms  (0.33x)
+test               x  reps |  native |        crockford |     this, strict |        this, lax
+01_typical_3kb     x 25000 |   347ms |  1433ms  (x4.13) |   810ms  (x2.33) |   705ms  (x2.03)
+02_typical_28kb    x  5000 |   490ms |  2840ms  (x5.80) |  1858ms  (x3.79) |  1665ms  (x3.40)
+03_mixed_83b       x 50000 |   102ms |   385ms  (x3.76) |   250ms  (x2.44) |   216ms  (x2.11)
+04_short_numbers   x 50000 |   105ms |   676ms  (x6.42) |   495ms  (x4.70) |   492ms  (x4.67)
+05_long_numbers    x 50000 |   101ms |   501ms  (x4.94) |   219ms  (x2.16) |   202ms  (x1.99)
+06_short_strings   x 50000 |    98ms |   298ms  (x3.05) |   247ms  (x2.54) |   210ms  (x2.16)
+07_long_strings    x  5000 |   256ms |  3953ms (x15.43) |   138ms  (x0.54) |    17ms  (x0.07)
+08_string_escapes  x 75000 |    70ms |   975ms (x13.87) |   607ms  (x8.64) |   523ms  (x7.44)
+09_bool_null       x 75000 |    77ms |   521ms  (x6.79) |   320ms  (x4.18) |   319ms  (x4.17)
 ```
 
 ## Usage

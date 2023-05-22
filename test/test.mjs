@@ -2,10 +2,9 @@ import fs from 'fs';
 import path from 'path';
 import { parse } from '../src/parse.mjs';
 import { parse as crockford } from './test_comparison/crockford.mjs';
+import col from 'colors/safe.js';
 
 const folderPath = 'test/test_parsing';
-const repetitions = 10000;
-
 const filenames = fs
   .readdirSync(folderPath)
   .filter(filename =>
@@ -17,7 +16,7 @@ const filenames = fs
 let passes = 0, fails = 0;
 const perftests = {};
 
-console.log(`Running JSON.parse comparison tests ...`);
+console.log(col.bold(`Running JSON.parse comparison tests ...`));
 
 for (const filename of filenames) {
   const json = fs.readFileSync(path.join(folderPath, filename), 'utf8');
@@ -61,7 +60,7 @@ for (const filename of filenames) {
 
 console.log(`\n${passes} passes, ${fails} fails\n`);
 
-console.log(`Running number parsing test ...`);
+console.log(col.bold(`Running number parsing test ...\n`));
 
 const bigNumJson = "[9007199254740991, 9007199254740991.1, 900719925474099.1e1, 9007199254740993]";
 
@@ -80,39 +79,40 @@ const bigNumPass = typeof revived[0] === 'number' &&
   typeof revived[2] === 'number' && 
   typeof revived[3] === 'bigint';
 
-console.log(bigNumPass ? 'Pass' : 'FAIL');
+console.log(bigNumPass ? 'Pass' : 'Fail');
 
 if (!bigNumPass || fails > 0) process.exit(1);
 
-console.log(`\nRunning perf tests ...\n`);
+console.log(col.bold(`\nRunning perf tests ...\n`));
 
-const lJust = (s, len) => s + ' '.repeat(Math.max(0, len - s.length));
-const rJust = (s, len) => ' '.repeat(Math.max(0, len - s.length)) + s;
+const ljust = (s, len) => s + ' '.repeat(Math.max(0, len - s.length));
+const rjust = (s, len) => ' '.repeat(Math.max(0, len - s.length)) + s;
+const perf = (reps, baseline, fn) => {
+  const t0 = performance.now();
+  for (let i = 0; i < reps; i++) fn();
+  const t = performance.now() - t0;
+  let result = rjust(t.toFixed(), 5) + 'ms';
+  if (typeof baseline === 'number') {
+    const factor = t / baseline;
+    const highlight = factor < 1 ? col.green : factor > 10 ? col.red : factor > 5 ? col.yellow : x => x;
+    result += highlight(rjust(`(x${factor.toFixed(2)})`, 9));
+  }
+  return [result, t];
+};
 
+console.log(col.bold(`test               x  reps |  native |        crockford |     this, strict |        this, lax`));
 for (const filename in perftests) {
   const json = perftests[filename];
+  const [, name, repsStr] = filename.match(/^perf_(.+)_x([0-9]+)[.]json$/) ?? [, 'Perf test', 10000];
+  const reps = Number(repsStr);
 
-  const jpt0 = performance.now();
-  for (let i = 0; i < repetitions; i++) JSON.parse(json);
-  const jpt = performance.now() - jpt0;
+  const [baselineResult, t] = perf(reps, null, () => JSON.parse(json));
+  const [crockfordResult] = perf(reps, t, () => crockford(json));
+  const [parseResult] = perf(reps, t, () => parse(json));
+  const [parseLaxResult] = perf(reps, t, () => parse(json, null, null, true));
 
-  const ct0 = performance.now();
-  for (let i = 0; i < repetitions; i++) crockford(json);
-  const ct = performance.now() - ct0;
-
-  const weft0 = performance.now();
-  for (let i = 0; i < repetitions; i++) parse(json, null, null, true);
-  const weft = performance.now() - weft0;
-
-  const wet0 = performance.now();
-  for (let i = 0; i < repetitions; i++) parse(json);
-  const wet = performance.now() - wet0;
-
-  const title = lJust(`${filename} x ${repetitions}`, 33);
-  const jptResult = `JSON.parse ${rJust(jpt.toFixed(), 4)}ms`;
-  const ctResult = `Crockford ${rJust(ct.toFixed(), 5)}ms ${rJust('(' + (jpt / ct).toFixed(2), 6)}x)`;
-  const weftResult = `parse (lax strings) ${rJust(weft.toFixed(), 5)}ms ${rJust('(' + (jpt / weft).toFixed(2), 6)}x)`;
-  const wetResult = `parse ${rJust(wet.toFixed(), 5)}ms ${rJust('(' + (jpt / wet).toFixed(2), 6)}x)`;
-  
-  console.log(`${title} | ${jptResult} | ${ctResult} | ${weftResult} | ${wetResult}`);
+  const title = `${ljust(name, 18)} x ${rjust(repsStr, 5)}`;
+  console.log(`${title} | ${baselineResult} | ${crockfordResult} | ${parseResult} | ${parseLaxResult}`);
 }
+
+console.log();
