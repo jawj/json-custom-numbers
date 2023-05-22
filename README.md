@@ -38,15 +38,15 @@ This is an example of performance test output (on a 2020 Intel MacBook Pro):
 
 ```
 test               x  reps |  native |        crockford |     this, strict |        this, lax
-01_typical_3kb     x 25000 |   347ms |  1433ms  (x4.13) |   810ms  (x2.33) |   705ms  (x2.03)
-02_typical_28kb    x  5000 |   490ms |  2840ms  (x5.80) |  1858ms  (x3.79) |  1665ms  (x3.40)
-03_mixed_83b       x 50000 |   102ms |   385ms  (x3.76) |   250ms  (x2.44) |   216ms  (x2.11)
-04_short_numbers   x 50000 |   105ms |   676ms  (x6.42) |   495ms  (x4.70) |   492ms  (x4.67)
-05_long_numbers    x 50000 |   101ms |   501ms  (x4.94) |   219ms  (x2.16) |   202ms  (x1.99)
-06_short_strings   x 50000 |    98ms |   298ms  (x3.05) |   247ms  (x2.54) |   210ms  (x2.16)
-07_long_strings    x  5000 |   256ms |  3953ms (x15.43) |   138ms  (x0.54) |    17ms  (x0.07)
-08_string_escapes  x 75000 |    70ms |   975ms (x13.87) |   607ms  (x8.64) |   523ms  (x7.44)
-09_bool_null       x 75000 |    77ms |   521ms  (x6.79) |   320ms  (x4.18) |   319ms  (x4.17)
+01_typical_3kb     x 25000 |   290ms |  1503ms  (x5.19) |   799ms  (x2.76) |   653ms  (x2.26)
+02_typical_28kb    x  5000 |   446ms |  3055ms  (x6.85) |  2053ms  (x4.60) |  1763ms  (x3.95)
+03_mixed_83b       x 50000 |    97ms |   443ms  (x4.58) |   291ms  (x3.01) |   255ms  (x2.64)
+04_short_numbers   x 50000 |    98ms |   680ms  (x6.93) |   526ms  (x5.37) |   500ms  (x5.09)
+05_long_numbers    x 50000 |    97ms |   487ms  (x5.03) |   229ms  (x2.37) |   215ms  (x2.22)
+06_short_strings   x 50000 |    99ms |   313ms  (x3.15) |   232ms  (x2.33) |   184ms  (x1.85)
+07_long_strings    x  5000 |   248ms |  3628ms (x14.65) |   147ms  (x0.59) |    16ms  (x0.06)
+08_string_escapes  x 75000 |    71ms |   943ms (x13.35) |   645ms  (x9.14) |   458ms  (x6.49)
+09_bool_null       x 75000 |    73ms |   535ms  (x7.29) |   352ms  (x4.79) |   353ms  (x4.80)
 ```
 
 ## Usage
