@@ -60,7 +60,7 @@ for (const filename of filenames) {
 
   compare(filename, json, JSON.parse, parseStrict);
 
-  if (/^(y_|perf_)/.test(filename)) compare(filename, json, JSON.parse, parseChill);
+  if (/^(y_|perf_|i_)/.test(filename)) compare(filename, json, JSON.parse, parseChill);
 }
 
 console.log(`\n${passes} passes, ${fails} fails\n`);
