@@ -37,16 +37,16 @@ I compared several alternative approaches to number and string parsing. The impl
 This is an example of performance test output (on a 2020 Intel MacBook Pro):
 
 ```
-test               x  reps |  native |        crockford |     this, strict |        this, lax
-01_typical_3kb     x 25000 |   290ms |  1503ms  (x5.19) |   799ms  (x2.76) |   653ms  (x2.26)
-02_typical_28kb    x  5000 |   446ms |  3055ms  (x6.85) |  2053ms  (x4.60) |  1763ms  (x3.95)
-03_mixed_83b       x 50000 |    97ms |   443ms  (x4.58) |   291ms  (x3.01) |   255ms  (x2.64)
-04_short_numbers   x 50000 |    98ms |   680ms  (x6.93) |   526ms  (x5.37) |   500ms  (x5.09)
-05_long_numbers    x 50000 |    97ms |   487ms  (x5.03) |   229ms  (x2.37) |   215ms  (x2.22)
-06_short_strings   x 50000 |    99ms |   313ms  (x3.15) |   232ms  (x2.33) |   184ms  (x1.85)
-07_long_strings    x  5000 |   248ms |  3628ms (x14.65) |   147ms  (x0.59) |    16ms  (x0.06)
-08_string_escapes  x 75000 |    71ms |   943ms (x13.35) |   645ms  (x9.14) |   458ms  (x6.49)
-09_bool_null       x 75000 |    73ms |   535ms  (x7.29) |   352ms  (x4.79) |   353ms  (x4.80)
+test               x   reps |  native |        crockford |     this, strict |        this, lax
+01_typical_3kb     x  25000 |   309ms |  1706ms  (x5.52) |   754ms  (x2.44) |   581ms  (x1.88)
+02_typical_28kb    x   5000 |   485ms |  3004ms  (x6.19) |  1791ms  (x3.69) |  1593ms  (x3.28)
+03_mixed_83b       x  50000 |    92ms |   355ms  (x3.84) |   281ms  (x3.04) |   222ms  (x2.41)
+04_short_numbers   x  50000 |   120ms |   508ms  (x4.25) |   480ms  (x4.01) |   450ms  (x3.76)
+05_long_numbers    x  50000 |   104ms |   459ms  (x4.39) |   240ms  (x2.30) |   216ms  (x2.07)
+06_short_strings   x  50000 |   102ms |   197ms  (x1.93) |   227ms  (x2.22) |   202ms  (x1.98)
+07_long_strings    x   5000 |   309ms |  3997ms (x12.94) |   146ms  (x0.47) |    15ms  (x0.05)
+08_string_escapes  x 100000 |    98ms |  1087ms (x11.12) |   659ms  (x6.74) |   537ms  (x5.49)
+09_bool_null       x 100000 |    97ms |   411ms  (x4.25) |   383ms  (x3.96) |   374ms  (x3.87)
 ```
 
 ## Usage
