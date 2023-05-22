@@ -82,10 +82,11 @@ function string() {  // note: it's on you to check that ch == '"' before you cal
       let code = text.charCodeAt(at++);
       value += code === 117 /* u */ ?
         String.fromCharCode(
-          ((hextab1[text.charCodeAt(at++)] || badUnicode()) - 1) |
-          ((hextab2[text.charCodeAt(at++)] || badUnicode()) - 1) |
-          ((hextab3[text.charCodeAt(at++)] || badUnicode()) - 1) |
-          ((hextab4[text.charCodeAt(at++)] || badUnicode()) - 1)
+          // the lookup tables have 1 added to each value so that 0 means not found, which is why we subtract 4
+          (hextab1[text.charCodeAt(at++)] || badUnicode()) +
+          (hextab2[text.charCodeAt(at++)] || badUnicode()) +
+          (hextab3[text.charCodeAt(at++)] || badUnicode()) +
+          (hextab4[text.charCodeAt(at++)] || badUnicode()) - 4
         ) :
         escapes[code] || error("Invalid escape in string");
     }
