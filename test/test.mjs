@@ -88,6 +88,7 @@ console.log(col.bold(`\nRunning perf tests ...\n`));
 const ljust = (s, len) => s + ' '.repeat(Math.max(0, len - s.length));
 const rjust = (s, len) => ' '.repeat(Math.max(0, len - s.length)) + s;
 const perf = (reps, baseline, fn) => {
+  if (global.gc) global.gc();
   const t0 = performance.now();
   for (let i = 0; i < reps; i++) fn();
   const t = performance.now() - t0;
@@ -100,7 +101,7 @@ const perf = (reps, baseline, fn) => {
   return [result, t];
 };
 
-console.log(col.bold(`test               x  reps |  native |        crockford |     this, strict |        this, lax`));
+console.log(col.bold(`test               x   reps |  native |        crockford |     this, strict |        this, lax`));
 for (const filename in perftests) {
   const json = perftests[filename];
   const [, name, repsStr] = filename.match(/^perf_(.+)_x([0-9]+)[.]json$/) ?? [, 'Perf test', 10000];
@@ -111,7 +112,7 @@ for (const filename in perftests) {
   const [parseResult] = perf(reps, t, () => parse(json));
   const [parseLaxResult] = perf(reps, t, () => parse(json, null, null, true));
 
-  const title = `${ljust(name, 18)} x ${rjust(repsStr, 5)}`;
+  const title = `${ljust(name, 18)} x ${rjust(repsStr, 6)}`;
   console.log(`${title} | ${baselineResult} | ${crockfordResult} | ${parseResult} | ${parseLaxResult}`);
 }
 
