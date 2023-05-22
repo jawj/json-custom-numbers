@@ -13,7 +13,6 @@ export class JSONParseError extends Error { }
 let at;  // the index of the current character
 let ch;  // the current character
 let text;  // JSON source
-let skipIllegalStringCharCheck;
 let numericReviverFn;
 
 const illegalStringChars = /[\n\t\u0000-\u001f]/;
@@ -67,7 +66,7 @@ function string() {  // note: it's on you to check that ch == '"' before you cal
     const nextBackslash = chunk.indexOf("\\");
 
     if (nextBackslash === -1) {  // no backslashes up to end quote: we're done
-      if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) badChar();
+      if (illegalStringChars.test(chunk)) badChar();
       value += chunk;
       at = nextQuote + 1;
       ch = text.charAt(at++);
@@ -75,7 +74,7 @@ function string() {  // note: it's on you to check that ch == '"' before you cal
 
     } else {  // deal with backslash escapes
       chunk = chunk.slice(0, nextBackslash);
-      if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) badChar();
+      if (illegalStringChars.test(chunk)) badChar();
       value += chunk;
       at += nextBackslash + 1;
 
@@ -149,13 +148,12 @@ function value() {
   }
 };
 
-export function parse(source, reviver, numericReviver, fastStrings) {
+export function parse(source, reviver, numericReviver) {
   if (typeof source !== "string") error("JSON source is not a string");
 
   at = 0;
   ch = " ";
   text = source;
-  skipIllegalStringCharCheck = fastStrings;
   numericReviverFn = numericReviver;
 
   const result = value();

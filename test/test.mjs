@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import { parse } from '../src/parse.mjs';
+import { parse as parseStrict } from '../src/parseStrict.mjs';
+import { parse as parseChill } from '../src/parseChill.mjs';
 import { parse as crockford } from './test_comparison/crockford.mjs';
 import col from 'colors/safe.js';
 
@@ -18,44 +19,48 @@ const perftests = {};
 
 console.log(col.bold(`Running JSON.parse comparison tests ...`));
 
+function compare(filename, json, trueFn, testFn) {
+  let trueErr = undefined;
+  let trueResult = undefined;
+  try {
+    trueResult = trueFn(json);
+  } catch (err) {
+    trueErr = err;
+  }
+
+  let testErr = undefined;
+  let testResult = undefined;
+  try {
+    testResult = testFn(json);
+  } catch (err) {
+    testErr = err;
+  }
+
+  if (!!testErr !== !!trueErr) {
+    console.log(filename, json);
+    console.log(trueErr ? trueErr.message : testErr.message);
+    console.log(`  FAIL: JSON.parse ${trueErr ? 'error' : 'OK'}, parse ${testErr ? 'error' : 'OK'}\n`);
+    // process.exit();
+    fails += 1;
+
+  } else if (JSON.stringify(testResult) !== JSON.stringify(trueResult)) {
+    console.log(filename, json);
+    console.log(`${filename} FAIL: JSON.parse (${JSON.stringify(trueResult)}) !== parse (${JSON.stringify(testResult)})\n`);
+    // process.exit();
+    fails += 1;
+
+  } else {
+    passes += 1;
+  }
+}
+
 for (const filename of filenames) {
   const json = fs.readFileSync(path.join(folderPath, filename), 'utf8');
   if (filename.startsWith('perf_')) perftests[filename] = json;
 
-  let jpGotErr = undefined;
-  let jpResult = undefined;
-  try {
-    jpResult = JSON.parse(json);
-  } catch (err) {
-    jpGotErr = err;
-  }
+  compare(filename, json, JSON.parse, parseStrict);
 
-  let weGotErr = undefined;
-  let weResult = undefined;
-  try {
-    weResult = parse(json);
-  } catch (err) {
-    weGotErr = err;
-  }
-
-  if (!!weGotErr !== !!jpGotErr) {
-    console.log(filename, json);
-    console.log(jpGotErr ? jpGotErr.message : weGotErr.message);
-    console.log(`  FAIL: JSON.parse ${jpGotErr ? 'error' : 'OK'}, parse ${weGotErr ? 'error' : 'OK'}\n`);
-    // process.exit();
-    fails += 1;
-    continue;
-  }
-
-  if (JSON.stringify(weResult) !== JSON.stringify(jpResult)) {
-    console.log(filename, json);
-    console.log(`${filename} FAIL: JSON.parse (${JSON.stringify(jpResult)}) !== parse (${JSON.stringify(weResult)})\n`);
-    // process.exit();
-    fails += 1;
-    continue;
-  }
-
-  passes += 1;
+  if (/^(y_|perf_)/.test(filename)) compare(filename, json, JSON.parse, parseChill);
 }
 
 console.log(`\n${passes} passes, ${fails} fails\n`);
@@ -71,12 +76,12 @@ function nr(s) {
   return BigInt(s);
 }
 
-const revived = parse(bigNumJson, null, nr);
+const revived = parseStrict(bigNumJson, null, nr);
 console.log(bigNumJson, '->', revived);
 
 const bigNumPass = typeof revived[0] === 'number' &&
-  typeof revived[1] === 'number' && 
-  typeof revived[2] === 'number' && 
+  typeof revived[1] === 'number' &&
+  typeof revived[2] === 'number' &&
   typeof revived[3] === 'bigint';
 
 console.log(bigNumPass ? 'Pass' : 'Fail');
@@ -101,7 +106,7 @@ const perf = (reps, baseline, fn) => {
   return [result, t];
 };
 
-console.log(col.bold(`test               x   reps |  native |        crockford |     this, strict |        this, lax`));
+console.log(col.bold(`test               x   reps |  native |        crockford |     this, strict |      this, chill`));
 for (const filename in perftests) {
   const json = perftests[filename];
   const [, name, repsStr] = filename.match(/^perf_(.+)_x([0-9]+)[.]json$/) ?? [, 'Perf test', 10000];
@@ -109,8 +114,8 @@ for (const filename in perftests) {
 
   const [baselineResult, t] = perf(reps, null, () => JSON.parse(json));
   const [crockfordResult] = perf(reps, t, () => crockford(json));
-  const [parseResult] = perf(reps, t, () => parse(json));
-  const [parseLaxResult] = perf(reps, t, () => parse(json, null, null, true));
+  const [parseResult] = perf(reps, t, () => parseStrict(json));
+  const [parseLaxResult] = perf(reps, t, () => parseChill(json));
 
   const title = `${ljust(name, 18)} x ${rjust(repsStr, 6)}`;
   console.log(`${title} | ${baselineResult} | ${crockfordResult} | ${parseResult} | ${parseLaxResult}`);
