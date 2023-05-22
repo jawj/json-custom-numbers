@@ -77,7 +77,7 @@ function string() {  // note: it's on you to check that ch == '"' before you cal
         let uffff = 0;
         for (let shift = 12; shift >= 0; shift -= 4) {  // unrolling this loop isn't measurably faster
           code = text.charCodeAt(at++);
-          uffff |= (code > 47 && code < 58 ? code - 48  /* 0 - 9 */ :
+          uffff |= (code > 47 && code < 58 ? code - 48 /* 0 - 9 */ :
             code > 64 && code < 71 ? code - 55 /* A - F */ :
               code > 96 && code < 103 ? code - 87 /* a - f */ :
                 error("Invalid \\uXXXX escape in string")) << shift;
