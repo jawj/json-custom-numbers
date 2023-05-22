@@ -1,5 +1,5 @@
 /*
-  2023-05-21 / George MacKerron (mackerron.com)
+  2023-05-22 / George MacKerron (mackerron.com)
   Based on https://github.com/douglascrockford/JSON-js/blob/03157639c7a7cddd2e9f032537f346f1a87c0f6d/json_parse.js
   Public Domain
   NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
@@ -19,6 +19,7 @@ let numericReviverFn;
 const illegalStringChars = /[\n\t\u0000-\u001f]/;
 const wordRegExp = /true|false|null|-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?/y;
 const escapes = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "\"", "", "", "", "", "", "", "", "", "", "", "", "", "/", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "\\", "", "", "", "", "", "\b", "", "", "", "\f", "", "", "", "", "", "", "", "\n", "", "", "", "\r", "", "\t"];
+const hexvals = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 0, 0, 0, 0, 0, 0, 0, 26, 27, 28, 29, 30, 31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 26, 27, 28, 29, 30, 31];
 
 function error(m) {
   throw new JSONParseError(`${m}\nAt character ${at} in JSON: ${text}`);
@@ -44,6 +45,9 @@ function word() {
   return value;
 };
 
+function badUnicode() { error("Invalid \\uXXXX escape in string"); }
+function badChar() { error("Invalid character in string"); }
+
 function string() {  // note: it's on you to check that ch == '"' before you call this
   let value = "";
   for (; ;) {
@@ -60,7 +64,7 @@ function string() {  // note: it's on you to check that ch == '"' before you cal
     const nextBackslash = chunk.indexOf("\\");
 
     if (nextBackslash === -1) {  // no backslashes up to end quote: we're done
-      if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) error("Invalid character in string");
+      if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) badChar();
       value += chunk;
       at = nextQuote + 1;
       ch = text.charAt(at++);
@@ -68,27 +72,19 @@ function string() {  // note: it's on you to check that ch == '"' before you cal
 
     } else {  // deal with backslash escapes
       chunk = chunk.slice(0, nextBackslash);
-      if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) error("Invalid character in string");
+      if (!skipIllegalStringCharCheck && illegalStringChars.test(chunk)) badChar();
       value += chunk;
       at += nextBackslash + 1;
 
       let code = text.charCodeAt(at++);
-      if (code === 117 /* u */) {
-        let uffff = 0;
-        for (let shift = 12; shift >= 0; shift -= 4) {  // unrolling this loop isn't measurably faster
-          code = text.charCodeAt(at++);
-          uffff |= (code > 47 && code < 58 ? code - 48 /* 0 - 9 */ :
-            code > 64 && code < 71 ? code - 55 /* A - F */ :
-              code > 96 && code < 103 ? code - 87 /* a - f */ :
-                error("Invalid \\uXXXX escape in string")) << shift;
-        }
-        value += String.fromCharCode(uffff);
-
-      } else {
-        let esc = escapes[code];
-        if (!esc) error("Invalid escape in string");
-        value += esc;
-      }
+      value += code === 117 /* u */ ?
+        String.fromCharCode(
+          ((hexvals[text.charCodeAt(at++)] || badUnicode()) ^ 16) << 12 |
+          ((hexvals[text.charCodeAt(at++)] || badUnicode()) ^ 16) << 8 |
+          ((hexvals[text.charCodeAt(at++)] || badUnicode()) ^ 16) << 4 |
+          ((hexvals[text.charCodeAt(at++)] || badUnicode()) ^ 16)
+        ) :
+        escapes[code] || error("Invalid escape in string");
     }
   }
 };
