@@ -3,15 +3,29 @@
   "version": "2.0.3",
   "description": "JSON parser enabling custom number parsing",
   "exports": {
-    "require": "./dist/index.js",
-    "import": "./dist/index.mjs",
-    "types": "./dist/index.d.ts"
+    ".": {
+      "require": "./dist/parseStrict.js",
+      "import": "./dist/parseStrict.mjs",
+      "types": "./dist/index.d.ts"
+    },
+    "./fast": {
+      "require": "./dist/parseChilled.js",
+      "import": "./dist/parseChilled.mjs",
+      "types": "./dist/index.d.ts"
+    }
   },
-  "main": "/dist/index.js",
+  "files": [
+    "README.md",
+    "dist/parseStrict.js",
+    "dist/parseStrict.mjs",
+    "dist/parseChilled.js",
+    "dist/parseChilled.mjs"
+  ],
+  "main": "/dist/parseStrict.js",
   "scripts": {
-    "test": "node --expose-gc test/test.mjs",
-    "buildEsm": "esbuild src/parse.mjs --bundle --platform=neutral --target=es2015 --minify --format=esm --outfile=dist/index.mjs",
-    "buildCjs": "esbuild src/parse.mjs --bundle --platform=neutral --target=es2015 --minify --format=cjs --outfile=dist/index.js",
+    "test": "node test/test.mjs",
+    "buildEsm": "esbuild src/parse*.mjs --platform=neutral --target=es2015 --minify --format=esm --outdir=dist --out-extension:.js=.mjs",
+    "buildCjs": "esbuild src/parse*.mjs --platform=neutral --target=es2015 --minify --format=cjs --outdir=dist --out-extension:.js=.js",
     "build": "npm run test && npm run buildEsm && npm run buildCjs"
   },
   "author": "George MacKerron",
@@ -21,7 +35,8 @@
     "url": "https://github.com/jawj/json-custom-numbers"
   },
   "devDependencies": {
-    "esbuild": "^0.17.19"
+    "esbuild": "^0.17.19",
+    "colors": "^1.4.0"
   },
   "keywords": [
     "json",
@@ -29,8 +44,5 @@
     "parse",
     "custom",
     "crockford"
-  ],
-  "dependencies": {
-    "colors": "^1.4.0"
-  }
+  ]
 }

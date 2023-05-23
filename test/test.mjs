@@ -3,7 +3,6 @@ import path from 'path';
 import col from 'colors/safe.js';
 import { parse as parseStrict } from '../src/parseStrict.mjs';
 import { parse as parseChilled } from '../src/parseChilled.mjs';
-import { parse as parseTrusting } from '../src/parseTrusting.mjs';
 import { parse as crockford } from './test_comparison/crockford.mjs';
 
 const folderPath = 'test/test_parsing';
@@ -59,10 +58,13 @@ for (const filename of filenames) {
   const json = fs.readFileSync(path.join(folderPath, filename), 'utf8');
   if (filename.startsWith('perf_')) perftests[filename] = json;
 
+  // strict parser
   compare(filename, json, JSON.parse, parseStrict);
 
-  if (/^(y|perf|i)_/.test(filename)) compare(filename, json, JSON.parse, parseChilled);
-  if (/^(y|perf)_/.test(filename)) compare(filename, json, JSON.parse, parseTrusting);
+  // chilled parser (we already know it allows some invalid strings, so cut the n_ tests)
+  if (/^(y|perf|i)_/.test(filename)) {
+    compare(filename, json, JSON.parse, parseChilled);
+  }
 }
 
 console.log(`\n${passes} passes, ${fails} fails\n`);
@@ -95,10 +97,8 @@ console.log(col.bold(`\nRunning perf tests ...\n`));
 const ljust = (s, len) => s + ' '.repeat(Math.max(0, len - s.length));
 const rjust = (s, len) => ' '.repeat(Math.max(0, len - s.length)) + s;
 const perf = (reps, baseline, fn) => {
-  if (global.gc) global.gc();
   const t0 = performance.now();
   for (let i = 0; i < reps; i++) fn();
-  if (global.gc) global.gc();
   const t = performance.now() - t0;
   let result = rjust(t.toFixed(), 5) + 'ms';
   if (typeof baseline === 'number') {
@@ -119,10 +119,9 @@ for (const filename in perftests) {
   const [crockfordResult] = perf(reps, t, () => crockford(json));
   const [strictResult] = perf(reps, t, () => parseStrict(json));
   const [chilledResult] = perf(reps, t, () => parseChilled(json));
-  const [trustingResult] = perf(reps, t, () => parseTrusting(json));
 
   const title = `${ljust(name, 18)} x ${rjust(repsStr, 6)}`;
-  console.log(`${title} | ${baselineResult} | ${crockfordResult} | ${strictResult} | ${chilledResult} | ${trustingResult}`);
+  console.log(`${title} | ${baselineResult} | ${crockfordResult} | ${strictResult} | ${chilledResult}`);
 }
 
 console.log();
