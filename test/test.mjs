@@ -109,7 +109,7 @@ const perf = (reps, baseline, fn) => {
   return [result, t];
 };
 
-console.log(col.bold(`test               x   reps |  native |        crockford |     this, strict |    this, chilled`));
+console.log(col.bold(`test               x   reps |  native |        crockford |     this, strict |     this, faster`));
 for (const filename in perftests) {
   const json = perftests[filename];
   const [, name, repsStr] = filename.match(/^perf_(.+)_x([0-9]+)[.]json$/) ?? [, 'Perf test', 10000];

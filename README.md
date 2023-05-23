@@ -37,16 +37,16 @@ I compared several alternative approaches to number and string parsing. The impl
 This is an example of performance test output (on a 2020 Intel MacBook Pro):
 
 ```
-test               x   reps |  native |        crockford |     this, strict |        this, lax
-01_typical_3kb     x  25000 |   325ms |  1660ms  (x5.11) |   740ms  (x2.28) |   598ms  (x1.84)
-02_typical_28kb    x   5000 |   500ms |  2784ms  (x5.56) |  1709ms  (x3.42) |  1437ms  (x2.87)
-03_mixed_83b       x  50000 |    90ms |   331ms  (x3.69) |   235ms  (x2.62) |   207ms  (x2.30)
-04_short_numbers   x  50000 |   100ms |   527ms  (x5.28) |   466ms  (x4.67) |   462ms  (x4.64)
-05_long_numbers    x  50000 |    95ms |   430ms  (x4.52) |   201ms  (x2.11) |   189ms  (x1.99)
-06_short_strings   x  50000 |    96ms |   185ms  (x1.93) |   204ms  (x2.14) |   164ms  (x1.71)
-07_long_strings    x   5000 |   269ms |  4137ms (x15.40) |   145ms  (x0.54) |    16ms  (x0.06)
-08_string_escapes  x 100000 |    97ms |  1120ms (x11.49) |   681ms  (x6.99) |   555ms  (x5.70)
-09_bool_null       x 100000 |    92ms |   430ms  (x4.67) |   399ms  (x4.34) |   389ms  (x4.23)
+test               x   reps |  native |        crockford |     this, strict |     this, faster
+01_typical_3kb     x  25000 |   307ms |  1521ms  (x4.95) |   801ms  (x2.61) |   693ms  (x2.26)
+02_typical_28kb    x   5000 |   438ms |  3049ms  (x6.96) |  1912ms  (x4.36) |  1714ms  (x3.91)
+03_mixed_83b       x  50000 |   102ms |   392ms  (x3.86) |   269ms  (x2.65) |   237ms  (x2.33)
+04_short_numbers   x  50000 |   100ms |   624ms  (x6.26) |   490ms  (x4.92) |   476ms  (x4.78)
+05_long_numbers    x  50000 |    95ms |   490ms  (x5.14) |   221ms  (x2.31) |   209ms  (x2.19)
+06_short_strings   x  50000 |   103ms |   314ms  (x3.06) |   221ms  (x2.15) |   179ms  (x1.74)
+07_long_strings    x   5000 |   246ms |  3660ms (x14.89) |   150ms  (x0.61) |    22ms  (x0.09)
+08_string_escapes  x 100000 |   102ms |  1194ms (x11.74) |   718ms  (x7.06) |   585ms  (x5.75)
+09_bool_null       x 100000 |    99ms |   689ms  (x6.97) |   425ms  (x4.30) |   416ms  (x4.21)
 ```
 
 ## Usage
@@ -58,6 +58,8 @@ For usage, see [the type definitions](dist/index.d.ts).
 A key application of this library is converting large integers in JSON (e.g. from Postgres query results) to [`BigInt`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt)s.
 
 ```javascript
+import { parse } from 'json-custom-numbers';
+
 // `JSON.parse` loses precision for large integers
 JSON.parse("9007199254740991"); // => 9007199254740991
 JSON.parse("9007199254740993"); // => 9007199254740992

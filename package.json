@@ -8,7 +8,7 @@
       "import": "./dist/parseStrict.mjs",
       "types": "./dist/index.d.ts"
     },
-    "./fast": {
+    "./faster": {
       "require": "./dist/parseChilled.js",
       "import": "./dist/parseChilled.mjs",
       "types": "./dist/index.d.ts"
