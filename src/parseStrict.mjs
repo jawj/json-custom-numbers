@@ -73,9 +73,11 @@ function string() {  // note: it's on you to check that ch == '"' before you cal
       return value;
 
     } else {  // deal with backslash escapes
-      chunk = chunk.slice(0, nextBackslash);
-      if (illegalStringChars.test(chunk)) badChar();
-      value += chunk;
+      if (nextBackslash > 0) {
+        chunk = chunk.slice(0, nextBackslash);
+        if (illegalStringChars.test(chunk)) badChar();
+        value += chunk;
+      }
       at += nextBackslash + 1;
 
       let code = text.charCodeAt(at++);
