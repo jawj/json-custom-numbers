@@ -15,7 +15,7 @@ let ch;  // the current character
 let text;  // JSON source
 let numericReviverFn;
 
-// const illegalStringChars = /[\n\t\u0000-\u001f]/;
+// chill: const illegalStringChars = /[\n\t\u0000-\u001f]/;
 const wordRegExp = /true|false|null|-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?/y;
 const escapes = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "\"", "", "", "", "", "", "", "", "", "", "", "", "", "/", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "\\", "", "", "", "", "", "\b", "", "", "", "\f", "", "", "", "", "", "", "", "\n", "", "", "", "\r", "", "\t"];
 const hextab1 = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,4097,8193,12289,16385,20481,24577,28673,32769,36865,0,0,0,0,0,0,0,40961,45057,49153,53249,57345,61441,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,40961,45057,49153,53249,57345,61441];
@@ -48,7 +48,7 @@ function word() {
 };
 
 function badUnicode() { error("Invalid \\uXXXX escape in string"); }
-// function badChar() { error("Invalid character in string"); }
+// chill: function badChar() { error("Invalid character in string"); }
 
 function string() {  // note: it's on you to check that ch == '"' before you call this
   let value = "";
@@ -66,7 +66,7 @@ function string() {  // note: it's on you to check that ch == '"' before you cal
     const nextBackslash = chunk.indexOf("\\");
 
     if (nextBackslash === -1) {  // no backslashes up to end quote: we're done
-      // if (illegalStringChars.test(chunk)) badChar();
+      // chill: if (illegalStringChars.test(chunk)) badChar();
       value += chunk;
       at = nextQuote + 1;
       ch = text.charAt(at++);
@@ -74,7 +74,7 @@ function string() {  // note: it's on you to check that ch == '"' before you cal
 
     } else {  // deal with backslash escapes
       chunk = chunk.slice(0, nextBackslash);
-      // if (illegalStringChars.test(chunk)) badChar();
+      // chill: if (illegalStringChars.test(chunk)) badChar();
       value += chunk;
       at += nextBackslash + 1;
 

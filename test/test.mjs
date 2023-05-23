@@ -1,9 +1,10 @@
 import fs from 'fs';
 import path from 'path';
-import { parse as parseStrict } from '../src/parseStrict.mjs';
-import { parse as parseChill } from '../src/parseChill.mjs';
-import { parse as crockford } from './test_comparison/crockford.mjs';
 import col from 'colors/safe.js';
+import { parse as parseStrict } from '../src/parseStrict.mjs';
+import { parse as parseChilled } from '../src/parseChilled.mjs';
+import { parse as parseTrusting } from '../src/parseTrusting.mjs';
+import { parse as crockford } from './test_comparison/crockford.mjs';
 
 const folderPath = 'test/test_parsing';
 const filenames = fs
@@ -60,7 +61,8 @@ for (const filename of filenames) {
 
   compare(filename, json, JSON.parse, parseStrict);
 
-  if (/^(y_|perf_|i_)/.test(filename)) compare(filename, json, JSON.parse, parseChill);
+  if (/^(y|perf|i)_/.test(filename)) compare(filename, json, JSON.parse, parseChilled);
+  if (/^(y|perf)_/.test(filename)) compare(filename, json, JSON.parse, parseTrusting);
 }
 
 console.log(`\n${passes} passes, ${fails} fails\n`);
@@ -96,6 +98,7 @@ const perf = (reps, baseline, fn) => {
   if (global.gc) global.gc();
   const t0 = performance.now();
   for (let i = 0; i < reps; i++) fn();
+  if (global.gc) global.gc();
   const t = performance.now() - t0;
   let result = rjust(t.toFixed(), 5) + 'ms';
   if (typeof baseline === 'number') {
@@ -106,7 +109,7 @@ const perf = (reps, baseline, fn) => {
   return [result, t];
 };
 
-console.log(col.bold(`test               x   reps |  native |        crockford |     this, strict |      this, chill`));
+console.log(col.bold(`test               x   reps |  native |        crockford |     this, strict |    this, chilled`));
 for (const filename in perftests) {
   const json = perftests[filename];
   const [, name, repsStr] = filename.match(/^perf_(.+)_x([0-9]+)[.]json$/) ?? [, 'Perf test', 10000];
@@ -114,11 +117,12 @@ for (const filename in perftests) {
 
   const [baselineResult, t] = perf(reps, null, () => JSON.parse(json));
   const [crockfordResult] = perf(reps, t, () => crockford(json));
-  const [parseResult] = perf(reps, t, () => parseStrict(json));
-  const [parseLaxResult] = perf(reps, t, () => parseChill(json));
+  const [strictResult] = perf(reps, t, () => parseStrict(json));
+  const [chilledResult] = perf(reps, t, () => parseChilled(json));
+  const [trustingResult] = perf(reps, t, () => parseTrusting(json));
 
   const title = `${ljust(name, 18)} x ${rjust(repsStr, 6)}`;
-  console.log(`${title} | ${baselineResult} | ${crockfordResult} | ${parseResult} | ${parseLaxResult}`);
+  console.log(`${title} | ${baselineResult} | ${crockfordResult} | ${strictResult} | ${chilledResult} | ${trustingResult}`);
 }
 
 console.log();
