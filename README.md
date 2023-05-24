@@ -54,9 +54,9 @@ test               x   reps |  native |        crockford |     this, strict |   
 
 To install, run `npm install json-custom-numbers`.
 
-Import with either: 
+Import with one of: 
 
-* `import { parse } from 'json-custom-numbers';` — for behaviour that exactly matches `JSON.parse`); or
+* `import { parse } from 'json-custom-numbers';` — for behaviour that exactly matches `JSON.parse`.
 
 * `import { parse } from 'json-custom-numbers/faster';` — to gain some performance by allowing unescaped `\n`, `\t` and control characters in strings (as Crockford's reference implementation does).
 
