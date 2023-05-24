@@ -38,16 +38,16 @@ This is an example of performance test output (on a 2020 Intel MacBook Pro):
 
 ```
 test               x   reps |  native |        crockford |     this, strict |     this, faster
-01_typical_3kb     x  25000 |   302ms |  1347ms  (x4.46) |   732ms  (x2.43) |   635ms  (x2.10)
-02_typical_28kb    x   5000 |   474ms |  2888ms  (x6.09) |  1715ms  (x3.62) |  1638ms  (x3.46)
-03_mixed_83b       x  50000 |    96ms |   363ms  (x3.80) |   258ms  (x2.70) |   213ms  (x2.23)
-04_short_numbers   x  50000 |   102ms |   501ms  (x4.91) |   470ms  (x4.60) |   460ms  (x4.50)
-05_long_numbers    x  50000 |    92ms |   429ms  (x4.65) |   191ms  (x2.07) |   200ms  (x2.17)
-06_short_strings   x  50000 |   108ms |   189ms  (x1.74) |   218ms  (x2.01) |   187ms  (x1.72)
-07_long_strings    x   5000 |   287ms |  3820ms (x13.29) |   148ms  (x0.52) |    16ms  (x0.05)
-08_string_escapes  x 100000 |   140ms |  1131ms  (x8.09) |   561ms  (x4.01) |   500ms  (x3.58)
-09_bool_null       x 100000 |    96ms |   414ms  (x4.31) |   384ms  (x3.99) |   354ms  (x3.68)
-10_package_json    x  25000 |   102ms |   609ms  (x5.94) |   280ms  (x2.74) |   202ms  (x1.98)
+01_typical_3kb     x  25000 |   363ms |  1554ms  (x4.28) |   793ms  (x2.19) |   654ms  (x1.80)
+02_typical_28kb    x   5000 |   506ms |  3100ms  (x6.13) |  1911ms  (x3.78) |  1752ms  (x3.46)
+03_mixed_83b       x  50000 |    99ms |   371ms  (x3.75) |   255ms  (x2.58) |   215ms  (x2.18)
+04_short_numbers   x  50000 |   103ms |   538ms  (x5.24) |   466ms  (x4.54) |   454ms  (x4.42)
+05_long_numbers    x  50000 |    95ms |   453ms  (x4.77) |   229ms  (x2.42) |   209ms  (x2.20)
+06_short_strings   x  50000 |   102ms |   187ms  (x1.83) |   225ms  (x2.22) |   171ms  (x1.68)
+07_long_strings    x   5000 |   274ms |  3991ms (x14.59) |   146ms  (x0.53) |    14ms  (x0.05)
+08_string_escapes  x 100000 |    99ms |  1105ms (x11.15) |   428ms  (x4.32) |   403ms  (x4.07)
+09_bool_null       x 100000 |    97ms |   408ms  (x4.20) |   378ms  (x3.88) |   375ms  (x3.85)
+10_package_json    x  25000 |   105ms |   605ms  (x5.79) |   252ms  (x2.41) |   198ms  (x1.90)
 ```
 
 ## Installation and use
