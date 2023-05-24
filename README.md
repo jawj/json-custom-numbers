@@ -50,9 +50,17 @@ test               x   reps |  native |        crockford |     this, strict |   
 10_package_json    x  25000 |   102ms |   609ms  (x5.94) |   280ms  (x2.74) |   202ms  (x1.98)
 ```
 
-## Usage
+## Installation and use
 
-For usage, see [the type definitions](dist/index.d.ts).
+To install, run `npm install json-custom-numbers`.
+
+Import with either: 
+
+* `import { parse } from 'json-custom-numbers';` — for behaviour that exactly matches `JSON.parse`); or
+
+* `import { parse } from 'json-custom-numbers/faster';` — to gain some performance by allowing unescaped `\n`, `\t` and control characters in strings (as Crockford's reference implementation does).
+
+For usage, see the example below and the [type definitions](dist/index.d.ts).
 
 ## Number parsing
 
@@ -73,7 +81,7 @@ parse("9007199254740993"); // => 9007199254740992
 function nr(s) {
   const n = +s;
   if (n >= Number.MIN_SAFE_INTEGER && n <= Number.MAX_SAFE_INTEGER) return n;
-  if (s.indexOf('.') !== -1 || s.indexOf('e') !== -1 && s.indexOf('E') !== -1) return n;
+  if (s.indexOf('.') !== -1 || s.indexOf('e') !== -1 || s.indexOf('E') !== -1) return n;
   return BigInt(s);
 }
 parse("9007199254740991", null, nr);  // => 9007199254740991
