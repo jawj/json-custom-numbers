@@ -39,7 +39,7 @@ function error(m) {
 };
 
 function word() {
-  let value;
+  let val;
 
   const startAt = at - 1;  // the first digit/letter was already consumed
   wordRegExp.lastIndex = startAt;
@@ -48,21 +48,21 @@ function word() {
   const { lastIndex } = wordRegExp;
   if (ch < 102 /* f */) {  // numbers
     const string = text.slice(startAt, lastIndex);
-    value = numericReviverFn ? numericReviverFn(string) : +string;
+    val = numericReviverFn ? numericReviverFn(string) : +string;
 
-  } else {  // true/false/null
-    value = ch === 110 /* n */ ? null : ch === 116 /* t */;
+  } else {  // null/true/false
+    val = ch === 110 /* n */ ? null : ch === 116 /* t */;
   }
 
   at = lastIndex;
   ch = text.charCodeAt(at++);
-  return value;
+  return val;
 };
 
 function badUnicode() { error("Invalid \\uXXXX escape in string"); }
 
 function string() {  // note: it's on you to check that ch == '"'.charCodeAt() before you call this
-  let value = "";
+  let str = "";
 
   for (; ;) {
     stringChunkRegExp.lastIndex = at;
@@ -70,7 +70,7 @@ function string() {  // note: it's on you to check that ch == '"'.charCodeAt() b
 
     const { lastIndex } = stringChunkRegExp;
     if (lastIndex > at) {
-      value += text.slice(at, lastIndex);
+      str += text.slice(at, lastIndex);
       at = lastIndex;
     }
 
@@ -78,11 +78,11 @@ function string() {  // note: it's on you to check that ch == '"'.charCodeAt() b
     switch (ch) {
       case 34 /* " */:
         ch = text.charCodeAt(at++);
-        return value;
+        return str;
 
       case 92 /* \ */:
         ch = text.charCodeAt(at++);
-        value += ch === 117 /* u */ ?
+        str += ch === 117 /* u */ ?
           String.fromCharCode(
             (hexLookup1[text.charCodeAt(at++)] || badUnicode()) +
             (hexLookup2[text.charCodeAt(at++)] || badUnicode()) +
