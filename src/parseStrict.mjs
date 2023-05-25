@@ -1,5 +1,5 @@
 /*
-  2023-05-22 / George MacKerron (mackerron.com)
+  2023-05-25 / George MacKerron (mackerron.com)
   Based on https://github.com/douglascrockford/JSON-js/blob/03157639c7a7cddd2e9f032537f346f1a87c0f6d/json_parse.js
   Public Domain
   NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
@@ -43,25 +43,25 @@ function word() {
 
   const startAt = at - 1;  // the first digit/letter was already consumed
   wordRegExp.lastIndex = startAt;
-  wordRegExp.test(text) || error("Unexpected character");
+  wordRegExp.test(text) || error("Unexpected character (or end of string)");
 
   const { lastIndex } = wordRegExp;
-  if (ch < "f") {  // numbers
+  if (ch < 102 /* f */) {  // numbers
     const string = text.slice(startAt, lastIndex);
     value = numericReviverFn ? numericReviverFn(string) : +string;
 
   } else {  // true/false/null
-    value = ch === "n" ? null : ch === "t";
+    value = ch === 110 /* n */ ? null : ch === 116 /* t */;
   }
 
   at = lastIndex;
-  ch = text.charAt(at++);
+  ch = text.charCodeAt(at++);
   return value;
 };
 
 function badUnicode() { error("Invalid \\uXXXX escape in string"); }
 
-function string() {  // note: it's on you to check that ch == '"' before you call this
+function string() {  // note: it's on you to check that ch == '"'.charCodeAt() before you call this
   let value = "";
 
   for (; ;) {
@@ -73,33 +73,34 @@ function string() {  // note: it's on you to check that ch == '"' before you cal
       value += text.slice(at, lastIndex);
       at = lastIndex;
     }
-    ch = text.charAt(at++);
 
+    ch = text.charCodeAt(at++);
     switch (ch) {
-      case '"':
-        ch = text.charAt(at++);
+      case 34 /* " */:
+        ch = text.charCodeAt(at++);
         return value;
 
-      case "\\":
-        const code = text.charCodeAt(at++);
-        value += code === 117 /* 'u'.charCodeAt(0) */ ?
+      case 92 /* \ */:
+        ch = text.charCodeAt(at++);
+        value += ch === 117 /* u */ ?
           String.fromCharCode(
             (hexLookup1[text.charCodeAt(at++)] || badUnicode()) +
             (hexLookup2[text.charCodeAt(at++)] || badUnicode()) +
             (hexLookup3[text.charCodeAt(at++)] || badUnicode()) +
             (hexLookup4[text.charCodeAt(at++)] || badUnicode()) - 4
           ) :
-          escapes[code] ||
-          error(`Invalid escape sequence '\\${String.fromCharCode(code)}' in string`);
+          escapes[ch] ||
+          error(`Invalid escape sequence '\\${String.fromCharCode(ch)}' in string`);
         continue;
 
-      case "":
-        error("Unterminated string");
-
-      default:  // must be one of \n\t\u0000-\u001f
-        const charDesc = ch === '\n' ? 'newline' : ch === '\t' ? 'tab' : 'control character';
-        const hexRep = ch.charCodeAt(0).toString(16);
-        error(`Invalid unescaped ${charDesc} (U+${'0000'.slice(hexRep.length) + hexRep}) in string`);
+      default:
+        // end of string?
+        if (isNaN(ch)) error("Unterminated string");
+        // must be one of \n\t\u0000-\u001f
+        const charDesc = ch === 10 ? 'newline' : ch === 9 ? 'tab' : 'control character';
+        const hexRep = ch.toString(16);
+        const paddedHexRep = '0000'.slice(hexRep.length) + hexRep;
+        error(`Invalid unescaped ${charDesc} (U+${paddedHexRep}) in string`);
     }
   }
 };
@@ -107,56 +108,56 @@ function string() {  // note: it's on you to check that ch == '"' before you cal
 function array() {
   const arr = [];
   let i = 0;
-  // the '< "!"' helps performance by short-circuiting the four other conditions in most cases
-  do { ch = text.charAt(at++) } while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t"));
-  if (ch === "]") {
-    ch = text.charAt(at++)
+  // the '< 33' helps performance by short-circuiting the four other conditions in most cases
+  do { ch = text.charCodeAt(at++) } while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
+  if (ch === 93 /* ] */) {
+    ch = text.charCodeAt(at++)
     return arr;  // empty array
   }
-  while (ch) {
+  while (ch >= 0) {  // i.e. !isNaN(ch)
     arr[i++] = value();
-    while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
-    if (ch === "]") {
-      ch = text.charAt(at++)
+    while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9)) ch = text.charCodeAt(at++);
+    if (ch === 93 /* ] */) {
+      ch = text.charCodeAt(at++)
       return arr;
     }
-    if (ch !== ",") error("Expected ',' but got '" + ch + "' between array elements");
-    do { ch = text.charAt(at++) } while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t"));
+    if (ch !== 44 /* , */) error("Expected ',' but got '" + String.fromCharCode(ch) + "' between array elements");
+    do { ch = text.charCodeAt(at++) } while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
   }
   error("Invalid array");
 };
 
 function object() {
   const obj = {};
-  do { ch = text.charAt(at++) } while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t"));
-  if (ch === "}") {
-    ch = text.charAt(at++);
+  do { ch = text.charCodeAt(at++) } while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
+  if (ch === 125 /* } */) {
+    ch = text.charCodeAt(at++);
     return obj;  // empty object
   }
-  while (ch === '"') {
+  while (ch === 34 /* " */) {
     const key = string();
-    while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
-    if (ch !== ":") error("Expected ':' but got '" + ch + "' between key and value in object");
-    ch = text.charAt(at++);
+    while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9)) ch = text.charCodeAt(at++);
+    if (ch !== 58 /* : */) error("Expected ':' but got '" + String.fromCharCode(ch) + "' between key and value in object");
+    ch = text.charCodeAt(at++);
     obj[key] = value();
-    while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
-    if (ch === "}") {
-      ch = text.charAt(at++);
+    while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9)) ch = text.charCodeAt(at++);
+    if (ch === 125 /* } */) {
+      ch = text.charCodeAt(at++);
       return obj;
     }
-    if (ch !== ",") error("Expected ',' but got '" + ch + "' between items in object");
-    do { ch = text.charAt(at++) } while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t"));
+    if (ch !== 44 /* , */) error("Expected ',' but got '" + String.fromCharCode(ch) + "' between items in object");
+    do { ch = text.charCodeAt(at++) } while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
   }
   error("Invalid object");
 };
 
 function value() {
-  while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
+  while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9)) ch = text.charCodeAt(at++);
   switch (ch) {
-    case '"': return string();
-    case "{": return object();
-    case "[": return array();
-    default: return word();
+    case 34 /*  " */: return string();
+    case 123 /* { */: return object();
+    case 91 /*  [ */: return array();
+    default: /*    */ return word();
   }
 };
 
@@ -164,13 +165,13 @@ export function parse(source, reviver, numericReviver) {
   if (typeof source !== "string") error("JSON source is not a string");
 
   at = 0;
-  ch = " ";
+  ch = 32;
   text = source;
   numericReviverFn = numericReviver;
 
   const result = value();
-  while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
-  if (ch) error("Unexpected data at end");
+  while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9)) ch = text.charCodeAt(at++);
+  if (ch >= 0) error("Unexpected data at end");  // i.e. !isNaN(ch)
 
   return (typeof reviver === "function")
     ? (function walk(holder, key) {
