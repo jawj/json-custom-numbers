@@ -35,7 +35,7 @@ const hexLookup3 = new Uint16Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 const hexLookup4 = new Uint16Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 0, 0, 0, 0, 0, 0, 11, 12, 13, 14, 15, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 12, 13, 14, 15, 16]);
 
 function error(m) {
-  throw new JSONParseError(`${m}\nAt character ${at} in JSON: ${text}`);
+  throw new JSONParseError(m + "\nAt character " + at + " in JSON: " + text);
 };
 
 function word() {
@@ -90,17 +90,17 @@ function string() {  // note: it's on you to check that ch == '"'.charCodeAt() b
             (hexLookup4[text.charCodeAt(at++)] || badUnicode()) - 4
           ) :
           escapes[ch] ||
-          error(`Invalid escape sequence '\\${String.fromCharCode(ch)}' in string`);
+          error("Invalid escape sequence '" + String.fromCharCode(ch) + "' in string");
         continue;
 
       default:
         // end of string?
         if (isNaN(ch)) error("Unterminated string");
         // must be one of \n\t\u0000-\u001f
-        const charDesc = ch === 10 ? 'newline' : ch === 9 ? 'tab' : 'control character';
+        const charDesc = ch === 10 ? "newline" : ch === 9 ? "tab" : "control character";
         const hexRep = ch.toString(16);
-        const paddedHexRep = '0000'.slice(hexRep.length) + hexRep;
-        error(`Invalid unescaped ${charDesc} (U+${paddedHexRep}) in string`);
+        const paddedHexRep = "0000".slice(hexRep.length) + hexRep;
+        error("Invalid unescaped " + charDesc + " (U+" + paddedHexRep + ") in string");
     }
   }
 };
@@ -162,7 +162,8 @@ function value() {
 };
 
 export function parse(source, reviver, numericReviver) {
-  if (typeof source !== "string") error("JSON source is not a string");
+  if (source instanceof Uint8Array) source = new TextDecoder().decode(source);
+  if (typeof source !== "string") error("JSON must be a string, Buffer or Uint8Array");
 
   at = 0;
   ch = 32;
