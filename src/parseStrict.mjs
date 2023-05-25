@@ -15,13 +15,17 @@ let ch;  // the current character
 let text;  // JSON source
 let numericReviverFn;
 
-const illegalStringChars = /[\n\t\u0000-\u001f]/;
+const stringRegExp = /[^"\\\n\t\u0000-\u001f]*/y;
 const wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y;
+
+// this array is indexed by the char code of an escape character e.g. 'n'.charCodeAt(0) === 110, so escapes[110] === '\n' 
 const escapes = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "\"", "", "", "", "", "", "", "", "", "", "", "", "", "/", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "\\", "", "", "", "", "", "\b", "", "", "", "\f", "", "", "", "", "", "", "", "\n", "", "", "", "\r", "", "\t"];
-const hextab1 = new Uint16Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4097, 8193, 12289, 16385, 20481, 24577, 28673, 32769, 36865, 0, 0, 0, 0, 0, 0, 0, 40961, 45057, 49153, 53249, 57345, 61441, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 40961, 45057, 49153, 53249, 57345, 61441]);
-const hextab2 = new Uint16Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 257, 513, 769, 1025, 1281, 1537, 1793, 2049, 2305, 0, 0, 0, 0, 0, 0, 0, 2561, 2817, 3073, 3329, 3585, 3841, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2561, 2817, 3073, 3329, 3585, 3841]);
-const hextab3 = new Uint16Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 17, 33, 49, 65, 81, 97, 113, 129, 145, 0, 0, 0, 0, 0, 0, 0, 161, 177, 193, 209, 225, 241, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 161, 177, 193, 209, 225, 241]);
-const hextab4 = new Uint16Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 0, 0, 0, 0, 0, 0, 11, 12, 13, 14, 15, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 12, 13, 14, 15, 16]);
+
+// these arrays are indexed by the char code of a unicode escape hex value, and store the relevant value (+1) for each of the 4 positions
+const valPlusOneByHexCharCode1 = new Uint16Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4097, 8193, 12289, 16385, 20481, 24577, 28673, 32769, 36865, 0, 0, 0, 0, 0, 0, 0, 40961, 45057, 49153, 53249, 57345, 61441, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 40961, 45057, 49153, 53249, 57345, 61441]);
+const valPlusOneByHexCharCode2 = new Uint16Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 257, 513, 769, 1025, 1281, 1537, 1793, 2049, 2305, 0, 0, 0, 0, 0, 0, 0, 2561, 2817, 3073, 3329, 3585, 3841, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2561, 2817, 3073, 3329, 3585, 3841]);
+const valPlusOneByHexCharCode3 = new Uint16Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 17, 33, 49, 65, 81, 97, 113, 129, 145, 0, 0, 0, 0, 0, 0, 0, 161, 177, 193, 209, 225, 241, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 161, 177, 193, 209, 225, 241]);
+const valPlusOneByHexCharCode4 = new Uint16Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 0, 0, 0, 0, 0, 0, 11, 12, 13, 14, 15, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 12, 13, 14, 15, 16]);
 
 function error(m) {
   throw new JSONParseError(`${m}\nAt character ${at} in JSON: ${text}`);
@@ -48,49 +52,40 @@ function word() {
 };
 
 function badUnicode() { error("Invalid \\uXXXX escape in string"); }
-function badChar() { error("Invalid character in string"); }
 
 function string() {  // note: it's on you to check that ch == '"' before you call this
   let value = "";
-  let nextQuote = -1;
+
   for (; ;) {
-    if (nextQuote < at) nextQuote = text.indexOf('"', at);
-    if (nextQuote === -1) error("Unterminated string");
+    stringRegExp.lastIndex = at;
+    stringRegExp.test(text);
 
-    if (nextQuote === at) { // empty string: we're done
-      at = nextQuote + 1;
-      ch = text.charAt(at++);
-      return value;
+    const { lastIndex } = stringRegExp;
+    if (lastIndex > at) {
+      value += text.slice(at, lastIndex);
+      at = lastIndex;
     }
+    ch = text.charAt(at++);
 
-    let chunk = text.slice(at, nextQuote); // non-empty string: let's retrieve it
-    const nextBackslash = chunk.indexOf("\\");
+    switch (ch) {
+      case '"':
+        ch = text.charAt(at++);
+        return value;
 
-    if (nextBackslash === -1) {  // no backslashes up to end quote: we're done
-      if (illegalStringChars.test(chunk)) badChar();
-      value += chunk;
-      at = nextQuote + 1;
-      ch = text.charAt(at++);
-      return value;
+      case "\\":
+        let code = text.charCodeAt(at++);
+        value += code === 117 /* u */ ?
+          String.fromCharCode(
+            (valPlusOneByHexCharCode1[text.charCodeAt(at++)] || badUnicode()) +
+            (valPlusOneByHexCharCode2[text.charCodeAt(at++)] || badUnicode()) +
+            (valPlusOneByHexCharCode3[text.charCodeAt(at++)] || badUnicode()) +
+            (valPlusOneByHexCharCode4[text.charCodeAt(at++)] || badUnicode()) - 4
+          ) :
+          escapes[code] || error("Invalid escape in string");
+        break;
 
-    } else {  // deal with backslash escapes
-      if (nextBackslash > 0) {
-        chunk = chunk.slice(0, nextBackslash);
-        if (illegalStringChars.test(chunk)) badChar();
-        value += chunk;
-      }
-      at += nextBackslash + 1;
-
-      let code = text.charCodeAt(at++);
-      value += code === 117 /* u */ ?
-        String.fromCharCode(
-          // the lookup tables have 1 added to each value so that 0 means not found, which is why we subtract 4
-          (hextab1[text.charCodeAt(at++)] || badUnicode()) +
-          (hextab2[text.charCodeAt(at++)] || badUnicode()) +
-          (hextab3[text.charCodeAt(at++)] || badUnicode()) +
-          (hextab4[text.charCodeAt(at++)] || badUnicode()) - 4
-        ) :
-        escapes[code] || error("Invalid escape in string");
+      case "": error("Unterminated string");
+      default: error("Invalid character in string");
     }
   }
 };

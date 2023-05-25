@@ -14,23 +14,23 @@ These modifications:
 
 ## Conformance and compatibility
 
-When full string checking is not explicitly turned off, the `parse()` function matches the behaviour of `JSON.parse()` for every test in the [JSON Parsing Test Suite](https://github.com/nst/JSONTestSuite), and a few more.
+By default, the `parse()` function matches the behaviour of `JSON.parse()` for every test in the [JSON Parsing Test Suite](https://github.com/nst/JSONTestSuite), and a few more.
+
+In 'faster' mode, strings are allowed to contain unescaped tabs, newlines and control characters. This dramatically increases performance on long strings.
 
 ## Performance
 
-Performance comparisons are very dependent on the nature of the JSON string to be parsed and the JavaScript engine used. 
+Performance comparisons are dependent on the nature of the JSON string to be parsed and the JavaScript engine used. 
 
-On Node.js 18.10 and 20.0 (V8):
+On Node.js 18.10 or 20.0 (V8):
 
-* The best case is JSON that contains mainly long strings with few escape sequences. This library may then be **over 10x faster** than native `JSON.parse()` if checking for unescaped tabs, newlines and control characters is turned off, and still up to 2x faster if it's turned on (which is the default).
+* The best case is JSON that contains mainly long strings with few escape sequences. This library may then be **20x faster** in 'faster' mode, and around a third faster otherwise.
 
 * The worst case is JSON that contains mainly short numbers and/or strings comprised entirely of escape sequences. This library may then be around 5x slower than `JSON.parse()`.
 
-* Typically, this library is 2 – 4x slower than `JSON.parse()`. Unless you're regularly parsing very large JSON strings, the difference probably isn't very important.
+* Typically, this library is 2 – 4x slower than `JSON.parse()`. Unless you're regularly parsing very large JSON documents, the difference probably isn't very important.
 
-On Bun 0.6.1 (JavaScriptCore):
-
-* Performance in Bun is slightly worse: typically 3 - 5x slower than native `JSON.parse` (except for string escape sequences, which may be up to 10x slower).
+Performance in Bun (0.6.1, JavaScriptCore) is slightly worse across the board: typically 3 - 5x slower than native `JSON.parse`.
 
 I compared several alternative approaches to number and string parsing. The implementations currently used are the ones I found to be fastest in most scenarios. If you figure out something reliably faster, I'd be glad to hear about it.
 
