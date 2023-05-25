@@ -4,6 +4,7 @@ import col from 'colors/safe.js';
 import { parse as parseStrict } from '../src/parseStrict.mjs';
 import { parse as parseChilled } from '../src/parseChilled.mjs';
 import { parse as crockford } from './test_comparison/crockford.mjs';
+import { parse as parseBigInt } from 'json-bigint';
 
 const folderPath = 'test/test_parsing';
 const filenames = fs
@@ -19,7 +20,7 @@ const perftests = {};
 
 console.log(col.bold(`Running JSON.parse comparison tests ...`));
 
-function compare(filename, json, trueFn, testFn) {
+function compare(filename, json, trueFn, testFn, testFnName) {
   let trueErr = undefined;
   let trueResult = undefined;
   try {
@@ -39,13 +40,13 @@ function compare(filename, json, trueFn, testFn) {
   if (!!testErr !== !!trueErr) {
     console.log(filename, json);
     console.log(trueErr ? trueErr.message : testErr.message);
-    console.log(`  FAIL: JSON.parse ${trueErr ? 'error' : 'OK'}, parse ${testErr ? 'error' : 'OK'}\n`);
+    console.log(`  FAIL: JSON.parse ${trueErr ? 'error' : 'OK'}, ${testFnName} ${testErr ? 'error' : 'OK'}\n`);
     // process.exit();
     fails += 1;
 
   } else if (JSON.stringify(testResult) !== JSON.stringify(trueResult)) {
     console.log(filename, json);
-    console.log(`${filename} FAIL: JSON.parse (${JSON.stringify(trueResult)}) !== parse (${JSON.stringify(testResult)})\n`);
+    console.log(`${filename} FAIL: JSON.parse (${JSON.stringify(trueResult)}) !== ${testFnName} (${JSON.stringify(testResult)})\n`);
     // process.exit();
     fails += 1;
 
@@ -59,11 +60,11 @@ for (const filename of filenames) {
   if (filename.startsWith('perf_')) perftests[filename] = json;
 
   // strict parser
-  compare(filename, json, JSON.parse, parseStrict);
+  compare(filename, json, JSON.parse, parseStrict, 'parse (strict)');
 
   // chilled parser (we already know it allows some invalid strings, so cut the n_ tests)
   if (/^(y|perf|i)_/.test(filename)) {
-    compare(filename, json, JSON.parse, parseChilled);
+    compare(filename, json, JSON.parse, parseChilled, 'parse (faster)');
   }
 }
 
@@ -119,9 +120,10 @@ for (const filename in perftests) {
   const [crockfordResult] = perf(reps, t, () => crockford(json));
   const [strictResult] = perf(reps, t, () => parseStrict(json));
   const [chilledResult] = perf(reps, t, () => parseChilled(json));
+  const [bigIntResult] = perf(reps, t, () => parseBigInt(json));
 
   const title = `${ljust(name, 18)} x ${rjust(repsStr, 6)}`;
-  console.log(`${title} | ${baselineResult} | ${crockfordResult} | ${strictResult} | ${chilledResult}`);
+  console.log(`${title} | ${baselineResult} | ${crockfordResult} | ${strictResult} | ${chilledResult} | ${bigIntResult}`);
 }
 
 console.log();

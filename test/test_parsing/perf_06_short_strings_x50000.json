@@ -1,10 +1,10 @@
 ["a", "b", "c", 
-"de", "ef", "gh", "ijk", "lmn", "opq", 
+"de","ef","gh","ijk","lmn","opq", 
 "rstu", "vwxyz", 
-"a", "b", "c", "de", "ef", "gh", 
+"a","b","c","de","ef","gh", 
 "ijk", "lmn", "opq", "rstu", "vwxyz",
-"a", "b", "c", 
+"a","b","c", 
 "de", "ef", "gh", "ijk", "lmn", "opq", 
-"rstu", "vwxyz", 
+"rstu","vwxyz", 
 "a", "b", "c", "de", "ef", "gh", 
-"ijk", "lmn", "opq", "rstu", "vwxyz"]
+"ijk","lmn","opq","rstu","vwxyz"]

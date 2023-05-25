@@ -15,17 +15,24 @@ let ch;  // the current character
 let text;  // JSON source
 let numericReviverFn;
 
-const stringRegExp = /[^"\\\n\t\u0000-\u001f]*/y;
+const stringChunkRegExp = /[^"\\\n\t\u0000-\u001f]*/y;
 const wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y;
 
-// this array is indexed by the char code of an escape character e.g. 'n'.charCodeAt(0) === 110, so escapes[110] === '\n' 
+// this array is indexed by the char code of an escape character 
+// e.g. \n -> 'n'.charCodeAt(0) === 110, so escapes[110] === '\n'
 const escapes = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "\"", "", "", "", "", "", "", "", "", "", "", "", "", "/", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "\\", "", "", "", "", "", "\b", "", "", "", "\f", "", "", "", "", "", "", "", "\n", "", "", "", "\r", "", "\t"];
 
-// these arrays are indexed by the char code of a unicode escape hex value, and store the relevant value (+1) for each of the 4 positions
-const valPlusOneByHexCharCode1 = new Uint16Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4097, 8193, 12289, 16385, 20481, 24577, 28673, 32769, 36865, 0, 0, 0, 0, 0, 0, 0, 40961, 45057, 49153, 53249, 57345, 61441, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 40961, 45057, 49153, 53249, 57345, 61441]);
-const valPlusOneByHexCharCode2 = new Uint16Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 257, 513, 769, 1025, 1281, 1537, 1793, 2049, 2305, 0, 0, 0, 0, 0, 0, 0, 2561, 2817, 3073, 3329, 3585, 3841, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2561, 2817, 3073, 3329, 3585, 3841]);
-const valPlusOneByHexCharCode3 = new Uint16Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 17, 33, 49, 65, 81, 97, 113, 129, 145, 0, 0, 0, 0, 0, 0, 0, 161, 177, 193, 209, 225, 241, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 161, 177, 193, 209, 225, 241]);
-const valPlusOneByHexCharCode4 = new Uint16Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 0, 0, 0, 0, 0, 0, 11, 12, 13, 14, 15, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 12, 13, 14, 15, 16]);
+// these arrays are indexed by the char code of a unicode escape hex digit;
+// they store the relevant value for each of the 4 digit positions,
+// but with 1 added so we can distinguish '0' from an invalid hex digit
+// e.g. \u1234
+// -> the '1' in position 1 is worth 1 << 12 = 4096 
+// -> '1'.charCodeAt(0) === 49
+// -> hexLookup1[49] === 4096 + 1 = 4097
+const hexLookup1 = new Uint16Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4097, 8193, 12289, 16385, 20481, 24577, 28673, 32769, 36865, 0, 0, 0, 0, 0, 0, 0, 40961, 45057, 49153, 53249, 57345, 61441, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 40961, 45057, 49153, 53249, 57345, 61441]);
+const hexLookup2 = new Uint16Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 257, 513, 769, 1025, 1281, 1537, 1793, 2049, 2305, 0, 0, 0, 0, 0, 0, 0, 2561, 2817, 3073, 3329, 3585, 3841, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2561, 2817, 3073, 3329, 3585, 3841]);
+const hexLookup3 = new Uint16Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 17, 33, 49, 65, 81, 97, 113, 129, 145, 0, 0, 0, 0, 0, 0, 0, 161, 177, 193, 209, 225, 241, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 161, 177, 193, 209, 225, 241]);
+const hexLookup4 = new Uint16Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 0, 0, 0, 0, 0, 0, 11, 12, 13, 14, 15, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 12, 13, 14, 15, 16]);
 
 function error(m) {
   throw new JSONParseError(`${m}\nAt character ${at} in JSON: ${text}`);
@@ -34,16 +41,17 @@ function error(m) {
 function word() {
   let value;
 
-  wordRegExp.lastIndex = at - 1;
-  wordRegExp.test(text) || error("Unexpected value");
+  const startAt = at - 1;  // the first digit/letter was already consumed
+  wordRegExp.lastIndex = startAt;
+  wordRegExp.test(text) || error("Unexpected character");
 
   const { lastIndex } = wordRegExp;
   if (ch < "f") {  // numbers
-    const string = text.slice(at - 1, lastIndex);
+    const string = text.slice(startAt, lastIndex);
     value = numericReviverFn ? numericReviverFn(string) : +string;
 
   } else {  // true/false/null
-    value = ch === "t" ? true : ch === "f" ? false : null;
+    value = ch === "n" ? null : ch === "t";
   }
 
   at = lastIndex;
@@ -57,10 +65,10 @@ function string() {  // note: it's on you to check that ch == '"' before you cal
   let value = "";
 
   for (; ;) {
-    stringRegExp.lastIndex = at;
-    stringRegExp.test(text);
+    stringChunkRegExp.lastIndex = at;
+    stringChunkRegExp.test(text);
 
-    const { lastIndex } = stringRegExp;
+    const { lastIndex } = stringChunkRegExp;
     if (lastIndex > at) {
       value += text.slice(at, lastIndex);
       at = lastIndex;
@@ -73,19 +81,25 @@ function string() {  // note: it's on you to check that ch == '"' before you cal
         return value;
 
       case "\\":
-        let code = text.charCodeAt(at++);
-        value += code === 117 /* u */ ?
+        const code = text.charCodeAt(at++);
+        value += code === 117 /* 'u'.charCodeAt(0) */ ?
           String.fromCharCode(
-            (valPlusOneByHexCharCode1[text.charCodeAt(at++)] || badUnicode()) +
-            (valPlusOneByHexCharCode2[text.charCodeAt(at++)] || badUnicode()) +
-            (valPlusOneByHexCharCode3[text.charCodeAt(at++)] || badUnicode()) +
-            (valPlusOneByHexCharCode4[text.charCodeAt(at++)] || badUnicode()) - 4
+            (hexLookup1[text.charCodeAt(at++)] || badUnicode()) +
+            (hexLookup2[text.charCodeAt(at++)] || badUnicode()) +
+            (hexLookup3[text.charCodeAt(at++)] || badUnicode()) +
+            (hexLookup4[text.charCodeAt(at++)] || badUnicode()) - 4
           ) :
-          escapes[code] || error("Invalid escape in string");
-        break;
+          escapes[code] ||
+          error(`Invalid escape sequence '\\${String.fromCharCode(code)}' in string`);
+        continue;
 
-      case "": error("Unterminated string");
-      default: error("Invalid character in string");
+      case "":
+        error("Unterminated string");
+
+      default:  // must be one of \n\t\u0000-\u001f
+        const charDesc = ch === '\n' ? 'newline' : ch === '\t' ? 'tab' : 'control character';
+        const hexRep = ch.charCodeAt(0).toString(16);
+        error(`Invalid unescaped ${charDesc} (U+${'0000'.slice(hexRep.length) + hexRep}) in string`);
     }
   }
 };
@@ -106,7 +120,7 @@ function array() {
       ch = text.charAt(at++)
       return arr;
     }
-    if (ch !== ",") error("Expected ',', got '" + ch + "' between array elements");
+    if (ch !== ",") error("Expected ',' but got '" + ch + "' between array elements");
     do { ch = text.charAt(at++) } while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t"));
   }
   error("Invalid array");
@@ -122,7 +136,7 @@ function object() {
   while (ch === '"') {
     const key = string();
     while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
-    if (ch !== ":") error("Expected ':', got '" + ch + "' between key and value in object");
+    if (ch !== ":") error("Expected ':' but got '" + ch + "' between key and value in object");
     ch = text.charAt(at++);
     obj[key] = value();
     while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t")) ch = text.charAt(at++);
@@ -130,7 +144,7 @@ function object() {
       ch = text.charAt(at++);
       return obj;
     }
-    if (ch !== ",") error("Expected ',', got '" + ch + "' between items in object");
+    if (ch !== ",") error("Expected ',' but got '" + ch + "' between items in object");
     do { ch = text.charAt(at++) } while (ch < "!" && (ch === " " || ch === "\n" || ch === "\r" || ch === "\t"));
   }
   error("Invalid object");
