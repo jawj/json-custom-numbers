@@ -14,6 +14,7 @@ let at;  // the index of the current character
 let ch;  // the current character
 let text;  // JSON source
 let numericReviverFn;
+let textDec;
 
 const stringChunkRegExp = /[^"\\\n\t\u0000-\u001f]*/y;
 const wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y;
@@ -38,12 +39,16 @@ function error(m) {
   throw new JSONParseError(m + "\nAt character " + at + " in JSON: " + text);
 };
 
+function chDesc(prefix) {
+  return ch > 0 ? "'" + (prefix || '') + String.fromCharCode(ch) + "'" : "end of input";
+}
+
 function word() {
   let val;
 
   const startAt = at - 1;  // the first digit/letter was already consumed
   wordRegExp.lastIndex = startAt;
-  wordRegExp.test(text) || error("Unexpected character (or end of string)");
+  wordRegExp.test(text) || error("Unexpected character or end of input");
 
   const { lastIndex } = wordRegExp;
   if (ch < 102 /* f */) {  // numbers
@@ -65,7 +70,7 @@ function string() {  // note: it's on you to check that ch == '"'.charCodeAt() b
   let str = "";
 
   for (; ;) {
-    stringChunkRegExp.lastIndex = at;
+    stringChunkRegExp.lastIndex = at;  // find next chunk without \ or "
     stringChunkRegExp.test(text);
 
     const { lastIndex } = stringChunkRegExp;
@@ -74,13 +79,13 @@ function string() {  // note: it's on you to check that ch == '"'.charCodeAt() b
       at = lastIndex;
     }
 
-    ch = text.charCodeAt(at++);
+    ch = text.charCodeAt(at++);  // what comes after it?
     switch (ch) {
-      case 34 /* " */:
+      case 34 /* " */:  // end of string
         ch = text.charCodeAt(at++);
         return str;
 
-      case 92 /* \ */:
+      case 92 /* \ */:  // backslash escape
         ch = text.charCodeAt(at++);
         str += ch === 117 /* u */ ?
           String.fromCharCode(
@@ -90,17 +95,15 @@ function string() {  // note: it's on you to check that ch == '"'.charCodeAt() b
             (hexLookup4[text.charCodeAt(at++)] || badUnicode()) - 4
           ) :
           escapes[ch] ||
-          error("Invalid escape sequence '" + String.fromCharCode(ch) + "' in string");
+          error("Invalid escape sequence " + chDesc("\\") + " in string");
         continue;
 
-      default:
-        // end of string?
+      default:  // something is wrong
         if (isNaN(ch)) error("Unterminated string");
-        // must be one of \n\t\u0000-\u001f
-        const charDesc = ch === 10 ? "newline" : ch === 9 ? "tab" : "control character";
+        const invalidChDesc = ch === 10 ? "newline" : ch === 9 ? "tab" : "control character";
         const hexRep = ch.toString(16);
         const paddedHexRep = "0000".slice(hexRep.length) + hexRep;
-        error("Invalid unescaped " + charDesc + " (U+" + paddedHexRep + ") in string");
+        error("Invalid unescaped " + invalidChDesc + " (\\u" + paddedHexRep + ") in string");
     }
   }
 };
@@ -121,10 +124,10 @@ function array() {
       ch = text.charCodeAt(at++)
       return arr;
     }
-    if (ch !== 44 /* , */) error("Expected ',' but got '" + String.fromCharCode(ch) + "' between array elements");
+    if (ch !== 44 /* , */) error("Expected ',' but got " + chDesc() + " after array element");
     do { ch = text.charCodeAt(at++) } while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
   }
-  error("Invalid array");
+  error("Unterminated array");
 };
 
 function object() {
@@ -137,7 +140,7 @@ function object() {
   while (ch === 34 /* " */) {
     const key = string();
     while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9)) ch = text.charCodeAt(at++);
-    if (ch !== 58 /* : */) error("Expected ':' but got '" + String.fromCharCode(ch) + "' between key and value in object");
+    if (ch !== 58 /* : */) error("Expected ':' but got " + chDesc() + " after key in object");
     ch = text.charCodeAt(at++);
     obj[key] = value();
     while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9)) ch = text.charCodeAt(at++);
@@ -145,10 +148,10 @@ function object() {
       ch = text.charCodeAt(at++);
       return obj;
     }
-    if (ch !== 44 /* , */) error("Expected ',' but got '" + String.fromCharCode(ch) + "' between items in object");
+    if (ch !== 44 /* , */) error("Expected ',' but got " + chDesc() + " after value in object");
     do { ch = text.charCodeAt(at++) } while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
   }
-  error("Invalid object");
+  error("Expected '\"' but got " + chDesc() + " in object");
 };
 
 function value() {
@@ -162,7 +165,7 @@ function value() {
 };
 
 export function parse(source, reviver, numericReviver) {
-  if (source instanceof Uint8Array) source = new TextDecoder().decode(source);
+  if (source instanceof Uint8Array) source = (textDec ??= new TextDecoder()).decode(source);
   if (typeof source !== "string") error("JSON must be a string, Buffer or Uint8Array");
 
   at = 0;
@@ -172,7 +175,7 @@ export function parse(source, reviver, numericReviver) {
 
   const result = value();
   while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9)) ch = text.charCodeAt(at++);
-  if (ch >= 0) error("Unexpected data at end");  // i.e. !isNaN(ch)
+  if (ch >= 0) error("Unexpected data at end of input");  // i.e. !isNaN(ch)
 
   return (typeof reviver === "function")
     ? (function walk(holder, key) {

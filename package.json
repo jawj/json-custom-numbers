@@ -20,7 +20,7 @@
   ],
   "main": "./dist/parseStrict.js",
   "scripts": {
-    "test": "node test/test.mjs",
+    "test": "node --expose-gc test/test.mjs",
     "buildCjs": "esbuild src/parse*.mjs --platform=neutral --target=es2015 --minify --format=cjs --outdir=dist",
     "wrapEsm": "npx gen-esm-wrapper dist/parseStrict.js dist/parseStrict.mjs && npx gen-esm-wrapper dist/parseChilled.js dist/parseChilled.mjs",
     "build": "npm run test && npm run buildCjs && npm run wrapEsm"
