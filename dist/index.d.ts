@@ -1,7 +1,7 @@
 
 /**
  * JSON parser that allows custom number parsing.
- * The first two arguments match `JSON.parse()`. The second two are novel.
+ * The first two arguments match `JSON.parse()`. The third is novel.
  * @param text A valid JSON string
  * @param reviver A function that transforms the results. This function is
  * called for each member of the object. If a member contains nested objects,
