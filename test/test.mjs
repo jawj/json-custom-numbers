@@ -1,8 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import col from 'colors/safe.js';
-import { parse as parseStrict } from '../src/parseStrict.mjs';
-import { parse as parseChilled } from '../src/parseChilled.mjs';
+import { parse } from '../src/parseStrict.mjs';
 import { parse as crockford } from './test_comparison/crockford.mjs';
 import { parse as parseBigInt } from 'json-bigint';
 
@@ -22,7 +21,7 @@ const perftests = {};
 
 console.log(col.bold(`Running JSON.parse comparison tests ...`));
 
-function compare(filename, json, trueFn, testFn, testFnName) {
+function compare(filename, json, trueFn, trueFnName, testFn, testFnName) {
   let trueErr = undefined;
   let trueResult = undefined;
   try {
@@ -42,14 +41,14 @@ function compare(filename, json, trueFn, testFn, testFnName) {
   if (!!testErr !== !!trueErr) {
     console.log(filename, json);
     console.log(trueErr ? trueErr.message : testErr.message);
-    console.log(`  FAIL: JSON.parse ${trueErr ? 'error' : 'OK'}, ${testFnName} ${testErr ? 'error' : 'OK'}\n`);
-    // process.exit();
+    console.log(`  FAIL: ${trueFnName} ${trueErr ? 'error' : 'OK'}, ${testFnName} ${testErr ? 'error' : 'OK'}\n`);
+    // process.exit(1);
     fails += 1;
 
   } else if (JSON.stringify(testResult) !== JSON.stringify(trueResult)) {
     console.log(filename, json);
-    console.log(`${filename} FAIL: JSON.parse (${JSON.stringify(trueResult)}) !== ${testFnName} (${JSON.stringify(testResult)})\n`);
-    // process.exit();
+    console.log(`  FAIL: ${trueFnName} (${JSON.stringify(trueResult)}) !== ${testFnName} (${JSON.stringify(testResult)})\n`);
+    // process.exit(1);
     fails += 1;
 
   } else {
@@ -60,14 +59,7 @@ function compare(filename, json, trueFn, testFn, testFnName) {
 for (const filename of filenames) {
   const json = fs.readFileSync(path.join(folderPath, filename), 'utf8');
   if (filename.startsWith('perf_')) perftests[filename] = json;
-
-  // strict parser
-  compare(filename, json, JSON.parse, parseStrict, 'parse (strict)');
-
-  // chilled parser (we already know it allows some invalid strings, so cut the n_ tests)
-  if (/^(y|perf|i)_/.test(filename)) {
-    compare(filename, json, JSON.parse, parseChilled, 'parse (faster)');
-  }
+  compare(filename, json, JSON.parse, 'JSON.parse', parse, 'parse');
 }
 
 console.log(`\n${passes} passes, ${fails} fails\n`);
@@ -86,7 +78,7 @@ function nr(s) {
   return BigInt(s);
 }
 
-const revived = parseStrict(bigNumJson, null, nr);
+const revived = parse(bigNumJson, null, nr);
 console.log(bigNumJson, '->', revived);
 
 const bigNumPass = typeof revived[0] === 'number' &&
@@ -104,7 +96,7 @@ console.log(col.bold(`\nRunning error messages test ...\n`));
 const testErr = (json, message) => {
   let caught = undefined;
   try {
-    parseStrict(json);
+    parse(json);
   } catch (err) {
     caught = err;
   }
@@ -178,7 +170,7 @@ const perf = (reps, baseline, fn) => {
   return [result, t];
 };
 
-console.log(col.bold(`test               x   reps |  native |        crockford |     this, strict |     this, faster`));
+console.log(col.bold(`test               x   reps |  native |        crockford |      json-bigint |     this library`));
 for (const filename in perftests) {
   const json = perftests[filename];
   const [, name, repsStr] = filename.match(/^perf_(.+)_x([0-9]+)[.]json$/) ?? [, 'Perf test', 10000];
@@ -186,12 +178,11 @@ for (const filename in perftests) {
 
   const [baselineResult, t] = perf(reps, null, () => JSON.parse(json));
   const [crockfordResult] = perf(reps, t, () => crockford(json));
-  const [strictResult] = perf(reps, t, () => parseStrict(json));
-  const [chilledResult] = perf(reps, t, () => parseChilled(json));
   const [bigIntResult] = perf(reps, t, () => parseBigInt(json));
-
+  const [parseResult] = perf(reps, t, () => parse(json));
+  
   const title = `${ljust(name, 18)} x ${rjust(repsStr, 6)}`;
-  console.log(`${title} | ${baselineResult} | ${crockfordResult} | ${strictResult} | ${chilledResult} | ${bigIntResult}`);
+  console.log(`${title} | ${baselineResult} | ${crockfordResult} | ${bigIntResult} | ${parseResult}`);
 }
 
 console.log();
