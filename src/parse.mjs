@@ -11,11 +11,12 @@ export class JSONParseError extends Error { }
 
 // global state
 let at;  // the index of the current character
-let ch;  // the current character
-let text;  // JSON source
-let numericReviverFn;
-let textDec;
+let ch;  // the current character code
+let text;  // JSON source string
+let numericReviverFn;  // function that transforms numeric strings ("123") to numbers (123)
+let textDec;  // a TextDecoder instance, if one becomes necessary
 
+// these 'sticky' RegExps are used to parse (1) strings and (2) numbers, true/false and null
 const stringChunkRegExp = /[^"\\\n\t\u0000-\u001f]*/y;
 const wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y;
 
@@ -24,7 +25,7 @@ const wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|n
 const x = "";
 const escapes = [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, "\"", x, x, x, x, x, x, x, x, x, x, x, x, "/", x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, "\\", x, x, x, x, x, "\b", x, x, x, "\f", x, x, x, x, x, x, x, "\n", x, x, x, "\r", x, "\t"];
 
-// these are indexed by the char code of a hex digit used for \uXXXX escapes
+// these arrays are indexed by the char code of a hex digit used for \uXXXX escapes
 const hexLookup1 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4097, 8193, 12289, 16385, 20481, 24577, 28673, 32769, 36865, 0, 0, 0, 0, 0, 0, 0, 40961, 45057, 49153, 53249, 57345, 61441, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 40961, 45057, 49153, 53249, 57345, 61441];
 const hexLookup2 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 257, 513, 769, 1025, 1281, 1537, 1793, 2049, 2305, 0, 0, 0, 0, 0, 0, 0, 2561, 2817, 3073, 3329, 3585, 3841, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2561, 2817, 3073, 3329, 3585, 3841];
 const hexLookup3 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 17, 33, 49, 65, 81, 97, 113, 129, 145, 0, 0, 0, 0, 0, 0, 0, 161, 177, 193, 209, 225, 241, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 161, 177, 193, 209, 225, 241];
@@ -41,16 +42,16 @@ function chDesc(prefix) {
 function word() {
   let val;
 
-  const startAt = at - 1;  // the first digit/letter was already consumed
+  const startAt = at - 1;  // the first digit/letter was already consumed, so go back 1
   wordRegExp.lastIndex = startAt;
   wordRegExp.test(text) || error("Unexpected character or end of input");
 
   const { lastIndex } = wordRegExp;
-  if (ch < 102 /* f */) {  // numbers
+  if (ch < 102 /* f */) {  // it's a number
     const string = text.slice(startAt, lastIndex);
     val = numericReviverFn ? numericReviverFn(string) : +string;
 
-  } else {  // null/true/false
+  } else {  // must be null/true/false
     val = ch === 110 /* n */ ? null : ch === 116 /* t */;
   }
 
@@ -88,6 +89,8 @@ function string() {  // note: it's on you to check that ch == '"'.charCodeAt() b
             (hexLookup2[text.charCodeAt(at++)] || badUnicode()) +
             (hexLookup3[text.charCodeAt(at++)] || badUnicode()) +
             (hexLookup4[text.charCodeAt(at++)] || badUnicode()) - 4
+            // we added 1 to each valid lookup value to make it truthy: 
+            // `- 4` undoes that
           ) :
           escapes[ch] ||
           error("Invalid escape sequence " + chDesc("\\") + " in string");
@@ -95,6 +98,7 @@ function string() {  // note: it's on you to check that ch == '"'.charCodeAt() b
 
       default:  // something is wrong
         if (isNaN(ch)) error("Unterminated string");
+
         const invalidChDesc = ch === 10 ? "newline" : ch === 9 ? "tab" : "control character";
         const hexRep = ch.toString(16);
         const paddedHexRep = "0000".slice(hexRep.length) + hexRep;
