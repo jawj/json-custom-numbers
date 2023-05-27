@@ -14,7 +14,7 @@
   "main": "./dist/parse.js",
   "scripts": {
     "test": "node --expose-gc test/test.mjs",
-    "buildCjs": "esbuild src/parse.mjs --platform=neutral --target=es2015 --minify --format=cjs --outdir=dist",
+    "buildCjs": "esbuild src/parse.mjs --platform=neutral --target=es6 --minify --format=cjs --outdir=dist",
     "wrapEsm": "npx gen-esm-wrapper dist/parse.js dist/parse.mjs",
     "build": "npm run test && npm run buildCjs && npm run wrapEsm"
   },

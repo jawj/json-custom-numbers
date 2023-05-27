@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import col from 'colors/safe.js';
-import { parse } from '../src/parseStrict.mjs';
+import { parse } from '../src/parse.mjs';
 import { parse as crockford } from './test_comparison/crockford.mjs';
 import { parse as parseBigInt } from 'json-bigint';
 
