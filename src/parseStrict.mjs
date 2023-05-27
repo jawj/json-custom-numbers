@@ -65,7 +65,7 @@ function string() {  // note: it's on you to check that ch == '"'.charCodeAt() b
   let str = "";
 
   for (; ;) {
-    stringChunkRegExp.lastIndex = at;  // find next chunk without \ or "
+    stringChunkRegExp.lastIndex = at;  // find next chunk without \ or " or invalid chars
     stringChunkRegExp.test(text);
 
     const { lastIndex } = stringChunkRegExp;

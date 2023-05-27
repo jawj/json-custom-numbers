@@ -22,21 +22,21 @@ The `parse()` function matches the behaviour of `JSON.parse()` for every test in
 
 ## Performance
 
+I've spent some time optimising parsing performance. This implementation is the one I found to be fastest in most scenarios. If you figure out something reliably faster, I'd be glad to hear about it.
+
 Performance comparisons are dependent on the JavaScript engine the nature of the JSON string to be parsed. 
 
 On Node.js (18.10, V8):
 
-* The best case is JSON that's all long strings with few escape sequences. On these sorts of inputs, this library may be about **20% faster** than `JSON.parse`.
+* The best case is JSON that's all long strings with few escape sequences. On these sorts of inputs, this library may be about **15% faster** than `JSON.parse`.
 
-* The worst case is JSON that's all short strings comprised mainly of escape sequences. In such cases, this library may be 4 – 5x slower than `JSON.parse()`.
+* The worst case is JSON that's all strings that are mainly escape sequences. In such cases, this library may be around 4x slower than `JSON.parse()`.
 
-* Typically, this library is 2 – 3x slower than `JSON.parse()`. Unless you're regularly parsing very large JSON documents, the difference probably isn't very important.
+* Typically, this library is 2 – 3x slower than `JSON.parse()`.
 
-Performance in Bun (0.6.1, JavaScriptCore) is very similar, except the best case is about 20% slower than `JSON.parse`, rather than 20% faster.
+Performance in Bun (0.6.1, JavaScriptCore) is very similar, except the best case is about 25% slower than `JSON.parse`, rather than 15% faster.
 
-I have spent some time optimising parsing performance. This implementation is the one I found to be fastest in most scenarios. If you figure out something reliably faster, I'd be glad to hear about it.
-
-Tests compare the performance of this library, [Crockford's reference implementation]((https://github.com/douglascrockford/JSON-js/blob/03157639c7a7cddd2e9f032537f346f1a87c0f6d/json_parse.js)), and the [json-bigint](https://www.npmjs.com/package/json-bigint) library against native `JSON.parse` across a range of inputs. Here's some example output, from Node.js 18.10 on a 2020 Intel MacBook Pro:
+Tests are included to compare the performance of this library, [Crockford's reference implementation]((https://github.com/douglascrockford/JSON-js/blob/03157639c7a7cddd2e9f032537f346f1a87c0f6d/json_parse.js)), and the [json-bigint](https://www.npmjs.com/package/json-bigint) library against native `JSON.parse` across a range of inputs. Here's some example output, from Node.js 18.10 on a 2020 Intel MacBook Pro:
 
 ```
 test               x   reps |  native |        crockford |      json-bigint |     this library

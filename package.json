@@ -3,26 +3,19 @@
   "version": "2.0.6",
   "description": "JSON parser enabling custom number parsing",
   "exports": {
-    ".": {
-      "require": "./dist/parseStrict.js",
-      "import": "./dist/parseStrict.mjs",
-      "types": "./dist/index.d.ts"
-    },
-    "./faster": {
-      "require": "./dist/parseChilled.js",
-      "import": "./dist/parseChilled.mjs",
-      "types": "./dist/index.d.ts"
-    }
+    "require": "./dist/parse.js",
+    "import": "./dist/parse.mjs",
+    "types": "./dist/index.d.ts"
   },
   "files": [
     "./dist",
     "./README.md"
   ],
-  "main": "./dist/parseStrict.js",
+  "main": "./dist/parse.js",
   "scripts": {
     "test": "node --expose-gc test/test.mjs",
-    "buildCjs": "esbuild src/parse*.mjs --platform=neutral --target=es2015 --minify --format=cjs --outdir=dist",
-    "wrapEsm": "npx gen-esm-wrapper dist/parseStrict.js dist/parseStrict.mjs && npx gen-esm-wrapper dist/parseChilled.js dist/parseChilled.mjs",
+    "buildCjs": "esbuild src/parse.mjs --platform=neutral --target=es2015 --minify --format=cjs --outdir=dist",
+    "wrapEsm": "npx gen-esm-wrapper dist/parse.js dist/parse.mjs",
     "build": "npm run test && npm run buildCjs && npm run wrapEsm"
   },
   "author": "George MacKerron",
