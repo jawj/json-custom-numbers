@@ -24,7 +24,7 @@ The `parse()` function matches the behaviour of `JSON.parse()` for every test in
 
 I've spent some time optimising parsing performance. This implementation is the one I found to be fastest in most scenarios. If you figure out something reliably faster, I'd be glad to hear about it.
 
-Performance comparisons are dependent on the JavaScript engine the nature of the JSON string to be parsed. 
+Performance comparisons are dependent on the JavaScript engine and on the nature of the JSON string to be parsed. 
 
 On Node.js (V8):
 
