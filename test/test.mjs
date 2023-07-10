@@ -171,7 +171,7 @@ const perf = (reps, baseline, fn) => {
   return [result, t];
 };
 
-console.log(col.bold(`test               x   reps |  native |      json-bigint |    lossless-json |        crockford |     this library`));
+console.log(col.bold(`test               x   reps |  native |     this library |        crockford |      json-bigint |    lossless-json`));
 
 for (const filename of filenames) {
   if (!filename.startsWith('perf_')) continue;
@@ -180,13 +180,13 @@ for (const filename of filenames) {
   const reps = Number(repsStr);
 
   const [baselineResult, t] = perf(reps, null, () => JSON.parse(json));
+  const [parseResult] = perf(reps, t, () => parse(json));
+  const [crockfordResult] = perf(reps, t, () => crockford(json));
   const [bigIntResult] = perf(reps, t, () => parseBigInt(json));
   const [losslessResult] = perf(reps, t, () => parseLossless(json, undefined, s => parseFloat(s)));
-  const [crockfordResult] = perf(reps, t, () => crockford(json));
-  const [parseResult] = perf(reps, t, () => parse(json));
 
   const title = `${ljust(name, 18)} x ${rjust(repsStr, 6)}`;
-  console.log(`${title} | ${baselineResult} | ${bigIntResult} | ${losslessResult} | ${crockfordResult} | ${parseResult}`);
+  console.log(`${title} | ${baselineResult} | ${parseResult} | ${crockfordResult} | ${bigIntResult} | ${losslessResult}`);
 }
 
 console.log();

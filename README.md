@@ -26,30 +26,30 @@ I've spent some time optimising parsing performance. This implementation is the 
 
 Performance comparisons are dependent on the JavaScript engine the nature of the JSON string to be parsed. 
 
-On Node.js (18.10, V8):
+On Node.js (V8):
 
-* The best case is JSON that's all long strings with few escape sequences. On these sorts of inputs, this library may be about **15% faster** than `JSON.parse`.
+* The best case is JSON that's all long strings with few escape sequences. On these sorts of inputs, this library may be up to **25% faster** than `JSON.parse`.
 
-* The worst case is JSON that's all strings that are mainly escape sequences. In such cases, this library may be around 4x slower than `JSON.parse()`.
+* The worst case is JSON that's all strings that are mainly escape sequences. In such cases, this library may be around 3.5x slower than `JSON.parse()`.
 
 * Typically, this library is 2 – 3x slower than `JSON.parse()`.
 
-Performance in Bun (0.6.1, JavaScriptCore) is very similar, except the best case is about 25% slower than `JSON.parse`, rather than 15% faster.
+Performance in Bun (JavaScriptCore) is broadly similar, except the best case is about 15% slower than `JSON.parse`, rather than 25% faster.
 
-Tests are included to compare the performance of this library, [Crockford's reference implementation]((https://github.com/douglascrockford/JSON-js/blob/03157639c7a7cddd2e9f032537f346f1a87c0f6d/json_parse.js)), and the [json-bigint](https://www.npmjs.com/package/json-bigint) library against native `JSON.parse` across a range of inputs. Here's some example output, from Node.js 18.10 on a 2020 Intel MacBook Pro:
+Tests are included to compare the performance of this library, [Crockford's reference implementation]((https://github.com/douglascrockford/JSON-js/blob/03157639c7a7cddd2e9f032537f346f1a87c0f6d/json_parse.js)), and the [json-bigint](https://www.npmjs.com/package/json-bigint) and [lossless-json](https://www.npmjs.com/package/lossless-json) libraries against native `JSON.parse` across a range of inputs. Here's some example output, from Node.js 20.0 on a 2020 Intel MacBook Pro:
 
 ```
-test               x   reps |  native |        crockford |      json-bigint |     this library
-01_typical_3kb     x  10000 |   131ms |   636ms  (x4.85) |   487ms  (x3.71) |   271ms  (x2.06)
-02_typical_28kb    x   1000 |   105ms |   647ms  (x6.18) |   499ms  (x4.76) |   316ms  (x3.02)
-03_mixed_83b       x  50000 |   111ms |   384ms  (x3.46) |   388ms  (x3.50) |   202ms  (x1.82)
-04_short_numbers   x  50000 |   107ms |   512ms  (x4.78) |   483ms  (x4.51) |   382ms  (x3.57)
-05_long_numbers    x  50000 |   102ms |   466ms  (x4.59) |   715ms  (x7.04) |   179ms  (x1.76)
-06_short_strings   x  50000 |   105ms |   187ms  (x1.78) |   216ms  (x2.06) |   125ms  (x1.19)
-07_long_strings    x   2500 |   143ms |  1896ms (x13.25) |  1355ms  (x9.47) |   107ms  (x0.75)
-08_string_escapes  x 100000 |   110ms |  1122ms (x10.16) |  1069ms  (x9.68) |   371ms  (x3.36)
-09_bool_null       x 100000 |   100ms |   417ms  (x4.19) |   411ms  (x4.13) |   254ms  (x2.56)
-10_package_json    x  25000 |   101ms |   518ms  (x5.11) |   460ms  (x4.54) |   190ms  (x1.88)
+test               x   reps |  native |     this library |        crockford |      json-bigint |    lossless-json
+01_typical_3kb     x  10000 |   132ms |   283ms  (x2.14) |   673ms  (x5.10) |   501ms  (x3.80) |   685ms  (x5.19)
+02_typical_28kb    x   1000 |   106ms |   314ms  (x2.97) |   610ms  (x5.77) |   493ms  (x4.67) |   675ms  (x6.39)
+03_mixed_83b       x  50000 |   101ms |   209ms  (x2.06) |   393ms  (x3.87) |   389ms  (x3.83) |   399ms  (x3.94)
+04_short_numbers   x  50000 |   112ms |   373ms  (x3.33) |   484ms  (x4.33) |   473ms  (x4.23) |   501ms  (x4.48)
+05_long_numbers    x  50000 |   101ms |   178ms  (x1.75) |   467ms  (x4.60) |   722ms  (x7.12) |   334ms  (x3.29)
+06_short_strings   x  50000 |   108ms |   129ms  (x1.20) |   185ms  (x1.72) |   209ms  (x1.94) |   249ms  (x2.31)
+07_long_strings    x   2500 |   152ms |   115ms  (x0.76) |  1927ms (x12.68) |  1340ms  (x8.82) |  1206ms  (x7.94)
+08_string_escapes  x 100000 |   112ms |   394ms  (x3.52) |  1167ms (x10.43) |  1069ms  (x9.56) |   672ms  (x6.00)
+09_bool_null       x 100000 |   104ms |   258ms  (x2.48) |   421ms  (x4.04) |   399ms  (x3.83) |   663ms  (x6.37)
+10_package_json    x  25000 |   104ms |   194ms  (x1.87) |   541ms  (x5.21) |   467ms  (x4.49) |   486ms  (x4.68)
 ```
 
 
@@ -99,4 +99,4 @@ Public Domain.
 
 NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
 
-Except: tests in the [`test_parsing`](test/test_parsing/) folder that start with `y_`, `n_` or `i_` are from Nicolas Seriot's [JSON Test Suite](https://github.com/nst/JSONTestSuite), which is MIT licenced.
+Except: most tests in the [`test_parsing`](test/test_parsing/) folder that start with `y_`, `n_` or `i_` are from Nicolas Seriot's [JSON Test Suite](https://github.com/nst/JSONTestSuite), which is MIT licenced.

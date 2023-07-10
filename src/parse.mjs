@@ -10,24 +10,24 @@
 export class JSONParseError extends Error { }
 
 // global state
-let at;  // the index of the current character
-let ch;  // the current character code
-let text;  // JSON source string
-let numericReviverFn;  // function that transforms numeric strings ("123") to numbers (123)
-let textDec;  // a TextDecoder instance, if one becomes necessary
+let
+  at,  // the index of the current character
+  ch,  // the current character code
+  text,  // JSON source string
+  numericReviverFn,  // function that transforms numeric strings ("123") to numbers (123)
+  textDec;  // a TextDecoder instance, if one becomes necessary
 
-// these 'sticky' RegExps are used to parse (1) strings and (2) numbers, true/false and null
-const stringChunkRegExp = /[^"\\\u0000-\u001f]*/y;
-const wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y;
+const
+  // these 'sticky' RegExps are used to parse (1) strings and (2) numbers, true/false and null
+  stringChunkRegExp = /[^"\\\u0000-\u001f]*/y,
+  wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y,
 
-// this array is indexed by the char code of an escape character 
-// e.g. \n -> 'n'.charCodeAt() === 110, so escapes[110] === '\n'
-var
+  // this array is indexed by the char code of an escape character 
+  // e.g. \n -> 'n'.charCodeAt() === 110, so escapes[110] === '\n'
   x = "",
-  escapes = [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, "\"", x, x, x, x, x, x, x, x, x, x, x, x, "/", x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, "\\", x, x, x, x, x, "\b", x, x, x, "\f", x, x, x, x, x, x, x, "\n", x, x, x, "\r", x, "\t"];
+  escapes = [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, "\"", x, x, x, x, x, x, x, x, x, x, x, x, "/", x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, "\\", x, x, x, x, x, "\b", x, x, x, "\f", x, x, x, x, x, x, x, "\n", x, x, x, "\r", x, "\t"],
 
-// these arrays are indexed by the char code of a hex digit, used for \uXXXX escapes
-var
+  // these arrays are indexed by the char code of a hex digit, used for \uXXXX escapes
   y = 65536,  // = 0xffff + 1: signals a bad character, since it's out of range
   hexLookup1 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 4096, 8192, 12288, 16384, 20480, 24576, 28672, 32768, 36864, y, y, y, y, y, y, y, 40960, 45056, 49152, 53248, 57344, 61440, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 40960, 45056, 49152, 53248, 57344, 61440]),
   hexLookup2 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 256, 512, 768, 1024, 1280, 1536, 1792, 2048, 2304, y, y, y, y, y, y, y, 2560, 2816, 3072, 3328, 3584, 3840, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 2560, 2816, 3072, 3328, 3584, 3840]),
@@ -49,8 +49,8 @@ function word() {
   wordRegExp.lastIndex = startAt;
   wordRegExp.test(text) || error("Unexpected character or end of input");
 
-  const { lastIndex } = wordRegExp;
-  if (ch < 102 /* f */) {  // it's a number
+  const lastIndex = wordRegExp.lastIndex;
+  if (ch < 102 /* f */) {  // has to be a number
     const string = text.slice(startAt, lastIndex);
     val = numericReviverFn ? numericReviverFn(string) : +string;
 
@@ -70,7 +70,7 @@ function string() {  // note: it's on you to check that ch == '"'.charCodeAt() b
     stringChunkRegExp.lastIndex = at;  // find next chunk without \ or " or invalid chars
     stringChunkRegExp.test(text);
 
-    const { lastIndex } = stringChunkRegExp;
+    const lastIndex = stringChunkRegExp.lastIndex;
     if (lastIndex > at) {
       str += text.slice(at, lastIndex);
       at = lastIndex;
@@ -85,12 +85,12 @@ function string() {  // note: it's on you to check that ch == '"'.charCodeAt() b
       case 92 /* \ */:  // backslash escape
         ch = text.charCodeAt(at++);
         if (ch === 117 /* u */) {
-          var charCode =
+          const charCode =
             hexLookup1[text.charCodeAt(at++)] +
             hexLookup2[text.charCodeAt(at++)] +
             hexLookup3[text.charCodeAt(at++)] +
             hexLookup4[text.charCodeAt(at++)];
-          
+
           if (charCode < 65536) {  // NaN also fails this test
             str += String.fromCharCode(charCode);
             continue;
@@ -98,7 +98,7 @@ function string() {  // note: it's on you to check that ch == '"'.charCodeAt() b
           error("Invalid \\uXXXX escape in string");
         }
 
-        var esc = escapes[ch];
+        const esc = escapes[ch];
         if (esc) {
           str += esc;
           continue;
