@@ -1,5 +1,5 @@
 /*
-  2023-07-09 / George MacKerron (mackerron.com)
+  2023-07-10 / George MacKerron (mackerron.com)
   Based on https://github.com/douglascrockford/JSON-js/blob/03157639c7a7cddd2e9f032537f346f1a87c0f6d/json_parse.js
   Public Domain
   NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
@@ -42,13 +42,12 @@ function chDesc(prefix) {
 }
 
 function word() {
-  let val;
-
   const startAt = at - 1;  // the first digit/letter was already consumed, so go back 1
   wordRegExp.lastIndex = startAt;
   wordRegExp.test(text) || error("Unexpected character or end of input");
   at = wordRegExp.lastIndex;
 
+  let val;
   if (ch < 102 /* f */) {  // has to be a number
     const str = text.slice(startAt, at);
     val = numericReviverFn ? numericReviverFn(str) : +str;
@@ -63,7 +62,6 @@ function word() {
 
 function string() {  // note: it's on you to check that ch == '"'.charCodeAt() before you call this
   let str = "";
-
   for (; ;) {
     stringChunkRegExp.lastIndex = at;  // find next chunk without \ or " or invalid chars
     stringChunkRegExp.test(text);
@@ -84,10 +82,8 @@ function string() {  // note: it's on you to check that ch == '"'.charCodeAt() b
         ch = text.charCodeAt(at++);
         if (ch === 117 /* u */) {  // Unicode \uXXXX escape
           const charCode =
-            hexLookup1[text.charCodeAt(at++)] +
-            hexLookup2[text.charCodeAt(at++)] +
-            hexLookup3[text.charCodeAt(at++)] +
-            hexLookup4[text.charCodeAt(at++)];
+            hexLookup1[text.charCodeAt(at++)] + hexLookup2[text.charCodeAt(at++)] +
+            hexLookup3[text.charCodeAt(at++)] + hexLookup4[text.charCodeAt(at++)];
 
           if (charCode < 65536) {  // (NaN also fails this test)
             str += String.fromCharCode(charCode);
@@ -171,8 +167,8 @@ function value() {
 };
 
 export function parse(source, reviver, numericReviver) {
-  if (source instanceof Uint8Array) source = (textDec ??= new TextDecoder()).decode(source);
-  if (typeof source !== "string") error("JSON must be a string, Buffer or Uint8Array");
+  if (source instanceof globalThis.Buffer) source = (textDec ??= new TextDecoder()).decode(source);
+  if (typeof source !== "string") error("JSON must be a string or Buffer");
 
   at = 0;
   ch = 32;
