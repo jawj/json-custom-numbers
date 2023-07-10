@@ -113,7 +113,7 @@ testErr('{"x', `Unterminated string`);
 testErr('{"x"', `Expected ':' but got end of input after key in object`);
 testErr('{"x":', `Unexpected character or end of input`);
 testErr('{"x":x', `Unexpected character or end of input`);
-testErr('{"x":1', `Expected ',' but got end of input after value in object`);
+testErr('{"x":1', `Expected ',' or '}' but got end of input after value in object`);
 testErr('[', `Unterminated array`);
 testErr('[1', `Expected ',' but got end of input after array element`);
 testErr('[1x', `Expected ',' but got 'x' after array element`);

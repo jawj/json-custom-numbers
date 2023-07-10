@@ -1,5 +1,5 @@
 /*
-  2023-05-26 / George MacKerron (mackerron.com)
+  2023-07-09 / George MacKerron (mackerron.com)
   Based on https://github.com/douglascrockford/JSON-js/blob/03157639c7a7cddd2e9f032537f346f1a87c0f6d/json_parse.js
   Public Domain
   NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
@@ -17,19 +17,22 @@ let numericReviverFn;  // function that transforms numeric strings ("123") to nu
 let textDec;  // a TextDecoder instance, if one becomes necessary
 
 // these 'sticky' RegExps are used to parse (1) strings and (2) numbers, true/false and null
-const stringChunkRegExp = /[^"\\\n\t\u0000-\u001f]*/y;
+const stringChunkRegExp = /[^"\\\u0000-\u001f]*/y;
 const wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y;
 
 // this array is indexed by the char code of an escape character 
 // e.g. \n -> 'n'.charCodeAt() === 110, so escapes[110] === '\n'
-const x = "";
-const escapes = [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, "\"", x, x, x, x, x, x, x, x, x, x, x, x, "/", x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, "\\", x, x, x, x, x, "\b", x, x, x, "\f", x, x, x, x, x, x, x, "\n", x, x, x, "\r", x, "\t"];
+var
+  x = "",
+  escapes = [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, "\"", x, x, x, x, x, x, x, x, x, x, x, x, "/", x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, "\\", x, x, x, x, x, "\b", x, x, x, "\f", x, x, x, x, x, x, x, "\n", x, x, x, "\r", x, "\t"];
 
-// these arrays are indexed by the char code of a hex digit used for \uXXXX escapes
-const hexLookup1 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4097, 8193, 12289, 16385, 20481, 24577, 28673, 32769, 36865, 0, 0, 0, 0, 0, 0, 0, 40961, 45057, 49153, 53249, 57345, 61441, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 40961, 45057, 49153, 53249, 57345, 61441];
-const hexLookup2 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 257, 513, 769, 1025, 1281, 1537, 1793, 2049, 2305, 0, 0, 0, 0, 0, 0, 0, 2561, 2817, 3073, 3329, 3585, 3841, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2561, 2817, 3073, 3329, 3585, 3841];
-const hexLookup3 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 17, 33, 49, 65, 81, 97, 113, 129, 145, 0, 0, 0, 0, 0, 0, 0, 161, 177, 193, 209, 225, 241, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 161, 177, 193, 209, 225, 241];
-const hexLookup4 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 0, 0, 0, 0, 0, 0, 11, 12, 13, 14, 15, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 12, 13, 14, 15, 16];
+// these arrays are indexed by the char code of a hex digit, used for \uXXXX escapes
+var
+  y = 65536,  // = 0xffff + 1: signals a bad character, since it's out of range
+  hexLookup1 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 4096, 8192, 12288, 16384, 20480, 24576, 28672, 32768, 36864, y, y, y, y, y, y, y, 40960, 45056, 49152, 53248, 57344, 61440, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 40960, 45056, 49152, 53248, 57344, 61440]),
+  hexLookup2 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 256, 512, 768, 1024, 1280, 1536, 1792, 2048, 2304, y, y, y, y, y, y, y, 2560, 2816, 3072, 3328, 3584, 3840, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 2560, 2816, 3072, 3328, 3584, 3840]),
+  hexLookup3 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 16, 32, 48, 64, 80, 96, 112, 128, 144, y, y, y, y, y, y, y, 160, 176, 192, 208, 224, 240, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 160, 176, 192, 208, 224, 240]),
+  hexLookup4 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, y, y, y, y, y, y, y, 10, 11, 12, 13, 14, 15, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 10, 11, 12, 13, 14, 15]);
 
 function error(m) {
   throw new JSONParseError(m + "\nAt character " + at + " in JSON: " + text);
@@ -60,8 +63,6 @@ function word() {
   return val;
 };
 
-function badUnicode() { error("Invalid \\uXXXX escape in string"); }
-
 function string() {  // note: it's on you to check that ch == '"'.charCodeAt() before you call this
   let str = "";
 
@@ -83,18 +84,26 @@ function string() {  // note: it's on you to check that ch == '"'.charCodeAt() b
 
       case 92 /* \ */:  // backslash escape
         ch = text.charCodeAt(at++);
-        str += ch === 117 /* u */ ?
-          String.fromCharCode(
-            (hexLookup1[text.charCodeAt(at++)] || badUnicode()) +
-            (hexLookup2[text.charCodeAt(at++)] || badUnicode()) +
-            (hexLookup3[text.charCodeAt(at++)] || badUnicode()) +
-            (hexLookup4[text.charCodeAt(at++)] || badUnicode()) - 4
-            // we added 1 to each valid lookup value to make it truthy: 
-            // `- 4` undoes that
-          ) :
-          escapes[ch] ||
-          error("Invalid escape sequence " + chDesc("\\") + " in string");
-        continue;
+        if (ch === 117 /* u */) {
+          var charCode =
+            hexLookup1[text.charCodeAt(at++)] +
+            hexLookup2[text.charCodeAt(at++)] +
+            hexLookup3[text.charCodeAt(at++)] +
+            hexLookup4[text.charCodeAt(at++)];
+          
+          if (charCode < 65536) {  // NaN also fails this test
+            str += String.fromCharCode(charCode);
+            continue;
+          }
+          error("Invalid \\uXXXX escape in string");
+        }
+
+        var esc = escapes[ch];
+        if (esc) {
+          str += esc;
+          continue;
+        }
+        error("Invalid escape sequence " + chDesc("\\") + " in string");
 
       default:  // something is wrong
         if (isNaN(ch)) error("Unterminated string");
@@ -147,7 +156,7 @@ function object() {
       ch = text.charCodeAt(at++);
       return obj;
     }
-    if (ch !== 44 /* , */) error("Expected ',' but got " + chDesc() + " after value in object");
+    if (ch !== 44 /* , */) error("Expected ',' or '}' but got " + chDesc() + " after value in object");
     do { ch = text.charCodeAt(at++) } while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
   }
   error("Expected '\"' but got " + chDesc() + " in object");
@@ -159,7 +168,7 @@ function value() {
     case 34 /*  " */: return string();
     case 123 /* { */: return object();
     case 91 /*  [ */: return array();
-    default: /*    */ return word();
+    default /*    */: return word();
   }
 };
 
