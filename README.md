@@ -40,16 +40,16 @@ Tests are included to compare the performance of this library, [Crockford's refe
 
 ```
 test               x   reps |  native |        crockford |      json-bigint |     this library
-01_typical_3kb     x  10000 |   140ms |   606ms  (x4.33) |   573ms  (x4.09) |   306ms  (x2.18)
-02_typical_28kb    x   1000 |    95ms |   594ms  (x6.23) |   574ms  (x6.02) |   281ms  (x2.95)
-03_mixed_83b       x  50000 |   108ms |   389ms  (x3.61) |   450ms  (x4.18) |   198ms  (x1.84)
-04_short_numbers   x  50000 |   106ms |   544ms  (x5.12) |   605ms  (x5.70) |   372ms  (x3.50)
-05_long_numbers    x  50000 |   100ms |   448ms  (x4.50) |   789ms  (x7.92) |   177ms  (x1.78)
-06_short_strings   x  50000 |   101ms |   272ms  (x2.69) |   266ms  (x2.64) |   149ms  (x1.47)
-07_long_strings    x   2500 |   131ms |  1691ms (x12.93) |  1339ms (x10.24) |   109ms  (x0.83)
-08_string_escapes  x 100000 |   105ms |  1095ms (x10.44) |  1061ms (x10.12) |   413ms  (x3.94)
-09_bool_null       x 100000 |   106ms |   616ms  (x5.81) |   630ms  (x5.94) |   255ms  (x2.41)
-10_package_json    x  25000 |    87ms |   543ms  (x6.25) |   532ms  (x6.13) |   168ms  (x1.93)
+01_typical_3kb     x  10000 |   131ms |   636ms  (x4.85) |   487ms  (x3.71) |   271ms  (x2.06)
+02_typical_28kb    x   1000 |   105ms |   647ms  (x6.18) |   499ms  (x4.76) |   316ms  (x3.02)
+03_mixed_83b       x  50000 |   111ms |   384ms  (x3.46) |   388ms  (x3.50) |   202ms  (x1.82)
+04_short_numbers   x  50000 |   107ms |   512ms  (x4.78) |   483ms  (x4.51) |   382ms  (x3.57)
+05_long_numbers    x  50000 |   102ms |   466ms  (x4.59) |   715ms  (x7.04) |   179ms  (x1.76)
+06_short_strings   x  50000 |   105ms |   187ms  (x1.78) |   216ms  (x2.06) |   125ms  (x1.19)
+07_long_strings    x   2500 |   143ms |  1896ms (x13.25) |  1355ms  (x9.47) |   107ms  (x0.75)
+08_string_escapes  x 100000 |   110ms |  1122ms (x10.16) |  1069ms  (x9.68) |   371ms  (x3.36)
+09_bool_null       x 100000 |   100ms |   417ms  (x4.19) |   411ms  (x4.13) |   254ms  (x2.56)
+10_package_json    x  25000 |   101ms |   518ms  (x5.11) |   460ms  (x4.54) |   190ms  (x1.88)
 ```
 
 

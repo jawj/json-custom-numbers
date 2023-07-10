@@ -5,6 +5,7 @@ import { parse } from '../src/parse.mjs';
 import { parse as crockford } from './test_comparison/crockford.mjs';
 import { parse as parseBigInt } from 'json-bigint';
 
+const perfOnly = false;
 
 const folderPath = 'test/test_parsing';
 const filenames = fs
@@ -15,129 +16,128 @@ const filenames = fs
   )
   .sort();
 
-let passes = 0, fails = 0;
-const perftests = {};
+if (!perfOnly) {
 
+  let passes = 0, fails = 0;
 
-console.log(col.bold(`Running JSON.parse comparison tests ...`));
+  console.log(col.bold(`Running JSON.parse comparison tests ...`));
 
-function compare(filename, json, trueFn, trueFnName, testFn, testFnName) {
-  let trueErr = undefined;
-  let trueResult = undefined;
-  try {
-    trueResult = trueFn(json);
-  } catch (err) {
-    trueErr = err;
+  function compare(filename, json, trueFn, trueFnName, testFn, testFnName) {
+    let trueErr = undefined;
+    let trueResult = undefined;
+    try {
+      trueResult = trueFn(json);
+    } catch (err) {
+      trueErr = err;
+    }
+
+    let testErr = undefined;
+    let testResult = undefined;
+    try {
+      testResult = testFn(json);
+    } catch (err) {
+      testErr = err;
+    }
+
+    if (!!testErr !== !!trueErr) {
+      console.log(filename, json);
+      console.log(trueErr ? trueErr.message : testErr.message);
+      console.log(`  FAIL: ${trueFnName} ${trueErr ? 'error' : 'OK'}, ${testFnName} ${testErr ? 'error' : 'OK'}\n`);
+      // process.exit(1);
+      fails += 1;
+
+    } else if (JSON.stringify(testResult) !== JSON.stringify(trueResult)) {
+      console.log(filename, json);
+      console.log(`  FAIL: ${trueFnName} (${JSON.stringify(trueResult)}) !== ${testFnName} (${JSON.stringify(testResult)})\n`);
+      // process.exit(1);
+      fails += 1;
+
+    } else {
+      passes += 1;
+    }
   }
 
-  let testErr = undefined;
-  let testResult = undefined;
-  try {
-    testResult = testFn(json);
-  } catch (err) {
-    testErr = err;
+  for (const filename of filenames) {
+    const json = fs.readFileSync(path.join(folderPath, filename), 'utf8');
+    compare(filename, json, JSON.parse, 'JSON.parse', parse, 'parse');
   }
 
-  if (!!testErr !== !!trueErr) {
-    console.log(filename, json);
-    console.log(trueErr ? trueErr.message : testErr.message);
-    console.log(`  FAIL: ${trueFnName} ${trueErr ? 'error' : 'OK'}, ${testFnName} ${testErr ? 'error' : 'OK'}\n`);
-    // process.exit(1);
-    fails += 1;
+  console.log(`\n${passes} passes, ${fails} fails\n`);
 
-  } else if (JSON.stringify(testResult) !== JSON.stringify(trueResult)) {
-    console.log(filename, json);
-    console.log(`  FAIL: ${trueFnName} (${JSON.stringify(trueResult)}) !== ${testFnName} (${JSON.stringify(testResult)})\n`);
-    // process.exit(1);
-    fails += 1;
+  if (fails > 0) process.exit(1);
 
-  } else {
-    passes += 1;
+
+  console.log(col.bold(`Running number parsing test ...\n`));
+
+  const bigNumJson = "[9007199254740991, 9007199254740991.1, 900719925474099.1e1, 9007199254740993]";
+
+  function nr(s) {
+    const n = +s;
+    if (n >= Number.MIN_SAFE_INTEGER && n <= Number.MAX_SAFE_INTEGER) return n;
+    if (s.indexOf('.') !== -1 || s.indexOf('e') !== -1 && s.indexOf('E') !== -1) return n;
+    return BigInt(s);
   }
+
+  const revived = parse(bigNumJson, null, nr);
+  console.log(bigNumJson, '->', revived);
+
+  const bigNumPass = typeof revived[0] === 'number' &&
+    typeof revived[1] === 'number' &&
+    typeof revived[2] === 'number' &&
+    typeof revived[3] === 'bigint';
+
+  console.log(bigNumPass ? 'Pass' : 'Fail');
+
+  if (!bigNumPass) process.exit(1);
+
+
+  console.log(col.bold(`\nRunning error messages test ...\n`));
+
+  const testErr = (json, message) => {
+    let caught = undefined;
+    try {
+      parse(json);
+    } catch (err) {
+      caught = err;
+    }
+    if (!caught || !caught.message.startsWith(message)) {
+      console.log('Expected error: ' + message);
+      console.log(caught ? 'Got: ' + caught.message : 'No error thrown');
+      fails += 1;
+    }
+  }
+
+  testErr('{', `Expected '"' but got end of input in object`);
+  testErr('{x', `Expected '"' but got 'x' in object`);
+  testErr('{"x', `Unterminated string`);
+  testErr('{"x"', `Expected ':' but got end of input after key in object`);
+  testErr('{"x":', `Unexpected character or end of input`);
+  testErr('{"x":x', `Unexpected character or end of input`);
+  testErr('{"x":1', `Expected ',' or '}' but got end of input after value in object`);
+  testErr('[', `Unterminated array`);
+  testErr('[1', `Expected ',' but got end of input after array element`);
+  testErr('[1x', `Expected ',' but got 'x' after array element`);
+  testErr('[1,', `Unterminated array`);
+  testErr('[1,x', `Unexpected character or end of input`);
+  testErr('"abc', `Unterminated string`);
+  testErr('"\u0000', `Invalid unescaped control character (\\u0000) in string`);
+  testErr('"\n', `Invalid unescaped newline (\\u000a) in string`);
+  testErr('"\t', `Invalid unescaped tab (\\u0009) in string`);
+  testErr('"\\u"', `Invalid \\uXXXX escape in string`);
+  testErr('"\\uaaa"', `Invalid \\uXXXX escape in string`);
+  testErr('"\\uaaag"', `Invalid \\uXXXX escape in string`);
+  testErr('"\\a"', `Invalid escape sequence '\\a' in string`);
+  testErr('~', `Unexpected character or end of input`);
+  testErr('[1,2,~]', `Unexpected character or end of input`);
+  testErr('.1', `Unexpected character or end of input`);
+  testErr('1.', `Unexpected data at end of input`);
+  testErr('01', `Unexpected data at end of input`);
+  testErr('[01]', `Expected ',' but got '1' after array element`);
+
+  if (fails > 0) process.exit(1);
+
+  console.log('Pass');
 }
-
-for (const filename of filenames) {
-  const json = fs.readFileSync(path.join(folderPath, filename), 'utf8');
-  if (filename.startsWith('perf_')) perftests[filename] = json;
-  compare(filename, json, JSON.parse, 'JSON.parse', parse, 'parse');
-}
-
-console.log(`\n${passes} passes, ${fails} fails\n`);
-
-if (fails > 0) process.exit(1);
-
-
-console.log(col.bold(`Running number parsing test ...\n`));
-
-const bigNumJson = "[9007199254740991, 9007199254740991.1, 900719925474099.1e1, 9007199254740993]";
-
-function nr(s) {
-  const n = +s;
-  if (n >= Number.MIN_SAFE_INTEGER && n <= Number.MAX_SAFE_INTEGER) return n;
-  if (s.indexOf('.') !== -1 || s.indexOf('e') !== -1 && s.indexOf('E') !== -1) return n;
-  return BigInt(s);
-}
-
-const revived = parse(bigNumJson, null, nr);
-console.log(bigNumJson, '->', revived);
-
-const bigNumPass = typeof revived[0] === 'number' &&
-  typeof revived[1] === 'number' &&
-  typeof revived[2] === 'number' &&
-  typeof revived[3] === 'bigint';
-
-console.log(bigNumPass ? 'Pass' : 'Fail');
-
-if (!bigNumPass) process.exit(1);
-
-
-console.log(col.bold(`\nRunning error messages test ...\n`));
-
-const testErr = (json, message) => {
-  let caught = undefined;
-  try {
-    parse(json);
-  } catch (err) {
-    caught = err;
-  }
-  if (!caught || !caught.message.startsWith(message)) {
-    console.log('Expected error: ' + message);
-    console.log(caught ? 'Got: ' + caught.message : 'No error thrown');
-    fails += 1;
-  }
-}
-
-testErr('{', `Expected '"' but got end of input in object`);
-testErr('{x', `Expected '"' but got 'x' in object`);
-testErr('{"x', `Unterminated string`);
-testErr('{"x"', `Expected ':' but got end of input after key in object`);
-testErr('{"x":', `Unexpected character or end of input`);
-testErr('{"x":x', `Unexpected character or end of input`);
-testErr('{"x":1', `Expected ',' or '}' but got end of input after value in object`);
-testErr('[', `Unterminated array`);
-testErr('[1', `Expected ',' but got end of input after array element`);
-testErr('[1x', `Expected ',' but got 'x' after array element`);
-testErr('[1,', `Unterminated array`);
-testErr('[1,x', `Unexpected character or end of input`);
-testErr('"abc', `Unterminated string`);
-testErr('"\u0000', `Invalid unescaped control character (\\u0000) in string`);
-testErr('"\n', `Invalid unescaped newline (\\u000a) in string`);
-testErr('"\t', `Invalid unescaped tab (\\u0009) in string`);
-testErr('"\\u"', `Invalid \\uXXXX escape in string`);
-testErr('"\\uaaa"', `Invalid \\uXXXX escape in string`);
-testErr('"\\uaaag"', `Invalid \\uXXXX escape in string`);
-testErr('"\\a"', `Invalid escape sequence '\\a' in string`);
-testErr('~', `Unexpected character or end of input`);
-testErr('[1,2,~]', `Unexpected character or end of input`);
-testErr('.1', `Unexpected character or end of input`);
-testErr('1.', `Unexpected data at end of input`);
-testErr('01', `Unexpected data at end of input`);
-testErr('[01]', `Expected ',' but got '1' after array element`);
-
-if (fails > 0) process.exit(1);
-
-console.log('Pass');
-
 
 console.log(col.bold(`\nRunning perf tests ...\n`));
 
@@ -171,8 +171,10 @@ const perf = (reps, baseline, fn) => {
 };
 
 console.log(col.bold(`test               x   reps |  native |        crockford |      json-bigint |     this library`));
-for (const filename in perftests) {
-  const json = perftests[filename];
+
+for (const filename of filenames) {
+  if (!filename.startsWith('perf_')) continue;
+  const json = fs.readFileSync(path.join(folderPath, filename), 'utf8');
   const [, name, repsStr] = filename.match(/^perf_(.+)_x([0-9]+)[.]json$/) ?? [, 'Perf test', 10000];
   const reps = Number(repsStr);
 
@@ -180,7 +182,7 @@ for (const filename in perftests) {
   const [crockfordResult] = perf(reps, t, () => crockford(json));
   const [bigIntResult] = perf(reps, t, () => parseBigInt(json));
   const [parseResult] = perf(reps, t, () => parse(json));
-  
+
   const title = `${ljust(name, 18)} x ${rjust(repsStr, 6)}`;
   console.log(`${title} | ${baselineResult} | ${crockfordResult} | ${bigIntResult} | ${parseResult}`);
 }
