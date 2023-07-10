@@ -6,8 +6,7 @@ import { parse as crockford } from './test_comparison/crockford.mjs';
 import { parse as parseBigInt } from 'json-bigint';
 import { parse as parseLossless } from 'lossless-json';
 
-const perfOnly = true;
-
+const perfOnly = process.argv[2] === '--perf-only';
 const folderPath = 'test/test_parsing';
 const filenames = fs
   .readdirSync(folderPath)
@@ -18,9 +17,7 @@ const filenames = fs
   .sort();
 
 if (!perfOnly) {
-
   let passes = 0, fails = 0;
-
   console.log(col.bold(`Running JSON.parse comparison tests ...`));
 
   function compare(filename, json, trueFn, trueFnName, testFn, testFnName) {
@@ -64,7 +61,7 @@ if (!perfOnly) {
   }
 
   console.log(`\n${passes} passes, ${fails} fails\n`);
-
+  
   if (fails > 0) process.exit(1);
 
 
