@@ -18,6 +18,7 @@ let
 
 const
   // these 'sticky' RegExps are used to parse (1) strings and (2) numbers, true/false and null
+  whitespaceRegExp = /[ \n\r\t]*/y,
   stringChunkRegExp = /[^"\\\u0000-\u001f]*/y,
   wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y,
 
@@ -117,51 +118,50 @@ function string() {  // note: it's on you to check that ch == '"'.charCodeAt() b
 function array() {
   const arr = [];
   let i = 0;
-  // the '< 33' helps performance by short-circuiting the four other conditions in most cases
-  do { ch = text.charCodeAt(at++) } while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
+  whitespaceRegExp.lastIndex = at; whitespaceRegExp.test(text); at = whitespaceRegExp.lastIndex; ch = text.charCodeAt(at++);
   if (ch === 93 /* ] */) {
     ch = text.charCodeAt(at++);
     return arr;  // empty array
   }
   while (ch >= 0) {  // i.e. !isNaN(ch)
     arr[i++] = value();
-    while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9)) ch = text.charCodeAt(at++);
+    if (ch < 33) { whitespaceRegExp.lastIndex = at - 1; whitespaceRegExp.test(text); at = whitespaceRegExp.lastIndex; ch = text.charCodeAt(at++); }
     if (ch === 93 /* ] */) {
       ch = text.charCodeAt(at++);
       return arr;
     }
     if (ch !== 44 /* , */) error("Expected ',' but got " + chDesc() + " after array element");
-    do { ch = text.charCodeAt(at++) } while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
+    whitespaceRegExp.lastIndex = at; whitespaceRegExp.test(text); at = whitespaceRegExp.lastIndex; ch = text.charCodeAt(at++);
   }
   error("Unterminated array");
 };
 
 function object() {
   const obj = {};
-  do { ch = text.charCodeAt(at++) } while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
+  whitespaceRegExp.lastIndex = at; whitespaceRegExp.test(text); at = whitespaceRegExp.lastIndex; ch = text.charCodeAt(at++);
   if (ch === 125 /* } */) {
     ch = text.charCodeAt(at++);
     return obj;  // empty object
   }
   while (ch === 34 /* " */) {
     const key = string();
-    while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9)) ch = text.charCodeAt(at++);
+    if (ch < 33) { whitespaceRegExp.lastIndex = at - 1; whitespaceRegExp.test(text); at = whitespaceRegExp.lastIndex; ch = text.charCodeAt(at++); }
     if (ch !== 58 /* : */) error("Expected ':' but got " + chDesc() + " after key in object");
     ch = text.charCodeAt(at++);
     obj[key] = value();
-    while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9)) ch = text.charCodeAt(at++);
+    if (ch < 33) { whitespaceRegExp.lastIndex = at - 1; whitespaceRegExp.test(text); at = whitespaceRegExp.lastIndex; ch = text.charCodeAt(at++); }
     if (ch === 125 /* } */) {
       ch = text.charCodeAt(at++);
       return obj;
     }
     if (ch !== 44 /* , */) error("Expected ',' or '}' but got " + chDesc() + " after value in object");
-    do { ch = text.charCodeAt(at++) } while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
+    whitespaceRegExp.lastIndex = at; whitespaceRegExp.test(text); at = whitespaceRegExp.lastIndex; ch = text.charCodeAt(at++);
   }
   error("Expected '\"' but got " + chDesc() + " in object");
 };
 
 function value() {
-  while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9)) ch = text.charCodeAt(at++);
+  if (ch < 33) { whitespaceRegExp.lastIndex = at - 1; whitespaceRegExp.test(text); at = whitespaceRegExp.lastIndex; ch = text.charCodeAt(at++); }
   switch (ch) {
     case 34 /*  " */: return string();
     case 123 /* { */: return object();
@@ -180,7 +180,7 @@ export function parse(source, reviver, numericReviver) {
   numericReviverFn = numericReviver;
 
   const result = value();
-  while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9)) ch = text.charCodeAt(at++);
+  if (ch < 33) { whitespaceRegExp.lastIndex = at - 1; whitespaceRegExp.test(text); at = whitespaceRegExp.lastIndex; ch = text.charCodeAt(at++); }
   if (ch >= 0) error("Unexpected data at end of input");  // i.e. !isNaN(ch)
 
   return (typeof reviver === "function")
