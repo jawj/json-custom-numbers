@@ -167,7 +167,7 @@ function value() {
 };
 
 export function parse(source, reviver, numericReviver) {
-  if (source instanceof globalThis.Buffer) source = (textDec ??= new TextDecoder()).decode(source);
+  if (globalThis.Buffer && source instanceof globalThis.Buffer) source = (textDec ??= new TextDecoder()).decode(source);
   if (typeof source !== "string") error("JSON must be a string or Buffer");
 
   at = 0;
