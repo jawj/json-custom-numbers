@@ -1,6 +1,6 @@
 {
   "name": "json-custom-numbers",
-  "version": "2.0.10",
+  "version": "2.0.11",
   "description": "JSON parser enabling custom number parsing",
   "exports": {
     "types": "./dist/index.d.ts",
