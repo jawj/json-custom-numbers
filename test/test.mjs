@@ -2,7 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import col from 'colors/safe.js';
 import { parse } from '../src/parse.mjs';
-import { parse as crockford } from './test_comparison/crockford.mjs';
+import { stringify } from '../src/stringify.mjs';
+import { parse as parseCrockford } from './test_comparison/crockford_parse.mjs';
 import { parse as parseBigInt } from 'json-bigint';
 import { parse as parseLossless } from 'lossless-json';
 
@@ -178,7 +179,7 @@ for (const filename of filenames) {
 
   const [baselineResult, t] = perf(reps, null, () => JSON.parse(json));
   const [parseResult] = perf(reps, t, () => parse(json));
-  const [crockfordResult] = perf(reps, t, () => crockford(json));
+  const [crockfordResult] = perf(reps, t, () => parseCrockford(json));
   const [bigIntResult] = perf(reps, t, () => parseBigInt(json));
   const [losslessResult] = perf(reps, t, () => parseLossless(json, undefined, s => parseFloat(s)));
 
