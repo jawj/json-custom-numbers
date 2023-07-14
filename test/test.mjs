@@ -8,6 +8,8 @@ import { parse as parseBigInt } from 'json-bigint';
 import { parse as parseLossless } from 'lossless-json';
 
 const perfOnly = process.argv[2] === '--perf-only';
+const confOnly = process.argv[2] === '--conf-only';
+
 const folderPath = 'test/test_parsing';
 const filenames = fs
   .readdirSync(folderPath)
@@ -16,6 +18,9 @@ const filenames = fs
     fs.statSync(path.join(folderPath, filename)).isFile()
   )
   .sort();
+
+
+console.log(col.inverse((`=== parse ===\n`)));
 
 if (!perfOnly) {
   let passes = 0, fails = 0;
@@ -62,7 +67,7 @@ if (!perfOnly) {
   }
 
   console.log(`\n${passes} passes, ${fails} fails\n`);
-  
+
   if (fails > 0) process.exit(1);
 
 
@@ -135,56 +140,95 @@ if (!perfOnly) {
 
   if (fails > 0) process.exit(1);
 
-  console.log('Pass');
+  console.log('Pass\n');
 }
 
-console.log(col.bold(`\nRunning perf tests ...\n`));
+if (!confOnly) {
+  console.log(col.bold(`Running perf tests ...\n`));
 
-const cpuUsage = (prev) => {
-  if (process.cpuUsage) {
-    const usage = process.cpuUsage(prev);
-    return prev ? (usage.user + usage.system) * .001 : usage;
-  } else {
-    const usage = performance.now ? performance.now() : Date.now();
-    return usage - (prev ?? 0);
+  const cpuUsage = (prev) => {
+    if (process.cpuUsage) {
+      const usage = process.cpuUsage(prev);
+      return prev ? (usage.user + usage.system) * .001 : usage;
+    } else {
+      const usage = performance.now ? performance.now() : Date.now();
+      return usage - (prev ?? 0);
+    }
   }
-}
 
-const ljust = (s, len) => s + ' '.repeat(Math.max(0, len - s.length));
-const rjust = (s, len) => ' '.repeat(Math.max(0, len - s.length)) + s;
-const perf = (reps, baseline, fn) => {
-  if (global.gc) global.gc();
+  const ljust = (s, len) => s + ' '.repeat(Math.max(0, len - s.length));
+  const rjust = (s, len) => ' '.repeat(Math.max(0, len - s.length)) + s;
+  const perf = (reps, baseline, fn) => {
+    if (global.gc) global.gc();
 
-  const t0 = cpuUsage();
-  for (let i = 0; i < reps; i++) fn();
-  if (global.gc) global.gc();
-  const t = cpuUsage(t0);
+    const t0 = cpuUsage();
+    for (let i = 0; i < reps; i++) fn();
+    if (global.gc) global.gc();
+    const t = cpuUsage(t0);
 
-  let result = rjust(t.toFixed(), 5) + 'ms';
-  if (typeof baseline === 'number') {
-    const factor = t / baseline;
-    const highlight = factor < 1 ? col.green : factor > 10 ? col.red : factor > 5 ? col.yellow : x => x;
-    result += highlight(rjust(`(x${factor.toFixed(2)})`, 9));
+    let result = rjust(t.toFixed(), 5) + 'ms';
+    if (typeof baseline === 'number') {
+      const factor = t / baseline;
+      const highlight = factor < 1 ? col.green : factor > 10 ? col.red : factor > 5 ? col.yellow : x => x;
+      result += highlight(rjust(`(x${factor.toFixed(2)})`, 9));
+    }
+    return [result, t];
+  };
+
+  console.log(col.bold(`test               x   reps |  native |     this library |        crockford |      json-bigint |    lossless-json`));
+
+  for (const filename of filenames) {
+    if (!filename.startsWith('perf_')) continue;
+    const json = fs.readFileSync(path.join(folderPath, filename), 'utf8');
+    const [, name, repsStr] = filename.match(/^perf_(.+)_x([0-9]+)[.]json$/) ?? [, 'Perf test', 10000];
+    const reps = Number(repsStr);
+
+    const [baselineResult, t] = perf(reps, null, () => JSON.parse(json));
+    const [parseResult] = perf(reps, t, () => parse(json));
+    const [crockfordResult] = perf(reps, t, () => parseCrockford(json));
+    const [bigIntResult] = perf(reps, t, () => parseBigInt(json));
+    const [losslessResult] = perf(reps, t, () => parseLossless(json, undefined, s => parseFloat(s)));
+
+    const title = `${ljust(name, 18)} x ${rjust(repsStr, 6)}`;
+    console.log(`${title} | ${baselineResult} | ${parseResult} | ${crockfordResult} | ${bigIntResult} | ${losslessResult}`);
   }
-  return [result, t];
-};
 
-console.log(col.bold(`test               x   reps |  native |     this library |        crockford |      json-bigint |    lossless-json`));
-
-for (const filename of filenames) {
-  if (!filename.startsWith('perf_')) continue;
-  const json = fs.readFileSync(path.join(folderPath, filename), 'utf8');
-  const [, name, repsStr] = filename.match(/^perf_(.+)_x([0-9]+)[.]json$/) ?? [, 'Perf test', 10000];
-  const reps = Number(repsStr);
-
-  const [baselineResult, t] = perf(reps, null, () => JSON.parse(json));
-  const [parseResult] = perf(reps, t, () => parse(json));
-  const [crockfordResult] = perf(reps, t, () => parseCrockford(json));
-  const [bigIntResult] = perf(reps, t, () => parseBigInt(json));
-  const [losslessResult] = perf(reps, t, () => parseLossless(json, undefined, s => parseFloat(s)));
-
-  const title = `${ljust(name, 18)} x ${rjust(repsStr, 6)}`;
-  console.log(`${title} | ${baselineResult} | ${parseResult} | ${crockfordResult} | ${bigIntResult} | ${losslessResult}`);
+  console.log();
 }
 
-console.log();
+
+console.log(col.inverse((`=== stringify ===\n`)));
+
+if (!perfOnly) {
+  let passes = 0, fails = 0;
+  console.log(col.bold(`Running JSON.stringify comparison tests ...`));
+
+  function compare(filename, obj, trueFn, trueFnName, testFn, testFnName) {
+    for (const replacer of [undefined, ['a', 'x', 'users'], (k, v) => v + v]) {
+      for (const indent of [undefined, 2, '\t', '--']) {
+        const trueResult = trueFn(obj, replacer, indent);
+        const testResult = testFn(obj, replacer, indent);
+        if (trueResult !== testResult) {
+          console.log(filename, obj);
+          console.log(`  FAIL: ${trueFnName} (${trueResult}) !== ${testFnName} (${testResult})\n`);
+          // process.exit(1);
+          fails += 1;
+
+        } else {
+          passes += 1;
+        }
+      }
+    }
+  }
+
+  for (const filename of filenames) {
+    if (/^[niz]_/.test(filename)) continue;
+    const json = fs.readFileSync(path.join(folderPath, filename), 'utf8');
+    const obj = JSON.parse(json);
+    compare(filename, obj, JSON.stringify, 'JSON.stringify', stringify, 'stringify');
+  }
+
+  console.log(`\n${passes} passes, ${fails} fails\n`);
+
+  if (fails > 0) process.exit(1);
+}

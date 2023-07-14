@@ -18,6 +18,7 @@
   "scripts": {
     "test": "node --expose-gc test/test.mjs",
     "testPerf": "node --expose-gc test/test.mjs --perf-only",
+    "testConf": "node --expose-gc test/test.mjs --conf-only",
     "buildCjs": "esbuild src/parse.mjs --platform=neutral --target=es6 --minify --line-limit=80 --format=cjs --outdir=dist",
     "wrapEsm": "npx gen-esm-wrapper dist/parse.js dist/parse.mjs",
     "build": "npm run test && npm run buildCjs && npm run wrapEsm"

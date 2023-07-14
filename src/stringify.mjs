@@ -14,14 +14,19 @@ let
 
 const escapes = ['\\u0000', '\\u0001', '\\u0002', '\\u0003', '\\u0004', '\\u0005', '\\u0006', '\\u0007', '\\b', '\\t', '\\n', '\\u000b', '\\f', '\\r', '\\u000e', '\\u000f', '\\u0010', '\\u0011', '\\u0012', '\\u0013', '\\u0014', '\\u0015', '\\u0016', '\\u0017', '\\u0018', '\\u0019', '\\u001a', '\\u001b', '\\u001c', '\\u001d', '\\u001e', '\\u001f', ' ', ' ', '\\"', ' ', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '\\\\'];
 
+function escapeReplace(s) {
+  return escapes[s.codePointAt(0)];
+}
+
 function quote(s) {
   // test is much quicker than replace, so this saves time if most strings need no escaping
   return escapableTest.test(s) ?
-    '"' + s.replace(escapableReplace, a => escapes[a.charCodeAt(0)]) + '"' :
+    '"' + s.replace(escapableReplace, escapeReplace) + '"' :
     '"' + s + '"';
 }
 
-function str(key, holder) {  // produce a string from holder[key]
+// this version supports indentation and the replacer function
+function strComplete(key, holder) {  // produce a string from holder[key]
   let mind = gap;
   let value = holder[key];
 
@@ -44,7 +49,7 @@ function str(key, holder) {  // produce a string from holder[key]
 
       if (Array.isArray(value)) {
         const length = value.length;
-        for (let i = 0; i < length; i++) partial[i] = str(i, value) || "null";
+        for (let i = 0; i < length; i++) partial[i] = strComplete(i, value) || "null";
         const v = length === 0 ? "[]" : gap ?
           "[\n" + gap + partial.join(",\n" + gap) + "\n" + mind + "]" :
           "[" + partial.join(",") + "]";
@@ -59,7 +64,7 @@ function str(key, holder) {  // produce a string from holder[key]
         for (let i = 0; i < length; i++) {
           const k = rep[i];
           if (typeof k === "string") {
-            const v = str(k, value);
+            const v = strComplete(k, value);
             if (v) partial[j++] = quote(k) + (gap ? ": " : ":") + v;
           }
         }
@@ -67,13 +72,11 @@ function str(key, holder) {  // produce a string from holder[key]
       } else {  // otherwise, iterate through all the keys in the object
         for (const k in value) {
           if (hasOwnProp.call(value, k)) {
-            const v = str(k, value);
+            const v = strComplete(k, value);
             if (v) partial[j++] = quote(k) + (gap ? ": " : ":") + v;
           }
         }
       }
-
-      // join all of the member texts together, separated with commas, and wrap them in braces
 
       const v = j === 0 ? "{}" : gap ?
         "{\n" + gap + partial.join(",\n" + gap) + "\n" + mind + "}" :
@@ -82,9 +85,54 @@ function str(key, holder) {  // produce a string from holder[key]
       gap = mind;
       return v;
 
-    default:  // including numbers and anything else
+    case "number":
+      return isFinite(value) ? String(value) : "null";
+
+    default:
       if (numRep) return numRep(value);
-      if (typeofValue === 'number') return isFinite(value) ? String(value) : "null";
+  }
+}
+
+// this version is faster where there's no indentation and no replacer
+function strQuick(key, holder) {  // produce a string from holder[key]
+  let value = holder[key];
+  if (value && typeof value === "object" && typeof value.toJSON === "function") value = value.toJSON(key);
+
+  const typeofValue = typeof value;
+  switch (typeofValue) {
+    case "string":
+      return quote(value);
+
+    case "boolean":
+      return String(value);
+
+    case "object":
+      if (!value) return "null";
+
+      const partial = [];
+
+      if (Array.isArray(value)) {
+        const length = value.length;
+        for (let i = 0; i < length; i++) partial[i] = strQuick(i, value) || "null";
+        const v = "[" + partial.join(",") + "]";
+        return v;
+      }
+
+      let j = 0;
+      for (const k in value) {
+        if (hasOwnProp.call(value, k)) {
+          const v = strQuick(k, value);
+          if (v) partial[j++] = quote(k) + ":" + v;
+        }
+      }
+      const v = "{" + partial.join(",") + "}";
+      return v;
+
+    case "number":
+      return isFinite(value) ? String(value) : "null";
+
+    default:
+      if (numRep) return numRep(value);
   }
 }
 
@@ -102,5 +150,7 @@ export function stringify(value, replacer, space, numericReplacer) {
 
   numRep = numericReplacer;
 
-  return str("", { "": value });
+  return rep || indent ?
+    strComplete("", { "": value }) :
+    strQuick("", { "": value });
 };
