@@ -204,7 +204,7 @@ if (!perfOnly) {
   console.log(col.bold(`Running JSON.stringify comparison tests ...`));
 
   function compare(filename, obj, trueFn, trueFnName, testFn, testFnName) {
-    for (const replacer of [undefined, ['a', 'x', 'users'], (k, v) => v + v]) {
+    for (const replacer of [undefined, ['a', 'x', 'users'], (k, v) => v + v, /./]) {
       for (const indent of [undefined, 2, '\t', '--']) {
         const trueResult = trueFn(obj, replacer, indent);
         const testResult = testFn(obj, replacer, indent);
@@ -221,10 +221,26 @@ if (!perfOnly) {
     }
   }
 
-  for (const filename of filenames) {
-    if (/^[niz]_/.test(filename)) continue;
-    const json = fs.readFileSync(path.join(folderPath, filename), 'utf8');
-    const obj = JSON.parse(json);
+  class X {
+    #a = 1;
+    b = 2;
+  }
+
+  for (const filename of [...filenames, null]) {
+    let obj;
+
+    if (filename === null) {
+      obj = {
+        a: 0, b: "", c: null, d: undefined, e: new Date(), f: /./, g: X, h: new X(), i: 1 + undefined, j: Infinity,
+        k: [0, "", null, undefined, new Date(), /./, X, new X(), 1 + undefined, Infinity]
+      };
+
+    } else {
+      if (/^[niz]_/.test(filename)) continue;
+      const json = fs.readFileSync(path.join(folderPath, filename), 'utf8');
+      obj = JSON.parse(json);
+    }
+
     compare(filename, obj, JSON.stringify, 'JSON.stringify', stringify, 'stringify');
   }
 

@@ -2,7 +2,6 @@
 
 const escapableTest = /["\\\u0000-\u001f]/;
 const escapableReplace = /["\\\u0000-\u001f]/g;
-const hasOwnProp = Object.prototype.hasOwnProperty;
 
 let
   gap,
@@ -25,15 +24,62 @@ function quote(s) {
     '"' + s + '"';
 }
 
-// this version supports indentation and the replacer function
-function strComplete(key, holder) {  // produce a string from holder[key]
-  let mind = gap;
+function strFuncRepNoIndent(key, holder) {  // produce a string from holder[key]
   let value = holder[key];
+  let typeofValue = typeof value;
+  if (value && typeofValue === "object" && typeof value.toJSON === "function") value = value.toJSON(key);
 
-  if (value && typeof value === "object" && typeof value.toJSON === "function") value = value.toJSON(key);
-  if (repIsFunc) value = rep.call(holder, key, value);
+  value = rep.call(holder, key, value);
+  typeofValue = typeof value;
 
-  const typeofValue = typeof value;
+  switch (typeofValue) {
+    case "string":
+      return quote(value);
+
+    case "boolean":
+      return String(value);
+
+    case "object":
+      if (!value) return "null";
+
+      const partial = [];
+
+      if (Array.isArray(value)) {
+        const length = value.length;
+        for (let i = 0; i < length; i++) partial[i] = strFuncRepNoIndent(i, value) || "null";
+        const v = "[" + partial.join(",") + "]";
+        return v;
+      }
+
+      let j = 0;
+      const keys = Object.keys(value);
+      const length = keys.length;
+      for (let i = 0; i < length; i++) {
+        const k = keys[i];
+        const v = strFuncRepNoIndent(k, value);
+        if (v) partial[j++] = quote(k) + ":" + v;
+      }
+      const v = "{" + partial.join(",") + "}";
+      return v;
+
+    case "number":
+      return isFinite(value) ? String(value) : "null";
+
+    default:
+      if (numRep) return numRep(value);
+  }
+}
+
+function strFuncRepIndent(key, holder) {  // produce a string from holder[key]
+  let mind = gap;
+
+  let value = holder[key];
+  let typeofValue = typeof value;
+  if (value && typeofValue === "object" && typeof value.toJSON === "function") value = value.toJSON(key);
+
+  value = rep.call(holder, key, value);
+  typeofValue = typeof value;
+
   switch (typeofValue) {
     case "string":
       return quote(value);
@@ -49,38 +95,25 @@ function strComplete(key, holder) {  // produce a string from holder[key]
 
       if (Array.isArray(value)) {
         const length = value.length;
-        for (let i = 0; i < length; i++) partial[i] = strComplete(i, value) || "null";
-        const v = length === 0 ? "[]" : gap ?
-          "[\n" + gap + partial.join(",\n" + gap) + "\n" + mind + "]" :
-          "[" + partial.join(",") + "]";
+        for (let i = 0; i < length; i++) partial[i] = strFuncRepIndent(i, value) || "null";
+        const v = length === 0 ? "[]" :
+          "[\n" + gap + partial.join(",\n" + gap) + "\n" + mind + "]";
 
         gap = mind;
         return v;
       }
 
       let j = 0;
-      if (repIsArr) {  // if the replacer is an array, use it to select the members to be stringified
-        const length = rep.length;
-        for (let i = 0; i < length; i++) {
-          const k = rep[i];
-          if (typeof k === "string") {
-            const v = strComplete(k, value);
-            if (v) partial[j++] = quote(k) + (gap ? ": " : ":") + v;
-          }
-        }
-
-      } else {  // otherwise, iterate through all the keys in the object
-        for (const k in value) {
-          if (hasOwnProp.call(value, k)) {
-            const v = strComplete(k, value);
-            if (v) partial[j++] = quote(k) + (gap ? ": " : ":") + v;
-          }
-        }
+      const keys = Object.keys(value);
+      const length = keys.length;
+      for (let i = 0; i < length; i++) {
+        const k = keys[i];
+        const v = strFuncRepIndent(k, value);
+        if (v) partial[j++] = quote(k) + ": " + v;
       }
 
-      const v = j === 0 ? "{}" : gap ?
-        "{\n" + gap + partial.join(",\n" + gap) + "\n" + mind + "}" :
-        "{" + partial.join(",") + "}";
+      const v = j === 0 ? "{}" :
+        "{\n" + gap + partial.join(",\n" + gap) + "\n" + mind + "}";
 
       gap = mind;
       return v;
@@ -93,12 +126,14 @@ function strComplete(key, holder) {  // produce a string from holder[key]
   }
 }
 
-// this version is faster where there's no indentation and no replacer
-function strQuick(key, holder) {  // produce a string from holder[key]
+function strArrRepNoIndent(key, holder) {  // produce a string from holder[key]
   let value = holder[key];
-  if (value && typeof value === "object" && typeof value.toJSON === "function") value = value.toJSON(key);
+  let typeofValue = typeof value;
+  if (value && typeofValue === "object" && typeof value.toJSON === "function") {
+    value = value.toJSON(key);
+    typeofValue = typeof value;
+  }
 
-  const typeofValue = typeof value;
   switch (typeofValue) {
     case "string":
       return quote(value);
@@ -113,15 +148,17 @@ function strQuick(key, holder) {  // produce a string from holder[key]
 
       if (Array.isArray(value)) {
         const length = value.length;
-        for (let i = 0; i < length; i++) partial[i] = strQuick(i, value) || "null";
+        for (let i = 0; i < length; i++) partial[i] = strArrRepNoIndent(i, value) || "null";
         const v = "[" + partial.join(",") + "]";
         return v;
       }
 
       let j = 0;
-      for (const k in value) {
-        if (hasOwnProp.call(value, k)) {
-          const v = strQuick(k, value);
+      const length = rep.length;
+      for (let i = 0; i < length; i++) {
+        const k = rep[i];
+        if (typeof k === "string") {
+          const v = strArrRepNoIndent(k, value);
           if (v) partial[j++] = quote(k) + ":" + v;
         }
       }
@@ -136,21 +173,180 @@ function strQuick(key, holder) {  // produce a string from holder[key]
   }
 }
 
+function strArrRepIndent(key, holder) {  // produce a string from holder[key]
+  let mind = gap;
+
+  let value = holder[key];
+  let typeofValue = typeof value;
+  if (value && typeofValue === "object" && typeof value.toJSON === "function") {
+    value = value.toJSON(key);
+    typeofValue = typeof value;
+  }
+
+  switch (typeofValue) {
+    case "string":
+      return quote(value);
+
+    case "boolean":
+      return String(value);
+
+    case "object":
+      if (!value) return "null";
+
+      gap += indent;
+      const partial = [];
+
+      if (Array.isArray(value)) {
+        const length = value.length;
+        for (let i = 0; i < length; i++) partial[i] = strArrRepIndent(i, value) || "null";
+        const v = length === 0 ? "[]" :
+          "[\n" + gap + partial.join(",\n" + gap) + "\n" + mind + "]";
+
+        gap = mind;
+        return v;
+      }
+
+      let j = 0;
+      const length = rep.length;
+      for (let i = 0; i < length; i++) {
+        const k = rep[i];
+        if (typeof k === "string") {
+          const v = strArrRepIndent(k, value);
+          if (v) partial[j++] = quote(k) + ": " + v;
+        }
+      }
+
+      const v = j === 0 ? "{}" :
+        "{\n" + gap + partial.join(",\n" + gap) + "\n" + mind + "}";
+
+      gap = mind;
+      return v;
+
+    case "number":
+      return isFinite(value) ? String(value) : "null";
+
+    default:
+      if (numRep) return numRep(value);
+  }
+}
+
+function strNoRepNoIndent(key, holder) {  // produce a string from holder[key]
+  let value = holder[key];
+  let typeofValue = typeof value;
+  if (value && typeofValue === "object" && typeof value.toJSON === "function") {
+    value = value.toJSON(key);
+    typeofValue = typeof value;
+  }
+
+  switch (typeofValue) {
+    case "string":
+      return quote(value);
+
+    case "boolean":
+      return String(value);
+
+    case "object":
+      if (!value) return "null";
+
+      const partial = [];
+
+      if (Array.isArray(value)) {
+        const length = value.length;
+        for (let i = 0; i < length; i++) partial[i] = strNoRepNoIndent(i, value) || "null";
+        const v = "[" + partial.join(",") + "]";
+        return v;
+      }
+
+      let j = 0;
+      const keys = Object.keys(value);
+      const length = keys.length;
+      for (let i = 0; i < length; i++) {
+        const k = keys[i];
+        const v = strNoRepNoIndent(k, value);
+        if (v) partial[j++] = quote(k) + ":" + v;
+      }
+      const v = "{" + partial.join(",") + "}";
+      return v;
+
+    case "number":
+      return isFinite(value) ? String(value) : "null";
+
+    default:
+      if (numRep) return numRep(value);
+  }
+}
+
+function strNoRepIndent(key, holder) {  // produce a string from holder[key]
+  let mind = gap;
+  let value = holder[key];
+  let typeofValue = typeof value;
+  if (value && typeofValue === "object" && typeof value.toJSON === "function") {
+    value = value.toJSON(key);
+    typeofValue = typeof value;
+  }
+
+  switch (typeofValue) {
+    case "string":
+      return quote(value);
+
+    case "boolean":
+      return String(value);
+
+    case "object":
+      if (!value) return "null";
+
+      gap += indent;
+      const partial = [];
+
+      if (Array.isArray(value)) {
+        const length = value.length;
+        for (let i = 0; i < length; i++) partial[i] = strNoRepIndent(i, value) || "null";
+        const v = length === 0 ? "[]" :
+          "[\n" + gap + partial.join(",\n" + gap) + "\n" + mind + "]";
+
+        gap = mind;
+        return v;
+      }
+
+      let j = 0;
+      const keys = Object.keys(value);
+      const length = keys.length;
+      for (let i = 0; i < length; i++) {
+        const k = keys[i];
+        const v = strNoRepIndent(k, value);
+        if (v) partial[j++] = quote(k) + ": " + v;
+      }
+
+      const v = j === 0 ? "{}" :
+        "{\n" + gap + partial.join(",\n" + gap) + "\n" + mind + "}";
+
+      gap = mind;
+      return v;
+
+    case "number":
+      return isFinite(value) ? String(value) : "null";
+
+    default:
+      if (numRep) return numRep(value);
+  }
+}
+
 export function stringify(value, replacer, space, numericReplacer) {
   gap = "";
   indent = "";
 
-  if (typeof space === "number") for (let i = 0; i < space; i++) indent += " ";
-  else if (typeof space === "string") indent = space;
+  const typeofSpace = typeof space;
+  if (typeofSpace === "number") for (let i = 0; i < space; i++) indent += " ";
+  else if (typeofSpace === "string") indent = space;
 
   rep = replacer;
   repIsFunc = typeof rep === "function";
   repIsArr = Array.isArray(rep);
-  if (rep && !repIsFunc && !repIsArr) throw new Error("Replacer must be function, array, or undefined");
+  if (rep && !repIsFunc && !repIsArr) rep = undefined;
 
   numRep = numericReplacer;
 
-  return rep || indent ?
-    strComplete("", { "": value }) :
-    strQuick("", { "": value });
+  return (indent ?
+    (rep ? (repIsArr ? strArrRepIndent : strFuncRepIndent) : strNoRepIndent) :
+    (rep ? (repIsArr ? strArrRepNoIndent : strFuncRepNoIndent) : strNoRepNoIndent))("", { "": value });
 };
