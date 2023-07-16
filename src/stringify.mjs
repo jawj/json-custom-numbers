@@ -3,7 +3,11 @@
 let gap, indent, rep, numRep;
 const escapableTest = /["\\\u0000-\u001f]/;
 
-function strFuncRepNoIndent(key, holder) {  // produce a string from holder[key]
+// to avoid unneccessary conditionals inside loops, 6 different core functions
+// are provided:
+// (no indent, indent) x (no replacer, array replacer, function replacer)
+
+function strFuncRepNoIndent(key, holder) {
   let value = holder[key];
   let typeofValue = typeof value;
   if (value && typeofValue === "object" && typeof value.toJSON === "function") value = value.toJSON(key);
@@ -52,7 +56,7 @@ function strFuncRepNoIndent(key, holder) {  // produce a string from holder[key]
   }
 }
 
-function strFuncRepIndent(key, holder) {  // produce a string from holder[key]
+function strFuncRepIndent(key, holder) {
   let mind = gap;
 
   let value = holder[key];
@@ -73,7 +77,7 @@ function strFuncRepIndent(key, holder) {  // produce a string from holder[key]
       if (!value) return "null";
 
       gap += indent;
-      
+
       if (Array.isArray(value)) {
         const length = value.length;
         if (length === 0) {
@@ -117,7 +121,7 @@ function strFuncRepIndent(key, holder) {  // produce a string from holder[key]
   }
 }
 
-function strArrRepNoIndent(key, holder) {  // produce a string from holder[key]
+function strArrRepNoIndent(key, holder) {
   let value = holder[key];
   let typeofValue = typeof value;
   if (value && typeofValue === "object" && typeof value.toJSON === "function") {
@@ -150,17 +154,14 @@ function strArrRepNoIndent(key, holder) {  // produce a string from holder[key]
       const length = rep.length;
       for (let i = 0; i < length; i++) {
         const k = rep[i];
-        if (typeof k === "string") {
-          const v = strArrRepNoIndent(k, value);
-          if (v) {
-            if (resultKeys) result += ",";
-            else resultKeys = true;
-            result += (escapableTest.test(k) ? JSON.stringify(k) : '"' + k + '"') + ":" + v;
-          }
+        const v = strArrRepNoIndent(k, value);
+        if (v) {
+          if (resultKeys) result += ",";
+          else resultKeys = true;
+          result += (escapableTest.test(k) ? JSON.stringify(k) : '"' + k + '"') + ":" + v;
         }
       }
-      result += "}";
-      return result;
+      return result + "}";
 
     case "number":
       return isFinite(value) ? String(value) : "null";
@@ -170,7 +171,7 @@ function strArrRepNoIndent(key, holder) {  // produce a string from holder[key]
   }
 }
 
-function strArrRepIndent(key, holder) {  // produce a string from holder[key]
+function strArrRepIndent(key, holder) {
   let mind = gap;
 
   let value = holder[key];
@@ -212,13 +213,11 @@ function strArrRepIndent(key, holder) {  // produce a string from holder[key]
       const length = rep.length;
       for (let i = 0; i < length; i++) {
         const k = rep[i];
-        if (typeof k === "string") {
-          const v = strArrRepIndent(k, value);
-          if (v) {
-            if (result) result += ",\n" + gap;
-            else result = "{\n" + gap;
-            result += (escapableTest.test(k) ? JSON.stringify(k) : '"' + k + '"') + ": " + v;
-          }
+        const v = strArrRepIndent(k, value);
+        if (v) {
+          if (result) result += ",\n" + gap;
+          else result = "{\n" + gap;
+          result += (escapableTest.test(k) ? JSON.stringify(k) : '"' + k + '"') + ": " + v;
         }
       }
       if (result) result += "\n" + mind + "}";
@@ -234,7 +233,7 @@ function strArrRepIndent(key, holder) {  // produce a string from holder[key]
   }
 }
 
-function strNoRepNoIndent(key, holder) {  // produce a string from holder[key]
+function strNoRepNoIndent(key, holder) {
   let value = holder[key];
   let typeofValue = typeof value;
   if (value && typeofValue === "object" && typeof value.toJSON === "function") {
@@ -244,6 +243,7 @@ function strNoRepNoIndent(key, holder) {  // produce a string from holder[key]
 
   switch (typeofValue) {
     case "string":
+      // note: stringifying is much slower than testing, so this helps if many strings don't need it
       return escapableTest.test(value) ? JSON.stringify(value) : '"' + value + '"';
 
     case "boolean":
@@ -283,7 +283,7 @@ function strNoRepNoIndent(key, holder) {  // produce a string from holder[key]
   }
 }
 
-function strNoRepIndent(key, holder) {  // produce a string from holder[key]
+function strNoRepIndent(key, holder) {
   let mind = gap;
   let value = holder[key];
   let typeofValue = typeof value;
@@ -358,6 +358,7 @@ export function stringify(value, replacer, space, numericReplacer) {
   rep = replacer;
   const repIsFunc = typeof rep === "function";
   const repIsArr = Array.isArray(rep);
+  if (repIsArr) rep = rep.filter(x => typeof x === 'string');
   if (rep && !repIsFunc && !repIsArr) rep = undefined;
 
   numRep = numericReplacer;
