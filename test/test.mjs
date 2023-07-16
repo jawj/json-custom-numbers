@@ -172,7 +172,7 @@ const perf = (reps, baseline, fn) => {
   return [result, t];
 };
 
-if (!confOnly && false) {
+if (!confOnly) {
   console.log(col.bold(`Running perf tests ...\n`));
   console.log(col.bold(`test               x   reps |  native |     this library |        crockford |      json-bigint |    lossless-json`));
 
@@ -244,6 +244,12 @@ if (!perfOnly) {
   }
 
   console.log(`\n${passes} passes, ${fails} fails\n`);
+
+  const bigInt = 9007199254740993n
+  const bigIntJSON = stringify(bigInt, undefined, undefined, x => { if (typeof x === 'bigint') return x.toString() });
+  console.log(bigIntJSON);
+  if (bigIntJSON === bigInt.toString()) console.log('Pass: BigInt stringified\n');
+  else console.log('Fail: BigInt stringify failed\n');
 
   if (fails > 0) process.exit(1);
 }

@@ -7,7 +7,7 @@ const escapableTest = /["\\\u0000-\u001f]/;
 // are provided:
 // (no indent, indent) x (no replacer, array replacer, function replacer)
 
-function strFuncRepNoIndent(key, holder) {
+function str_funcRep_noIndent(key, holder) {
   let value = holder[key];
   let typeofValue = typeof value;
   if (value && typeofValue === "object" && typeof value.toJSON === "function") value = value.toJSON(key);
@@ -30,7 +30,7 @@ function strFuncRepNoIndent(key, holder) {
         const length = value.length;
         for (let i = 0; i < length; i++) {
           if (i !== 0) result += ",";
-          result += strFuncRepNoIndent(i, value) || "null";
+          result += str_funcRep_noIndent(i, value) || "null";
         }
         return result + "]";
       }
@@ -40,7 +40,7 @@ function strFuncRepNoIndent(key, holder) {
       const length = keys.length;
       for (let i = 0; i < length; i++) {
         const k = keys[i];
-        const v = strFuncRepNoIndent(k, value);
+        const v = str_funcRep_noIndent(k, value);
         if (v) {
           if (i !== 0) result += ",";
           result += (escapableTest.test(k) ? JSON.stringify(k) : '"' + k + '"') + ":" + v;
@@ -53,10 +53,11 @@ function strFuncRepNoIndent(key, holder) {
 
     default:
       if (numRep) return numRep(value);
+      if (typeofValue === 'bigint') throw new TypeError('Do not know how to serialize a BigInt');
   }
 }
 
-function strFuncRepIndent(key, holder) {
+function str_funcRep_withIndent(key, holder) {
   let mind = gap;
 
   let value = holder[key];
@@ -87,7 +88,7 @@ function strFuncRepIndent(key, holder) {
         let result = "[\n" + gap;
         for (let i = 0; i < length; i++) {
           if (i !== 0) result += ",\n" + gap;
-          result += strFuncRepIndent(i, value) || "null";
+          result += str_funcRep_withIndent(i, value) || "null";
         }
         result += "\n" + mind + "]";
         gap = mind;
@@ -103,7 +104,7 @@ function strFuncRepIndent(key, holder) {
       let result = "{\n" + gap;
       for (let i = 0; i < length; i++) {
         const k = keys[i];
-        const v = strFuncRepIndent(k, value);
+        const v = str_funcRep_withIndent(k, value);
         if (v) {
           if (i !== 0) result += ",\n" + gap;
           result += (escapableTest.test(k) ? JSON.stringify(k) : '"' + k + '"') + ": " + v;
@@ -118,10 +119,11 @@ function strFuncRepIndent(key, holder) {
 
     default:
       if (numRep) return numRep(value);
+      if (typeofValue === 'bigint') throw new TypeError('Do not know how to serialize a BigInt');
   }
 }
 
-function strArrRepNoIndent(key, holder) {
+function str_arrRep_noIndent(key, holder) {
   let value = holder[key];
   let typeofValue = typeof value;
   if (value && typeofValue === "object" && typeof value.toJSON === "function") {
@@ -144,7 +146,7 @@ function strArrRepNoIndent(key, holder) {
         const length = value.length;
         for (let i = 0; i < length; i++) {
           if (i !== 0) result += ",";
-          result += strArrRepNoIndent(i, value) || "null";
+          result += str_arrRep_noIndent(i, value) || "null";
         }
         return result + "]";
       }
@@ -154,7 +156,7 @@ function strArrRepNoIndent(key, holder) {
       const length = rep.length;
       for (let i = 0; i < length; i++) {
         const k = rep[i];
-        const v = strArrRepNoIndent(k, value);
+        const v = str_arrRep_noIndent(k, value);
         if (v) {
           if (resultKeys) result += ",";
           else resultKeys = true;
@@ -168,10 +170,11 @@ function strArrRepNoIndent(key, holder) {
 
     default:
       if (numRep) return numRep(value);
+      if (typeofValue === 'bigint') throw new TypeError('Do not know how to serialize a BigInt');
   }
 }
 
-function strArrRepIndent(key, holder) {
+function str_arrRep_withIndent(key, holder) {
   let mind = gap;
 
   let value = holder[key];
@@ -202,7 +205,7 @@ function strArrRepIndent(key, holder) {
         let result = "[\n" + gap;
         for (let i = 0; i < length; i++) {
           if (i !== 0) result += ",\n" + gap;
-          result += strArrRepIndent(i, value) || "null";
+          result += str_arrRep_withIndent(i, value) || "null";
         }
         result += "\n" + mind + "]";
         gap = mind;
@@ -213,7 +216,7 @@ function strArrRepIndent(key, holder) {
       const length = rep.length;
       for (let i = 0; i < length; i++) {
         const k = rep[i];
-        const v = strArrRepIndent(k, value);
+        const v = str_arrRep_withIndent(k, value);
         if (v) {
           if (result) result += ",\n" + gap;
           else result = "{\n" + gap;
@@ -230,10 +233,11 @@ function strArrRepIndent(key, holder) {
 
     default:
       if (numRep) return numRep(value);
+      if (typeofValue === 'bigint') throw new TypeError('Do not know how to serialize a BigInt');
   }
 }
 
-function strNoRepNoIndent(key, holder) {
+function str_noRep_noIndent(key, holder) {
   let value = holder[key];
   let typeofValue = typeof value;
   if (value && typeofValue === "object" && typeof value.toJSON === "function") {
@@ -243,7 +247,6 @@ function strNoRepNoIndent(key, holder) {
 
   switch (typeofValue) {
     case "string":
-      // note: stringifying is much slower than testing, so this helps if many strings don't need it
       return escapableTest.test(value) ? JSON.stringify(value) : '"' + value + '"';
 
     case "boolean":
@@ -257,7 +260,7 @@ function strNoRepNoIndent(key, holder) {
         const length = value.length;
         for (let i = 0; i < length; i++) {
           if (i !== 0) result += ",";
-          result += strNoRepNoIndent(i, value) || "null";
+          result += str_noRep_noIndent(i, value) || "null";
         }
         return result + "]";
       }
@@ -267,7 +270,7 @@ function strNoRepNoIndent(key, holder) {
       const length = keys.length;
       for (let i = 0; i < length; i++) {
         const k = keys[i];
-        const v = strNoRepNoIndent(k, value);
+        const v = str_noRep_noIndent(k, value);
         if (v) {
           if (i !== 0) result += ",";
           result += (escapableTest.test(k) ? JSON.stringify(k) : '"' + k + '"') + ":" + v;
@@ -280,10 +283,11 @@ function strNoRepNoIndent(key, holder) {
 
     default:
       if (numRep) return numRep(value);
+      if (typeofValue === 'bigint') throw new TypeError('Do not know how to serialize a BigInt');
   }
 }
 
-function strNoRepIndent(key, holder) {
+function str_noRep_withIndent(key, holder) {
   let mind = gap;
   let value = holder[key];
   let typeofValue = typeof value;
@@ -313,7 +317,7 @@ function strNoRepIndent(key, holder) {
         let result = "[\n" + gap;
         for (let i = 0; i < length; i++) {
           if (i !== 0) result += ",\n" + gap;
-          result += strNoRepIndent(i, value) || "null";
+          result += str_noRep_withIndent(i, value) || "null";
         }
         result += "\n" + mind + "]";
         gap = mind;
@@ -329,7 +333,7 @@ function strNoRepIndent(key, holder) {
       let result = "{\n" + gap;
       for (let i = 0; i < length; i++) {
         const k = keys[i];
-        const v = strNoRepIndent(k, value);
+        const v = str_noRep_withIndent(k, value);
         if (v) {
           if (i !== 0) result += ",\n" + gap;
           result += (escapableTest.test(k) ? JSON.stringify(k) : '"' + k + '"') + ": " + v;
@@ -344,6 +348,7 @@ function strNoRepIndent(key, holder) {
 
     default:
       if (numRep) return numRep(value);
+      if (typeofValue === 'bigint') throw new TypeError('Do not know how to serialize a BigInt');
   }
 }
 
@@ -364,6 +369,6 @@ export function stringify(value, replacer, space, numericReplacer) {
   numRep = numericReplacer;
 
   return (indent ?
-    (rep ? (repIsArr ? strArrRepIndent : strFuncRepIndent) : strNoRepIndent) :
-    (rep ? (repIsArr ? strArrRepNoIndent : strFuncRepNoIndent) : strNoRepNoIndent))("", { "": value });
+    (rep ? (repIsArr ? str_arrRep_withIndent : str_funcRep_withIndent) : str_noRep_withIndent) :
+    (rep ? (repIsArr ? str_arrRep_noIndent : str_funcRep_noIndent) : str_noRep_noIndent))("", { "": value });
 };
