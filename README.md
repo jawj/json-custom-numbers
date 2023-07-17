@@ -48,6 +48,8 @@ On Node.js 20:
 
 Tests are included to compare the performance of this library, [Crockford's reference implementation]((https://github.com/douglascrockford/JSON-js/blob/03157639c7a7cddd2e9f032537f346f1a87c0f6d/json_parse.js)), and the [json-bigint](https://www.npmjs.com/package/json-bigint) and [lossless-json](https://www.npmjs.com/package/lossless-json) libraries against native `JSON.parse` across a range of inputs. Here's some example output, from Node.js 20.0 on a 2020 Intel MacBook Pro:
 
+**Lower numbers are better**
+
 ```
 test               x   reps |  native |     this library |        crockford |      json-bigint |    lossless-json
 01_typical_3kb     x  10000 |   128ms |   287ms  (x2.24) |   614ms  (x4.79) |   468ms  (x3.65) |   638ms  (x4.98)
@@ -65,6 +67,8 @@ test               x   reps |  native |     this library |        crockford |   
 ### Stringify
 
 The numbers for `stringify()` follow a more or less similar pattern, but performance differences between `JSON.stringify()`, this library and other libraries are generally smaller:
+
+**Lower numbers are better**
 
 ```
 test               x   reps |  native |     this library |        crockford |      json-bigint |    lossless-json
