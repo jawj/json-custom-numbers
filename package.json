@@ -1,12 +1,7 @@
 {
   "name": "json-custom-numbers",
-  "version": "2.0.11",
-  "description": "JSON parser enabling custom number parsing",
-  "exports": {
-    "types": "./dist/index.d.ts",
-    "require": "./dist/parse.js",
-    "import": "./dist/parse.mjs"
-  },
+  "version": "2.0.12",
+  "description": "JSON parser and stringifier for custom numbers (e.g. BigInt)",
   "files": [
     "./dist",
     "index.d.ts",
@@ -19,9 +14,9 @@
     "test": "node --expose-gc test/test.mjs",
     "testPerf": "node --expose-gc test/test.mjs --perf-only",
     "testConf": "node --expose-gc test/test.mjs --conf-only",
-    "buildCjs": "esbuild src/parse.mjs --platform=neutral --target=es6 --minify --line-limit=80 --format=cjs --outdir=dist",
-    "wrapEsm": "npx gen-esm-wrapper dist/parse.js dist/parse.mjs",
-    "build": "npm run test && npm run buildCjs && npm run wrapEsm"
+    "buildCjs": "esbuild src/*.mjs --platform=neutral --target=es6 --minify --line-limit=80 --format=cjs --outdir=dist",
+    "wrapEsm": "npx gen-esm-wrapper dist/index.js dist/index.mjs",
+    "build": "npm run testConf && npm run buildCjs && npm run wrapEsm"
   },
   "author": "George MacKerron",
   "license": "Public domain",
@@ -38,9 +33,14 @@
   },
   "keywords": [
     "json",
-    "bigint",
     "parse",
+    "stringify",
+    "numbers",
+    "bigint",
     "custom",
+    "lossless",
+    "performance",
+    "conformance",
     "crockford"
   ]
 }

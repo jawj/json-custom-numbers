@@ -1,7 +1,15 @@
+/*
+  2023-07-17 / George MacKerron (mackerron.com)
+  Based on https://github.com/douglascrockford/JSON-js/blob/03157639c7a7cddd2e9f032537f346f1a87c0f6d/json2.js
+  Public Domain
+  NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
+*/
+
 "use strict";
 
 let gap, indent, rep, numRep;
 const escapableTest = /["\\\u0000-\u001f]/;
+const bigIntErrMsg = "Do not know how to serialize a BigInt";
 
 // to avoid unneccessary conditionals inside loops, 6 different core functions
 // are provided:
@@ -14,6 +22,9 @@ function str_funcRep_noIndent(key, holder) {
 
   value = rep.call(holder, key, value);
   typeofValue = typeof value;
+
+  let custom;
+  if (numRep && (custom = numRep(value, typeofValue)) !== undefined) return custom;
 
   switch (typeofValue) {
     case "string":
@@ -51,9 +62,8 @@ function str_funcRep_noIndent(key, holder) {
     case "number":
       return isFinite(value) ? String(value) : "null";
 
-    default:
-      if (numRep) return numRep(value);
-      if (typeofValue === 'bigint') throw new TypeError('Do not know how to serialize a BigInt');
+    case "bigint":
+      throw new TypeError(bigIntErrMsg);
   }
 }
 
@@ -66,6 +76,9 @@ function str_funcRep_withIndent(key, holder) {
 
   value = rep.call(holder, key, value);
   typeofValue = typeof value;
+
+  let custom;
+  if (numRep && (custom = numRep(value, typeofValue)) !== undefined) return custom;
 
   switch (typeofValue) {
     case "string":
@@ -117,9 +130,8 @@ function str_funcRep_withIndent(key, holder) {
     case "number":
       return isFinite(value) ? String(value) : "null";
 
-    default:
-      if (numRep) return numRep(value);
-      if (typeofValue === 'bigint') throw new TypeError('Do not know how to serialize a BigInt');
+    case "bigint":
+      throw new TypeError(bigIntErrMsg);
   }
 }
 
@@ -130,6 +142,9 @@ function str_arrRep_noIndent(key, holder) {
     value = value.toJSON(key);
     typeofValue = typeof value;
   }
+
+  let custom;
+  if (numRep && (custom = numRep(value, typeofValue)) !== undefined) return custom;
 
   switch (typeofValue) {
     case "string":
@@ -168,9 +183,8 @@ function str_arrRep_noIndent(key, holder) {
     case "number":
       return isFinite(value) ? String(value) : "null";
 
-    default:
-      if (numRep) return numRep(value);
-      if (typeofValue === 'bigint') throw new TypeError('Do not know how to serialize a BigInt');
+    case "bigint":
+      throw new TypeError(bigIntErrMsg);
   }
 }
 
@@ -183,6 +197,9 @@ function str_arrRep_withIndent(key, holder) {
     value = value.toJSON(key);
     typeofValue = typeof value;
   }
+
+  let custom;
+  if (numRep && (custom = numRep(value, typeofValue)) !== undefined) return custom;
 
   switch (typeofValue) {
     case "string":
@@ -231,9 +248,8 @@ function str_arrRep_withIndent(key, holder) {
     case "number":
       return isFinite(value) ? String(value) : "null";
 
-    default:
-      if (numRep) return numRep(value);
-      if (typeofValue === 'bigint') throw new TypeError('Do not know how to serialize a BigInt');
+    case "bigint":
+      throw new TypeError(bigIntErrMsg);
   }
 }
 
@@ -244,6 +260,9 @@ function str_noRep_noIndent(key, holder) {
     value = value.toJSON(key);
     typeofValue = typeof value;
   }
+
+  let custom;
+  if (numRep && (custom = numRep(value, typeofValue)) !== undefined) return custom;
 
   switch (typeofValue) {
     case "string":
@@ -281,9 +300,8 @@ function str_noRep_noIndent(key, holder) {
     case "number":
       return isFinite(value) ? String(value) : "null";
 
-    default:
-      if (numRep) return numRep(value);
-      if (typeofValue === 'bigint') throw new TypeError('Do not know how to serialize a BigInt');
+    case "bigint":
+      throw new TypeError(bigIntErrMsg);
   }
 }
 
@@ -295,6 +313,9 @@ function str_noRep_withIndent(key, holder) {
     value = value.toJSON(key);
     typeofValue = typeof value;
   }
+
+  let custom;
+  if (numRep && (custom = numRep(value, typeofValue)) !== undefined) return custom;
 
   switch (typeofValue) {
     case "string":
@@ -346,9 +367,8 @@ function str_noRep_withIndent(key, holder) {
     case "number":
       return isFinite(value) ? String(value) : "null";
 
-    default:
-      if (numRep) return numRep(value);
-      if (typeofValue === 'bigint') throw new TypeError('Do not know how to serialize a BigInt');
+    case "bigint":
+      throw new TypeError(bigIntErrMsg);
   }
 }
 

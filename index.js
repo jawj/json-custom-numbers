@@ -1,1 +1,1 @@
-module.exports = require('./dist/parse');
+module.exports = require('./dist/index.js');

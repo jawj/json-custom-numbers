@@ -1,1 +1,1 @@
-export * from './dist/parse.mjs';
+export * from './dist/index.mjs';
