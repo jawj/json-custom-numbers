@@ -1,3 +1,12 @@
+
+import { parse as parseNonRec } from '../src/parseNonRecursive.mjs';
+
+const str = `{"a": 12.12, "b": [true, false, null], "c": "x \\uabcd jabberwocky\\n", "d": { "e": 1, "f": 2 }, "x" }`;
+console.log(str);
+console.log(parseNonRec(str));
+//console.log(parseNonRec('['.repeat(100000) + ']'.repeat(100000)));
+//process.exit()
+
 import fs from 'fs';
 import path from 'path';
 import col from 'colors/safe.js';
@@ -183,13 +192,16 @@ if (!confOnly) {
     const reps = Number(repsStr);
 
     const [baselineResult, t] = perf(reps, null, () => JSON.parse(json));
+    
     const [parseResult] = perf(reps, t, () => parse(json));
+    const [parseNonRecResult] = perf(reps, t, () => parseNonRec(json));
+
     const [crockfordResult] = perf(reps, t, () => parseCrockford(json));
     const [bigIntResult] = perf(reps, t, () => parseBigInt(json));
     const [losslessResult] = perf(reps, t, () => parseLossless(json, undefined, s => parseFloat(s)));
 
     const title = `${ljust(name, 18)} x ${rjust(repsStr, 6)}`;
-    console.log(`${title} | ${baselineResult} | ${parseResult} | ${crockfordResult} | ${bigIntResult} | ${losslessResult}`);
+    console.log(`${title} | ${baselineResult} | ${parseResult} | ${crockfordResult} | ${bigIntResult} | ${losslessResult} | ${parseNonRecResult}`);
   }
 
   console.log();
