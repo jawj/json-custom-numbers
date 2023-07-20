@@ -1,22 +1,12 @@
 "use strict";
 export class JSONParseError extends Error {
 }
-const go = 0, ok = 1, firstokey = 2, okey = 3, ocolon = 4, ovalue = 5, ocomma = 6, firstavalue = 7, avalue = 8, acomma = 9, tab = 9, newline = 10, quote = 34, comma = 44, colon = 58, opensquare = 91, closesquare = 93, backslash = 92, f = 102, n = 110, t = 116, u = 117, openbrace = 123, closebrace = 125, stringChunkRegExp = /[^"\\\u0000-\u001f]*/y, wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y, x = "", escapes = [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, '"', x, x, x, x, x, x, x, x, x, x, x, x, "/", x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, "\\", x, x, x, x, x, "\b", x, x, x, "\f", x, x, x, x, x, x, x, "\n", x, x, x, "\r", x, "	"], y = 65536, hexLookup1 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 4096, 8192, 12288, 16384, 20480, 24576, 28672, 32768, 36864, y, y, y, y, y, y, y, 40960, 45056, 49152, 53248, 57344, 61440, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 40960, 45056, 49152, 53248, 57344, 61440]), hexLookup2 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 256, 512, 768, 1024, 1280, 1536, 1792, 2048, 2304, y, y, y, y, y, y, y, 2560, 2816, 3072, 3328, 3584, 3840, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 2560, 2816, 3072, 3328, 3584, 3840]), hexLookup3 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 16, 32, 48, 64, 80, 96, 112, 128, 144, y, y, y, y, y, y, y, 160, 176, 192, 208, 224, 240, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 160, 176, 192, 208, 224, 240]), hexLookup4 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, y, y, y, y, y, y, y, 10, 11, 12, 13, 14, 15, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 10, 11, 12, 13, 14, 15]);
+const stringChunkRegExp = /[^"\\\u0000-\u001f]*/y, wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y, x = "", escapes = [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, '"', x, x, x, x, x, x, x, x, x, x, x, x, "/", x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, "\\", x, x, x, x, x, "\b", x, x, x, "\f", x, x, x, x, x, x, x, "\n", x, x, x, "\r", x, "	"], noKey = "", noContainer = [], y = 65536, hexLookup1 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 4096, 8192, 12288, 16384, 20480, 24576, 28672, 32768, 36864, y, y, y, y, y, y, y, 40960, 45056, 49152, 53248, 57344, 61440, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 40960, 45056, 49152, 53248, 57344, 61440]), hexLookup2 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 256, 512, 768, 1024, 1280, 1536, 1792, 2048, 2304, y, y, y, y, y, y, y, 2560, 2816, 3072, 3328, 3584, 3840, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 2560, 2816, 3072, 3328, 3584, 3840]), hexLookup3 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 16, 32, 48, 64, 80, 96, 112, 128, 144, y, y, y, y, y, y, y, 160, 176, 192, 208, 224, 240, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 160, 176, 192, 208, 224, 240]), hexLookup4 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, y, y, y, y, y, y, y, 10, 11, 12, 13, 14, 15, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 10, 11, 12, 13, 14, 15]);
 export function parse(text) {
-  let at = 0;
-  let ch;
-  let state = go;
-  const stack = [];
-  let depth = 0;
-  let container;
-  let key;
-  let value;
+  const containerStack = [], keyStack = [], stateStack = [];
+  let at = 0, ch, state = 0, depth = 0, container, key, value;
   function error(m) {
     return new JSONParseError(m + "\nAt character " + at + " in JSON: " + text);
-  }
-  ;
-  function chDesc(prefix) {
-    return ch >= 0 ? "'" + (prefix || "") + String.fromCharCode(ch) + "'" : "end of input";
   }
   parseloop:
     for (; ; ) {
@@ -24,28 +14,28 @@ export function parse(text) {
         ch = text.charCodeAt(at++);
       } while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
       switch (ch) {
-        case comma:
+        case 44:
           switch (state) {
-            case ocomma:
+            case 6:
               container[key] = value;
-              state = okey;
+              state = 3;
               continue;
-            case acomma:
+            case 9:
               container.push(value);
-              state = avalue;
+              state = 8;
               continue;
             default:
               throw error("Unexpected comma");
           }
-        case colon:
+        case 58:
           switch (state) {
-            case ocolon:
-              state = ovalue;
+            case 4:
+              state = 5;
               continue;
             default:
               throw error("Unexpected colon");
           }
-        case quote:
+        case 34:
           value = "";
           stringloop:
             for (; ; ) {
@@ -58,11 +48,11 @@ export function parse(text) {
               }
               ch = text.charCodeAt(at++);
               switch (ch) {
-                case quote:
+                case 34:
                   break stringloop;
-                case backslash:
+                case 92:
                   ch = text.charCodeAt(at++);
-                  if (ch === u) {
+                  if (ch === 117) {
                     const charCode = hexLookup1[text.charCodeAt(at++)] + hexLookup2[text.charCodeAt(at++)] + hexLookup3[text.charCodeAt(at++)] + hexLookup4[text.charCodeAt(at++)];
                     if (charCode < 65536) {
                       value += String.fromCharCode(charCode);
@@ -75,100 +65,111 @@ export function parse(text) {
                     value += esc;
                     continue;
                   }
-                  throw error("Invalid escape sequence " + chDesc("\\") + " in string");
+                  const chDesc = ch >= 0 ? "'\\" + String.fromCharCode(ch) + "'" : "end of input";
+                  throw error("Invalid escape sequence " + chDesc + " in string");
               }
               if (isNaN(ch))
                 throw error("Unterminated string");
-              const invalidChDesc = ch === newline ? "newline" : ch === tab ? "tab" : "control character";
+              const invalidChDesc = ch === 10 ? "newline" : ch === 9 ? "tab" : "control character";
               const hexRep = ch.toString(16);
               const paddedHexRep = "0000".slice(hexRep.length) + hexRep;
               throw error("Invalid unescaped " + invalidChDesc + " (\\u" + paddedHexRep + ") in string");
             }
           switch (state) {
-            case okey:
-            case firstokey:
+            case 3:
+            case 2:
               key = value;
-              state = ocolon;
+              state = 4;
               continue;
-            case ovalue:
-              state = ocomma;
+            case 5:
+              state = 6;
               continue;
-            case avalue:
-            case firstavalue:
-              state = acomma;
+            case 8:
+            case 7:
+              state = 9;
               continue;
-            case go:
-              state = ok;
+            case 0:
+              state = 1;
               continue;
             default:
               throw error("Unexpected quote");
           }
-        case openbrace:
+        case 123:
           switch (state) {
-            case ovalue:
-              stack[depth++] = { state: ocomma, container, key };
+            case 5:
+              stateStack[depth] = 6;
+              containerStack[depth] = container;
+              keyStack[depth++] = key;
               container = {};
-              state = firstokey;
+              state = 2;
               continue;
-            case avalue:
-            case firstavalue:
-              stack[depth++] = { state: acomma, container, key: void 0 };
+            case 8:
+            case 7:
+              stateStack[depth] = 9;
+              containerStack[depth] = container;
+              keyStack[depth++] = "";
               container = {};
-              state = firstokey;
+              state = 2;
               continue;
-            case go:
-              stack[depth++] = { state: ok, container: void 0, key: void 0 };
+            case 0:
+              stateStack[depth] = 1;
+              containerStack[depth] = noContainer;
+              keyStack[depth++] = noKey;
               container = {};
-              state = firstokey;
+              state = 2;
               continue;
             default:
               throw error("Unexpected opening brace");
           }
-        case closebrace:
+        case 125:
           switch (state) {
-            case ocomma:
+            case 6:
               container[key] = value;
-            case firstokey:
-              const prev = stack[--depth];
+            case 2:
               value = container;
-              container = prev.container;
-              key = prev.key;
-              state = prev.state;
+              container = containerStack[--depth];
+              key = keyStack[depth];
+              state = stateStack[depth];
               continue;
             default:
               throw error("Unexpected closing brace");
           }
-        case opensquare:
+        case 91:
           switch (state) {
-            case go:
-              stack[depth++] = { state: ok, container: void 0, key: void 0 };
+            case 5:
+              stateStack[depth] = 6;
+              containerStack[depth] = container;
+              keyStack[depth++] = key;
               container = [];
-              state = firstavalue;
+              state = 7;
               continue;
-            case ovalue:
-              stack[depth++] = { state: ocomma, container, key };
+            case 8:
+            case 7:
+              stateStack[depth] = 9;
+              containerStack[depth] = container;
+              keyStack[depth++] = noKey;
               container = [];
-              state = firstavalue;
+              state = 7;
               continue;
-            case firstavalue:
-            case avalue:
-              stack[depth++] = { state: acomma, container, key: void 0 };
+            case 0:
+              stateStack[depth] = 1;
+              containerStack[depth] = noContainer;
+              keyStack[depth++] = noKey;
               container = [];
-              state = firstavalue;
+              state = 7;
               continue;
             default:
               throw error("Unexpected opening square bracket");
           }
-        case closesquare:
+        case 93:
           switch (state) {
-            case acomma:
+            case 9:
               container.push(value);
-            case firstavalue:
-              const prev = stack[--depth];
+            case 7:
               value = container;
-              container = prev.container;
-              key = prev.key;
-              state = prev.state;
+              container = containerStack[--depth];
+              key = keyStack[depth];
+              state = stateStack[depth];
               continue;
             default:
               throw error("Unexpected closing square bracket");
@@ -182,29 +183,29 @@ export function parse(text) {
           if (!matched)
             throw error("Unexpected character or end of input");
           at = wordRegExp.lastIndex;
-          if (ch < f) {
+          if (ch < 102) {
             const str = text.slice(startAt, at);
             value = +str;
           } else {
-            value = ch === n ? null : ch === t;
+            value = ch === 110 ? null : ch === 116;
           }
           switch (state) {
-            case ovalue:
-              state = ocomma;
+            case 5:
+              state = 6;
               continue;
-            case firstavalue:
-            case avalue:
-              state = acomma;
+            case 8:
+            case 7:
+              state = 9;
               continue;
-            case go:
-              state = ok;
+            case 0:
+              state = 1;
               continue;
             default:
               throw error("Unexpected value");
           }
       }
     }
-  if (state !== ok)
+  if (state !== 1)
     throw error("Unexpected end of input");
   return value;
 }

@@ -1,12 +1,6 @@
 
 import { parse as parseStateMachine } from '../src/parseStateMachine.mjs';
 
-const str = `{"a": 12.12, "b": [true, false, null, [7,8,9] ], "c": "x \\uabcd jabberwocky\\n", "d": { "e": 1, "f": 2 }, "x": {}, "y": [] }`;
-console.log(str);
-console.log(parseStateMachine(str));
-//console.log(parseNonRec('['.repeat(100000) + ']'.repeat(100000)));
-//process.exit()
-
 import fs from 'fs';
 import path from 'path';
 import col from 'colors/safe.js';
