@@ -1,5 +1,5 @@
 
-import { parse as parseStateMachine } from '../src/parseStateMachineExtreme.mjs';
+import { parse as parseStateMachine } from '../src/parseStateMachineExtreme2.mjs';
 
 import fs from 'fs';
 import path from 'path';
@@ -102,7 +102,7 @@ if (!perfOnly) {
   console.log(col.bold(`\nRunning error messages test ...\n`));
 
   const testErr = (json, message) => {
-    return;
+    // return;
     let caught = undefined;
     try {
       parseStateMachine(json);
