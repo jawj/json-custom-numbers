@@ -116,33 +116,35 @@ if (!perfOnly) {
     }
   }
 
-  testErr('{', `Unexpected end of input when expecting first key in object`);
-  testErr('{x', `Unexpected token 'x' when expecting first key in object`);
+  testErr('{', `Unexpected end of input, expecting first key in object`);
+  testErr('{x', `Unexpected 'x', expecting first key in object`);
   testErr('{"x', `Unterminated string`);
-  testErr('{"x"', `Unexpected end of input when expecting colon`);
-  testErr('{"x":', `Unexpected end of input when expecting value in object`);
-  testErr('{"x":x', `Unexpected token 'x' when expecting value in object`);
-  testErr('{"x":1', `Expected ',' or '}' but got end of input after value in object`);
-  testErr('[', `Unterminated array`);
-  testErr('[1', `Expected ',' but got end of input after array element`);
-  testErr('[1x', `Expected ',' but got 'x' after array element`);
-  testErr('[1,', `Unterminated array`);
-  testErr('[1,x', `Unexpected character or end of input`);
+  testErr('{"x"', `Unexpected end of input, expecting ':'`);
+  testErr('{"x":', `Unexpected end of input, expecting value in object`);
+  testErr('{"x":x', `Unexpected 'x', expecting value in object`);
+  testErr('{"x":1', `Unexpected end of input, expecting ',' or '}' in object`);
+  testErr('[', `Unexpected end of input, expecting first value in array`);
+  testErr('[1', `Unexpected end of input, expecting ',' or ']' in array`);
+  testErr('[1x', `Unexpected 'x', expecting ',' or ']' in array`);
+  testErr('[1,', `Unexpected end of input, expecting value in array`);
+  testErr('[1,x', `Unexpected 'x', expecting value in array`);
   testErr('"abc', `Unterminated string`);
-  testErr('"\u0000', `Invalid unescaped control character (\\u0000) in string`);
-  testErr('"\n', `Invalid unescaped newline (\\u000a) in string`);
-  testErr('"\t', `Invalid unescaped tab (\\u0009) in string`);
+  testErr('"\u0000', `Invalid unescaped \\u0000 in string`);
+  testErr('"\n', `Invalid unescaped \\n in string`);
+  testErr('"\t', `Invalid unescaped \\t in string`);
   testErr('"\\u"', `Invalid \\uXXXX escape in string`);
   testErr('"\\uaaa"', `Invalid \\uXXXX escape in string`);
   testErr('"\\uaaag"', `Invalid \\uXXXX escape in string`);
-  testErr('"\\a"', `Invalid escape sequence '\\a' in string`);
-  testErr('"\\', `Invalid escape sequence '\\a' in string`);
-  testErr('~', `Unexpected character or end of input`);
-  testErr('[1,2,~]', `Unexpected character or end of input`);
-  testErr('.1', `Unexpected character or end of input`);
-  testErr('1.', `Unexpected data at end of input`);
-  testErr('01', `Unexpected data at end of input`);
-  testErr('[01]', `Expected ',' but got '1' after array element`);
+  testErr('"\\uaaa', `Invalid \\uXXXX escape in string`);
+  testErr('"\\a"', `Invalid escape sequence in string: '\\a'`);
+  testErr('"\\', `Invalid escape sequence in string: end of input`);
+  testErr('~', `Unexpected '~', expecting JSON value`);
+  testErr('[1,2,~]', `Unexpected '~', expecting value in array`);
+  testErr('.1', `Unexpected '.', expecting JSON value`);
+  testErr('1.', `Unexpected '.', expecting end of input`);
+  testErr('01', `Unexpected '1', expecting end of input`);
+  testErr('[01]', `Unexpected '1', expecting ',' or ']' in array`);
+  testErr('[1,\u0000]', `Unexpected \\u0000, expecting value in array`);
 
   if (fails > 0) process.exit(1);
 

@@ -15,7 +15,7 @@ const
   firstavalue = 7,  // ready for the first value of an array or an empty array
   avalue = 8,       // ready for the next value of an array
   acomma = 9,       // ready for a comma or closing ]
-  
+
   // char codes
   tab = 9,
   newline = 10,
@@ -65,6 +65,16 @@ const
   hexLookup3 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 16, 32, 48, 64, 80, 96, 112, 128, 144, y, y, y, y, y, y, y, 160, 176, 192, 208, 224, 240, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 160, 176, 192, 208, 224, 240]),
   hexLookup4 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, y, y, y, y, y, y, y, 10, 11, 12, 13, 14, 15, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 10, 11, 12, 13, 14, 15]);
 
+function chDesc(ch: number, prefix = '') {
+  if (!(ch >= 0)) return 'end of input';
+  if (ch > 31 && ch < 127) return `'${prefix}${String.fromCharCode(ch)}'`;
+  if (ch === newline) return '\\n';
+  if (ch === tab) return '\\t';
+  const hexRep = ch.toString(16);
+  const paddedHexRep = '0000'.slice(hexRep.length) + hexRep;
+  return `\\u${paddedHexRep}`;
+}
+
 export function parse(text: string) {
   const
     containerStack: (Record<string, any> | any[])[] = [],
@@ -82,10 +92,6 @@ export function parse(text: string) {
 
   function error(m: string) {
     return new JSONParseError(`${m}\nAt character ${at} in JSON: ${text}`);
-  }
-
-  function chDesc(prefix = '') {
-    return ch >= 0 ? `'${prefix}${String.fromCharCode(ch)}'` : 'end of input';
   }
 
   parseloop: for (; ;) {
@@ -153,16 +159,12 @@ export function parse(text: string) {
                 value += esc;
                 continue;
               }
-              throw error(`Invalid escape sequence in string: ${chDesc('\\')}`);
+              throw error(`Invalid escape sequence in string: ${chDesc(ch, '\\')}`);
           }
 
           // something is wrong
           if (isNaN(ch)) throw error('Unterminated string');
-
-          const invalidChDesc = ch === newline ? 'newline' : ch === tab ? 'tab' : 'control character';
-          const hexRep = ch.toString(16);
-          const paddedHexRep = '0000'.slice(hexRep.length) + hexRep;
-          throw error(`Invalid unescaped ${invalidChDesc} (\\u${paddedHexRep}) in string`);
+          throw error(`Invalid unescaped ${chDesc(ch)} in string`);
         }
 
         switch (state) {
@@ -278,7 +280,7 @@ export function parse(text: string) {
 
         wordRegExp.lastIndex = startAt;
         const matched = wordRegExp.test(text);
-        if (!matched) throw error(`Unexpected ${chDesc()}, expecting ${stateDescs[state]}`);
+        if (!matched) throw error(`Unexpected ${chDesc(ch)}, expecting ${stateDescs[state]}`);
 
         at = wordRegExp.lastIndex;
 

@@ -13,15 +13,25 @@ const stateDescs = [
   "value in array",
   "',' or ']' in array"
 ], stringChunkRegExp = /[^"\\\u0000-\u001f]*/y, wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y, x = "", escapes = [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, '"', x, x, x, x, x, x, x, x, x, x, x, x, "/", x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, "\\", x, x, x, x, x, "\b", x, x, x, "\f", x, x, x, x, x, x, x, "\n", x, x, x, "\r", x, "	"], noKey = "", noContainer = [], y = 65536, hexLookup1 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 4096, 8192, 12288, 16384, 20480, 24576, 28672, 32768, 36864, y, y, y, y, y, y, y, 40960, 45056, 49152, 53248, 57344, 61440, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 40960, 45056, 49152, 53248, 57344, 61440]), hexLookup2 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 256, 512, 768, 1024, 1280, 1536, 1792, 2048, 2304, y, y, y, y, y, y, y, 2560, 2816, 3072, 3328, 3584, 3840, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 2560, 2816, 3072, 3328, 3584, 3840]), hexLookup3 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 16, 32, 48, 64, 80, 96, 112, 128, 144, y, y, y, y, y, y, y, 160, 176, 192, 208, 224, 240, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 160, 176, 192, 208, 224, 240]), hexLookup4 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, y, y, y, y, y, y, y, 10, 11, 12, 13, 14, 15, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 10, 11, 12, 13, 14, 15]);
+function chDesc(ch, prefix = "") {
+  if (!(ch >= 0))
+    return "end of input";
+  if (ch > 31 && ch < 127)
+    return `'${prefix}${String.fromCharCode(ch)}'`;
+  if (ch === 10)
+    return "\\n";
+  if (ch === 9)
+    return "\\t";
+  const hexRep = ch.toString(16);
+  const paddedHexRep = "0000".slice(hexRep.length) + hexRep;
+  return `\\u${paddedHexRep}`;
+}
 export function parse(text) {
   const containerStack = [], keyStack = [], stateStack = [];
   let at = 0, ch, state = 0, depth = 0, container, key, value;
   function error(m) {
     return new JSONParseError(`${m}
 At character ${at} in JSON: ${text}`);
-  }
-  function chDesc(prefix = "") {
-    return ch >= 0 ? `'${prefix}${String.fromCharCode(ch)}'` : "end of input";
   }
   parseloop:
     for (; ; ) {
@@ -80,14 +90,11 @@ At character ${at} in JSON: ${text}`);
                     value += esc;
                     continue;
                   }
-                  throw error(`Invalid escape sequence in string: ${chDesc("\\")}`);
+                  throw error(`Invalid escape sequence in string: ${chDesc(ch, "\\")}`);
               }
               if (isNaN(ch))
                 throw error("Unterminated string");
-              const invalidChDesc = ch === 10 ? "newline" : ch === 9 ? "tab" : "control character";
-              const hexRep = ch.toString(16);
-              const paddedHexRep = "0000".slice(hexRep.length) + hexRep;
-              throw error(`Invalid unescaped ${invalidChDesc} (\\u${paddedHexRep}) in string`);
+              throw error(`Invalid unescaped ${chDesc(ch)} in string`);
             }
           switch (state) {
             case 3:
@@ -195,7 +202,7 @@ At character ${at} in JSON: ${text}`);
           wordRegExp.lastIndex = startAt;
           const matched = wordRegExp.test(text);
           if (!matched)
-            throw error(`Unexpected ${chDesc()}, expecting ${stateDescs[state]}`);
+            throw error(`Unexpected ${chDesc(ch)}, expecting ${stateDescs[state]}`);
           at = wordRegExp.lastIndex;
           if (ch < 102) {
             const str = text.slice(startAt, at);
