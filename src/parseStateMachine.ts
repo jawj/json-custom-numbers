@@ -15,6 +15,7 @@ const
   firstavalue = 7,  // ready for the first value of an array or an empty array
   avalue = 8,       // ready for the next value of an array
   acomma = 9,       // ready for a comma or closing ]
+  
   // char codes
   tab = 9,
   newline = 10,
@@ -83,7 +84,7 @@ export function parse(text: string) {
             state = okey;
             continue;
           case acomma:
-            (container as any[]).push(value);
+            container[container.length] = value;
             state = avalue;
             continue;
           default:
@@ -181,7 +182,7 @@ export function parse(text: string) {
           case firstavalue:
             stateStack[depth] = acomma;
             containerStack[depth] = container;
-            keyStack[depth++] = '';
+            keyStack[depth++] = noKey;
             container = {};
             state = firstokey;
             continue;
@@ -242,7 +243,7 @@ export function parse(text: string) {
       case closesquare:
         switch (state) {
           case acomma:
-            (container as any[]).push(value);
+            container[container.length] = value;
           // deliberate fall-through
           case firstavalue:
             value = container;
@@ -254,7 +255,7 @@ export function parse(text: string) {
             throw error('Unexpected closing square bracket');
         }
 
-      default:  // numbers, true, false, null
+      default:  // numbers (-0-9tfn), true, false, null
         if (!(ch >= 0)) break parseloop;  // end of input reached
 
         const startAt = at - 1;  // the first digit/letter was already consumed, so go back 1

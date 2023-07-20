@@ -21,7 +21,7 @@ export function parse(text) {
               state = 3;
               continue;
             case 9:
-              container.push(value);
+              container[container.length] = value;
               state = 8;
               continue;
             default:
@@ -107,7 +107,7 @@ export function parse(text) {
             case 7:
               stateStack[depth] = 9;
               containerStack[depth] = container;
-              keyStack[depth++] = "";
+              keyStack[depth++] = noKey;
               container = {};
               state = 2;
               continue;
@@ -164,7 +164,7 @@ export function parse(text) {
         case 93:
           switch (state) {
             case 9:
-              container.push(value);
+              container[container.length] = value;
             case 7:
               value = container;
               container = containerStack[--depth];
