@@ -163,7 +163,7 @@ export function parse(text: string) {
           }
 
           // something is wrong
-          if (isNaN(ch)) throw error('Unterminated string');
+          if (!(ch >= 0)) throw error('Unterminated string');
           throw error(`Invalid unescaped ${chDesc(ch)} in string`);
         }
 
@@ -274,13 +274,14 @@ export function parse(text: string) {
         }
 
       default:  // numbers, true, false, null
-        if (!(ch >= 0)) break parseloop;  // end of input reached
-
         const startAt = at - 1;  // the first digit/letter was already consumed, so go back 1
 
         wordRegExp.lastIndex = startAt;
         const matched = wordRegExp.test(text);
-        if (!matched) throw error(`Unexpected ${chDesc(ch)}, expecting ${stateDescs[state]}`);
+        if (!matched) {
+          if (!(ch >= 0)) break parseloop;  // end of input reached
+          throw error(`Unexpected ${chDesc(ch)}, expecting ${stateDescs[state]}`);
+        }
 
         at = wordRegExp.lastIndex;
 

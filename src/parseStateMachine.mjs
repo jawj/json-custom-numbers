@@ -92,7 +92,7 @@ At character ${at} in JSON: ${text}`);
                   }
                   throw error(`Invalid escape sequence in string: ${chDesc(ch, "\\")}`);
               }
-              if (isNaN(ch))
+              if (!(ch >= 0))
                 throw error("Unterminated string");
               throw error(`Invalid unescaped ${chDesc(ch)} in string`);
             }
@@ -196,13 +196,14 @@ At character ${at} in JSON: ${text}`);
               throw error(`Unexpected ']', expecting ${stateDescs[state]}`);
           }
         default:
-          if (!(ch >= 0))
-            break parseloop;
           const startAt = at - 1;
           wordRegExp.lastIndex = startAt;
           const matched = wordRegExp.test(text);
-          if (!matched)
+          if (!matched) {
+            if (!(ch >= 0))
+              break parseloop;
             throw error(`Unexpected ${chDesc(ch)}, expecting ${stateDescs[state]}`);
+          }
           at = wordRegExp.lastIndex;
           if (ch < 102) {
             const str = text.slice(startAt, at);
