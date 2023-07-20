@@ -4,6 +4,8 @@
 export class JSONParseError extends Error { }
 
 const
+  unfinished = Symbol("unfinished"),
+
   // these 'sticky' RegExps are used to parse (1) strings and (2) numbers, true/false and null
   stringChunkRegExp = /[^"\\\u0000-\u001f]*/y,
   wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y,
@@ -43,11 +45,12 @@ export function parse(text) {
   }
 
   do {
-    // consume whitespace
     do { ch = text.charCodeAt(at++) } while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
-    
+
     chswitch: switch (ch) {
       case 34 /* " */:
+        if (value !== undefined && value !== unfinished) throw error("Unexpected quote");
+
         value = "";
         for (; ;) {
           stringChunkRegExp.lastIndex = at;  // find next chunk without \ or " or invalid chars
@@ -94,8 +97,38 @@ export function parse(text) {
           const paddedHexRep = "0000".slice(hexRep.length) + hexRep;
           throw error("Invalid unescaped " + invalidChDesc + " (\\u" + paddedHexRep + ") in string");
         }
-        
+
+      case 44 /* , */:
+        if (value === undefined || value === unfinished) throw error("Unexpected comma (expecting value)");
+
+        if (state === 58 /* : */) {
+          parent[valueStack[--depth]] = value;
+          state = stateStack[depth];
+          value = unfinished;
+          break;
+        }
+
+        if (state === 91 /* [ */) {
+          parent.push(value);
+          value = unfinished;
+          break;
+        }
+
+        throw error("Unexpected comma");
+
+      case 58 /* : */:
+        if (state !== 123 /* { */) throw error("Unexpected colon");
+        if (typeof value !== 'string') throw error("Object key must be a string");
+
+        stateStack[depth] = state;
+        valueStack[depth++] = value;
+        state = ch;
+        value = unfinished;
+        break;
+
       case 123 /* { */:
+        if (value !== undefined && value !== unfinished) throw error("Unexpected opening brace");
+
         stateStack[depth] = state;
         valueStack[depth++] = parent;
         parent = {};
@@ -104,23 +137,24 @@ export function parse(text) {
         break;
 
       case 125 /* } */:
+        if (value === unfinished) throw error("Unexpected closing brace after comma or colon");
+
         if (state === 58 /* : */) {
           parent[valueStack[--depth]] = value;
           state = stateStack[depth];
+          value = undefined;
         }
 
-        if (state === 123 /* { */) {
-          value = parent;
-          parent = valueStack[--depth];
-          state = stateStack[depth];
+        if (value !== undefined) throw error("Unexpected closing brace after object key");
 
-        } else {
-          throw error('Unexpected }');
-        }
-
+        value = parent;
+        parent = valueStack[--depth];
+        state = stateStack[depth];
         break;
 
       case 91 /* [ */:
+        if (value !== undefined && value !== unfinished) throw error("Unexpected opening square bracket");
+
         stateStack[depth] = state;
         valueStack[depth++] = parent;
         parent = [];
@@ -129,56 +163,23 @@ export function parse(text) {
         break;
 
       case 93 /* ] */:
-        if (state === 91 /* [ */) {
-          if (value !== undefined) parent.push(value);
+        if (state !== 91 /* [ */) throw error("Unexpected closing square bracket");
+        if (value === unfinished) throw error("Unexpected closing square bracket after comma");
 
-          value = parent;
-          parent = valueStack[--depth];
-          state = stateStack[depth];
+        if (value !== undefined) parent.push(value);
 
-        } else {
-          throw error('Unexpected ]');
-        }
-        break;
-
-      case 44 /* , */:
-        if (undefined === value) {
-          throw error('Unexpected ,');
-
-        } else if (state === 58 /* : */) {
-          parent[valueStack[--depth]] = value;
-          state = stateStack[depth];
-          value = undefined;
-
-        } else if (state === 91 /* [ */) {
-          parent.push(value);
-          value = undefined;
-
-        } else {
-          throw error('Unexpected ,');
-        }
-        break;
-
-      case 58 /* : */:
-        if (state === 123 /* { */) {
-          if (typeof value !== 'string') throw error("Non-string object key");
-          stateStack[depth] = state;
-          valueStack[depth++] = value;
-          state = ch;
-          value = undefined;
-
-        } else {
-          throw error('Unexpected :');
-        }
+        value = parent;
+        parent = valueStack[--depth];
+        state = stateStack[depth];
         break;
 
       default:
-        const startAt = at - 1;  // the first digit/letter was already consumed, so go back 1
+        if (value !== undefined && value !== unfinished) throw error("Unexpected value");
 
+        const startAt = at - 1;  // the first digit/letter was already consumed, so go back 1
         wordRegExp.lastIndex = startAt;
         const matched = wordRegExp.test(text);
         if (!matched) throw error("Unexpected character or end of input");
-
         at = wordRegExp.lastIndex;
 
         if (ch < 102 /* f */) {  // has to be a number
@@ -189,10 +190,12 @@ export function parse(text) {
         } else {  // must be null/true/false
           value = ch === 110 /* n */ ? null : ch === 116 /* t */;
         }
-    }
 
-    // console.log('ch:', String.fromCharCode(ch), 'state:', String.fromCharCode(state), 'states:', stateStack.slice(0, depth).map(x => String.fromCharCode(x)), 'values:', valueStack.slice(0, depth), 'parent:', parent, 'result:', result);
+    }
   } while (depth !== 0);
+
+  do { ch = text.charCodeAt(at++) } while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
+  if (!isNaN(ch)) throw error("Unexpected trailing data after JSON value");
 
   return value;
 }
