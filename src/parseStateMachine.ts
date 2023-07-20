@@ -38,12 +38,12 @@ const
     'end of input',
     'first key in object',
     'key in object',
-    'colon',
+    "':'",
     'value in object',
-    'comma or closing brace for object',
+    "',' or '}' in object",
     'first value in array',
     'value in array',
-    'comma or closing bracket for array'
+    "',' or ']' in array"
   ],
 
   // these 'sticky' RegExps are used to parse (1) strings and (2) numbers, true/false and null
@@ -81,7 +81,11 @@ export function parse(text: string) {
     value;        // the current value
 
   function error(m: string) {
-    return new JSONParseError(m + "\nAt character " + at + " in JSON: " + text);
+    return new JSONParseError(`${m}\nAt character ${at} in JSON: ${text}`);
+  }
+
+  function chDesc(prefix = '') {
+    return ch >= 0 ? `'${prefix}${String.fromCharCode(ch)}'` : 'end of input';
   }
 
   parseloop: for (; ;) {
@@ -101,7 +105,7 @@ export function parse(text: string) {
             state = avalue;
             continue;
           default:
-            throw error('Unexpected comma');
+            throw error(`Unexpected ',', expecting ${stateDescs[state]}`);
         }
 
       case colon:
@@ -110,7 +114,7 @@ export function parse(text: string) {
             state = ovalue;
             continue;
           default:
-            throw error('Unexpected colon');
+            throw error(`Unexpected ':', expecting ${stateDescs[state]}`);
         }
 
       case quote:
@@ -149,8 +153,7 @@ export function parse(text: string) {
                 value += esc;
                 continue;
               }
-              const chDesc = ch >= 0 ? "'\\" + String.fromCharCode(ch) + "'" : 'end of input';
-              throw error('Invalid escape sequence ' + chDesc + ' in string');
+              throw error(`Invalid escape sequence in string: ${chDesc('\\')}`);
           }
 
           // something is wrong
@@ -159,7 +162,7 @@ export function parse(text: string) {
           const invalidChDesc = ch === newline ? 'newline' : ch === tab ? 'tab' : 'control character';
           const hexRep = ch.toString(16);
           const paddedHexRep = '0000'.slice(hexRep.length) + hexRep;
-          throw error('Invalid unescaped ' + invalidChDesc + ' (\\u' + paddedHexRep + ') in string');
+          throw error(`Invalid unescaped ${invalidChDesc} (\\u${paddedHexRep}) in string`);
         }
 
         switch (state) {
@@ -179,7 +182,7 @@ export function parse(text: string) {
             state = ok;
             continue;
           default:
-            throw error('Unexpected quote');
+            throw error(`Unexpected '"', expecting ${stateDescs[state]}`);
         }
 
       case openbrace:
@@ -207,7 +210,7 @@ export function parse(text: string) {
             state = firstokey;
             continue;
           default:
-            throw error('Unexpected opening brace');
+            throw error(`Unexpected '{', expecting ${stateDescs[state]}`);
         }
 
       case closebrace:
@@ -222,7 +225,7 @@ export function parse(text: string) {
             state = stateStack[depth];
             continue;
           default:
-            throw error('Unexpected closing brace');
+            throw error(`Unexpected '}', expecting ${stateDescs[state]}`);
         }
 
       case opensquare:
@@ -250,7 +253,7 @@ export function parse(text: string) {
             state = firstavalue;
             continue;
           default:
-            throw error('Unexpected opening square bracket');
+            throw error(`Unexpected '[', expecting ${stateDescs[state]}`);
         }
 
       case closesquare:
@@ -265,17 +268,17 @@ export function parse(text: string) {
             state = stateStack[depth];
             continue;
           default:
-            throw error('Unexpected closing square bracket');
+            throw error(`Unexpected ']', expecting ${stateDescs[state]}`);
         }
 
-      default:  // numbers (-0-9tfn), true, false, null
+      default:  // numbers, true, false, null
         if (!(ch >= 0)) break parseloop;  // end of input reached
 
         const startAt = at - 1;  // the first digit/letter was already consumed, so go back 1
 
         wordRegExp.lastIndex = startAt;
         const matched = wordRegExp.test(text);
-        if (!matched) throw error("Unexpected token '" + String.fromCharCode(ch) + "' when expecting " + stateDescs[state]);
+        if (!matched) throw error(`Unexpected ${chDesc()}, expecting ${stateDescs[state]}`);
 
         at = wordRegExp.lastIndex;
 
@@ -300,11 +303,11 @@ export function parse(text: string) {
             state = ok;
             continue;
           default:
-            throw error("Unexpected token '" + value + "' when expecting " + stateDescs[state]);
+            throw error(`Unexpected '${value}', expecting ${stateDescs[state]}`);
         }
     }
   }
 
-  if (state !== ok) throw error('Unexpected end of input when expecting ' + stateDescs[state]);
+  if (state !== ok) throw error(`Unexpected end of input, expecting ${stateDescs[state]}`);
   return value;
 }

@@ -1,10 +1,10 @@
 
-import { parse as parseStateMachine } from '../src/parseStateMachineExtreme2.mjs';
+import { parse as parseStateMachine } from '../src/parseStateMachine.mjs';
 
 import fs from 'fs';
 import path from 'path';
 import col from 'colors/safe.js';
-import { parse } from '../src/parseStateMachine.mjs';
+import { parse } from '../src/parse.mjs';
 import { stringify } from '../src/stringify.mjs';
 import { parse as parseCrockford } from './test_comparison/crockford_parse.mjs';
 import { stringify as stringifyCrockford } from './test_comparison/crockford_stringify.mjs';
@@ -136,6 +136,7 @@ if (!perfOnly) {
   testErr('"\\uaaa"', `Invalid \\uXXXX escape in string`);
   testErr('"\\uaaag"', `Invalid \\uXXXX escape in string`);
   testErr('"\\a"', `Invalid escape sequence '\\a' in string`);
+  testErr('"\\', `Invalid escape sequence '\\a' in string`);
   testErr('~', `Unexpected character or end of input`);
   testErr('[1,2,~]', `Unexpected character or end of input`);
   testErr('.1', `Unexpected character or end of input`);
