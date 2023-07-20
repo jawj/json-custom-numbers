@@ -33,6 +33,19 @@ const
   closebrace = 125,
   /* </cut> */
 
+  stateDescs = [
+    'JSON value',
+    'end of input',
+    'first key in object',
+    'key in object',
+    'colon',
+    'value in object',
+    'comma or closing brace for object',
+    'first value in array',
+    'value in array',
+    'comma or closing bracket for array'
+  ],
+
   // these 'sticky' RegExps are used to parse (1) strings and (2) numbers, true/false and null
   stringChunkRegExp = /[^"\\\u0000-\u001f]*/y,
   wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y,
@@ -117,7 +130,7 @@ export function parse(text: string) {
             case quote:  // end of string
               break stringloop;
 
-            case backslash:  // backslash escape
+            case backslash:
               ch = text.charCodeAt(at++);
               if (ch === u) {  // Unicode \uXXXX escape
                 const charCode =
@@ -262,7 +275,7 @@ export function parse(text: string) {
 
         wordRegExp.lastIndex = startAt;
         const matched = wordRegExp.test(text);
-        if (!matched) throw error('Unexpected character or end of input');
+        if (!matched) throw error("Unexpected token '" + String.fromCharCode(ch) + "' when expecting " + stateDescs[state]);
 
         at = wordRegExp.lastIndex;
 
@@ -287,10 +300,11 @@ export function parse(text: string) {
             state = ok;
             continue;
           default:
-            throw error('Unexpected value');
+            throw error("Unexpected token '" + value + "' when expecting " + stateDescs[state]);
         }
     }
   }
-  if (state !== ok) throw error('Unexpected end of input');
+
+  if (state !== ok) throw error('Unexpected end of input when expecting ' + stateDescs[state]);
   return value;
 }
