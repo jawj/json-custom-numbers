@@ -24,7 +24,7 @@ function chDesc(ch, prefix = "") {
     return "\\t";
   const hexRep = ch.toString(16);
   const paddedHexRep = "0000".slice(hexRep.length) + hexRep;
-  return `\\u${paddedHexRep}`;
+  return (ch > 31 ? `'${prefix}${String.fromCharCode(ch)}', ` : "") + `\\u${paddedHexRep}`;
 }
 export function parse(text) {
   const containerStack = [], keyStack = [], stateStack = [];

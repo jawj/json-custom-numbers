@@ -145,7 +145,10 @@ if (!perfOnly) {
   testErr('01', `Unexpected '1', expecting end of input`);
   testErr('[01]', `Unexpected '1', expecting ',' or ']' in array`);
   testErr('[1,\u0000]', `Unexpected \\u0000, expecting value in array`);
-  testErr('"\\×"', ``);
+  testErr('"\\×"', `Invalid escape sequence in string: '\\×', \\u00d7`);
+  testErr(`"\\
+  `, `Invalid escape sequence in string: \\n`);
+
 
   if (fails > 0) process.exit(1);
 
