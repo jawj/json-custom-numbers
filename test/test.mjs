@@ -116,14 +116,14 @@ if (!perfOnly) {
     }
   }
 
-  testErr('{', `Unexpected end of input, expecting first key in object`);
-  testErr('{x', `Unexpected 'x', expecting first key in object`);
+  testErr('{', `Unexpected end of input, expecting '}' or first key in object`);
+  testErr('{x', `Unexpected 'x', expecting '}' or first key in object`);
   testErr('{"x', `Unterminated string`);
   testErr('{"x"', `Unexpected end of input, expecting ':'`);
   testErr('{"x":', `Unexpected end of input, expecting value in object`);
   testErr('{"x":x', `Unexpected 'x', expecting value in object`);
   testErr('{"x":1', `Unexpected end of input, expecting ',' or '}' in object`);
-  testErr('[', `Unexpected end of input, expecting first value in array`);
+  testErr('[', `Unexpected end of input, expecting ']' or first value in array`);
   testErr('[1', `Unexpected end of input, expecting ',' or ']' in array`);
   testErr('[1x', `Unexpected 'x', expecting ',' or ']' in array`);
   testErr('[1,', `Unexpected end of input, expecting value in array`);

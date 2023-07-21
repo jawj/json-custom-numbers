@@ -3,10 +3,10 @@
 export class JSONParseError extends Error { }
 
 const
-  /* <cut> -- esbuild will cut this section and define constants as literals */
+  /* <cut> -- sed will cut this section and esbuild will define as literals */
   // parser states
   go = 0,           // starting state
-  ok = 1,           // final, accepting state
+  ok = 1,           // final valid state
   firstokey = 2,    // ready for the first key of the object or the closing of an empty object
   okey = 3,         // ready for the next key of the object
   ocolon = 4,       // ready for the colon
@@ -36,12 +36,12 @@ const
   stateDescs = [
     'JSON value',
     'end of input',
-    'first key in object',
+    "'}' or first key in object",
     'key in object',
     "':'",
     'value in object',
     "',' or '}' in object",
-    'first value in array',
+    "']' or first value in array",
     'value in array',
     "',' or ']' in array"
   ],
@@ -55,8 +55,8 @@ const
   x = "",
   escapes = [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, "\"", x, x, x, x, x, x, x, x, x, x, x, x, "/", x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, "\\", x, x, x, x, x, "\b", x, x, x, "\f", x, x, x, x, x, x, x, "\n", x, x, x, "\r", x, "\t"],
 
-  noKey = '',
-  noContainer = [],
+  //noKey = '',
+  //noContainer = [],
 
   // these arrays are indexed by the char code of a hex digit, used for \uXXXX escapes
   y = 65536,  // = 0xffff + 1: signals a bad character, since it's out of range
@@ -107,20 +107,11 @@ export function parse(text: string) {
             state = okey;
             continue;
           case acomma:
-            container[container.length] = value;
+            container[key++] = value;
             state = avalue;
             continue;
           default:
             throw error(`Unexpected ',', expecting ${stateDescs[state]}`);
-        }
-
-      case colon:
-        switch (state) {
-          case ocolon:
-            state = ovalue;
-            continue;
-          default:
-            throw error(`Unexpected ':', expecting ${stateDescs[state]}`);
         }
 
       case quote:
@@ -187,6 +178,11 @@ export function parse(text: string) {
             throw error(`Unexpected '"', expecting ${stateDescs[state]}`);
         }
 
+      case colon:
+        if (state !== ocolon) throw error(`Unexpected ':', expecting ${stateDescs[state]}`);
+        state = ovalue;
+        continue;
+
       case openbrace:
         switch (state) {
           case ovalue:
@@ -200,14 +196,14 @@ export function parse(text: string) {
           case firstavalue:
             stateStack[depth] = acomma;
             containerStack[depth] = container;
-            keyStack[depth++] = noKey;
+            keyStack[depth++] = key;  // (none)
             container = {};
             state = firstokey;
             continue;
           case go:
             stateStack[depth] = ok;
-            containerStack[depth] = noContainer;
-            keyStack[depth++] = noKey;
+            containerStack[depth] = container;  // (none)
+            keyStack[depth++] = key;  // (none)
             container = {};
             state = firstokey;
             continue;
@@ -237,21 +233,24 @@ export function parse(text: string) {
             containerStack[depth] = container;
             keyStack[depth++] = key;
             container = [];
+            key = 0;
             state = firstavalue;
             continue;
           case avalue:
           case firstavalue:
             stateStack[depth] = acomma;
             containerStack[depth] = container;
-            keyStack[depth++] = noKey;
+            keyStack[depth++] = key;  // (none)
             container = [];
+            key = 0;
             state = firstavalue;
             continue;
           case go:
             stateStack[depth] = ok;
-            containerStack[depth] = noContainer;
-            keyStack[depth++] = noKey;
+            containerStack[depth] = container;  // (none)
+            keyStack[depth++] = key;  // (none)
             container = [];
+            key = 0;
             state = firstavalue;
             continue;
           default:
@@ -261,7 +260,7 @@ export function parse(text: string) {
       case closesquare:
         switch (state) {
           case acomma:
-            container[container.length] = value;
+            container[key] = value;  // no need to increment key (= index) on last value
           // deliberate fall-through
           case firstavalue:
             value = container;
