@@ -3,34 +3,34 @@ const escapableTest = /["\\\u0000-\u001f]/;
 
 export function stringify(value: any) {
   let key;
-  let json = '';
 
   let container: any = { '': value };
+  let index = 0;
   let keys = [''] as string[] | undefined;
   let length = 1;
-  let index = 0;
 
-  let containerStack: (typeof container)[] = [];
-  let indexStack: (typeof index)[] = [];
-  let lengthStack: (typeof length)[] = [];
-  let keysStack: (typeof keys)[] = [];
+  let stack: any = [];
   let depth = 0;
 
+  let json = '';
   let appendStr;
-  do {  
+
+  do { 
     // loop over the current container (object or array)
     
     if (index === length) {
-      // we're at the end of a container: emit closing symbol and skip to next iteration
+      // we're at the end of a container: emit closing symbol, update values from stack, skip to next iteration
       json += keys ? '}' : ']';
-      container = containerStack[--depth];
-      index = indexStack[depth];
-      keys = keysStack[depth];
-      length = lengthStack[depth];
+
+      length = stack[--depth];
+      keys = stack[--depth];
+      index = stack[--depth];
+      container = stack[--depth];
+      
       continue;
     }
 
-    // we're mid-container: deal with a new value
+    // so we're mid-container: deal with a new value
     let newKeys, newLength;
 
     value = keys ?
@@ -95,28 +95,28 @@ export function stringify(value: any) {
         if (depth > 0) json += (escapableTest.test(key) ? JSON.stringify(key) : '"' + key + '"') + ':';
         json += appendStr;
       }
+
     } else {  
       // we're in an array
       if (index > 0) json += ',';
       json += appendStr === undefined ? 'null' : appendStr;
     }
 
-    // got an ordinary value: increment index and go on
-    if (newLength === undefined) {
-      index++;
-      continue;
-    }
+    index++;
 
-    // got an object or array: update current values and stack
-    containerStack[depth] = container;
-    indexStack[depth] = index + 1;
-    keysStack[depth] = keys;
-    lengthStack[depth++] = length;
+    // new value is simple: skip to next iteration
+    if (newLength === undefined) continue;
+
+    // new value is object or array: update stack and values
+    stack[depth++] = container;
+    stack[depth++] = index;
+    stack[depth++] = keys;
+    stack[depth++] = length;
 
     container = value;
-    length = newLength;
-    keys = newKeys;
     index = 0;
+    keys = newKeys;
+    length = newLength;   
 
   } while (depth !== 0);
 

@@ -1,24 +1,21 @@
 const escapableTest = /["\\\u0000-\u001f]/;
 export function stringify(value) {
   let key;
-  let json = "";
   let container = { "": value };
+  let index = 0;
   let keys = [""];
   let length = 1;
-  let index = 0;
-  let containerStack = [];
-  let indexStack = [];
-  let lengthStack = [];
-  let keysStack = [];
+  let stack = [];
   let depth = 0;
+  let json = "";
   let appendStr;
   do {
     if (index === length) {
       json += keys ? "}" : "]";
-      container = containerStack[--depth];
-      index = indexStack[depth];
-      keys = keysStack[depth];
-      length = lengthStack[depth];
+      length = stack[--depth];
+      keys = stack[--depth];
+      index = stack[--depth];
+      container = stack[--depth];
       continue;
     }
     let newKeys, newLength;
@@ -80,18 +77,17 @@ export function stringify(value) {
         json += ",";
       json += appendStr === void 0 ? "null" : appendStr;
     }
-    if (newLength === void 0) {
-      index++;
+    index++;
+    if (newLength === void 0)
       continue;
-    }
-    containerStack[depth] = container;
-    indexStack[depth] = index + 1;
-    keysStack[depth] = keys;
-    lengthStack[depth++] = length;
+    stack[depth++] = container;
+    stack[depth++] = index;
+    stack[depth++] = keys;
+    stack[depth++] = length;
     container = value;
-    length = newLength;
-    keys = newKeys;
     index = 0;
+    keys = newKeys;
+    length = newLength;
   } while (depth !== 0);
   return json;
 }
