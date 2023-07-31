@@ -219,7 +219,7 @@ if (!perfOnly) {
 
   function compare(filename, obj, trueFn, trueFnName, testFn, testFnName) {
     for (const replacer of [undefined /*, ['a', 'x', 'users', 12], (k, v) => v + k + v, /./ */]) {
-      for (const indent of [undefined /*, 2, '\t', '--' */]) {
+      for (const indent of [undefined, 2, '\t', '--']) {
         const trueResult = trueFn(obj, replacer, indent);
         const testResult = testFn(obj, replacer, indent);
         if (trueResult !== testResult) {
