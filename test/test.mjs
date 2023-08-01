@@ -217,9 +217,11 @@ if (!perfOnly) {
   let passes = 0, fails = 0;
   console.log(col.bold(`Running JSON.stringify comparison tests ...`));
 
+  const weirdReplacer = (k, v) => typeof v === 'object' ? { ...v, k } : Array.isArray(v) ? [...v, k] : v + k + v;
+
   function compare(filename, obj, trueFn, trueFnName, testFn, testFnName) {
-    for (const replacer of [undefined /*, ['a', 'x', 'users', 12], (k, v) => v + k + v, /./ */]) {
-      for (const indent of [undefined, 2, '\t', '--']) {
+    for (const replacer of [undefined, ['a', 'x', 'users', 12], /./, weirdReplacer]) {
+      for (const indent of [undefined, 2, 15, ' '.repeat(15), '\t', '--']) {
         const trueResult = trueFn(obj, replacer, indent);
         const testResult = testFn(obj, replacer, indent);
         if (trueResult !== testResult) {
@@ -240,13 +242,20 @@ if (!perfOnly) {
     b = 2;
   }
 
+  class Y {
+    x = 'y';
+    toJSON(key) {
+      return { yx: this.x, withKey: key };
+    }
+  }
+
   for (const filename of [...filenames, null]) {
     let obj;
 
     if (filename === null) {
       obj = {
         a: 0, b: "", c: null, d: undefined, e: new Date(), f: /./, g: X, h: new X(), i: 1 + undefined, j: Infinity,
-        k: [0, "", null, undefined, new Date(), /./, X, new X(), 1 + undefined, Infinity]
+        k: [0, "", null, undefined, new Date(), /./, X, new X(), 1 + undefined, Infinity], l: new Y()
       };
 
     } else {
@@ -261,7 +270,7 @@ if (!perfOnly) {
   console.log(`\n${passes} passes, ${fails} fails\n`);
 
   const bigInt = 9007199254740993n
-  const bigIntJSON = stringify(bigInt, undefined, undefined, x => { if (typeof x === 'bigint') return x.toString() });
+  const bigIntJSON = stringify(bigInt, undefined, undefined, (k, v, t) => { if (t === 'bigint') return v.toString() });
   console.log(bigIntJSON);
   if (bigIntJSON === bigInt.toString()) console.log('Pass: BigInt stringified\n');
   else console.log('Fail: BigInt stringify failed\n');

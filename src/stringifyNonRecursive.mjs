@@ -1,5 +1,6 @@
 const escapableTest = /["\\\u0000-\u001f]/;
-export function stringify(value, replacer, space) {
+const hasOwn = Object.prototype.hasOwnProperty;
+export function stringify(value, replacer, space, numRep) {
   let repFunc;
   let repArray;
   if (replacer !== void 0) {
@@ -42,44 +43,52 @@ export function stringify(value, replacer, space) {
       value = value.toJSON(key);
       typeofValue = typeof value;
     }
-    switch (typeofValue) {
-      case "string":
-        appendStr = escapableTest.test(value) ? JSON.stringify(value) : '"' + value + '"';
-        break;
-      case "number":
-        appendStr = isFinite(value) ? String(value) : "null";
-        break;
-      case "boolean":
-        appendStr = value === true ? "true" : "false";
-        break;
-      case "object":
-        if (value === null) {
-          appendStr = "null";
+    if (repFunc !== void 0) {
+      value = repFunc(key, value);
+      typeofValue = typeof value;
+    }
+    if (numRep === void 0 || (appendStr = numRep(key, value, typeofValue)) === void 0) {
+      switch (typeofValue) {
+        case "string":
+          appendStr = escapableTest.test(value) ? JSON.stringify(value) : '"' + value + '"';
           break;
-        }
-        if (Array.isArray(value)) {
-          const arrLength = value.length;
-          if (arrLength === 0)
-            appendStr = "[]";
+        case "number":
+          appendStr = isFinite(value) ? String(value) : "null";
+          break;
+        case "boolean":
+          appendStr = value === true ? "true" : "false";
+          break;
+        case "object":
+          if (value === null) {
+            appendStr = "null";
+            break;
+          }
+          if (Array.isArray(value)) {
+            const arrLength = value.length;
+            if (arrLength === 0)
+              appendStr = "[]";
+            else {
+              appendStr = "[";
+              newKeys = void 0;
+              newLength = arrLength;
+            }
+            break;
+          }
+          const objKeys = repArray === void 0 ? Object.keys(value) : repArray.filter((k) => hasOwn.call(value, k));
+          const objLength = objKeys.length;
+          if (objLength === 0)
+            appendStr = "{}";
           else {
-            appendStr = "[";
-            newKeys = void 0;
-            newLength = arrLength;
+            appendStr = "{";
+            newKeys = objKeys;
+            newLength = objLength;
           }
           break;
-        }
-        const objKeys = Object.keys(value);
-        const objLength = objKeys.length;
-        if (objLength === 0)
-          appendStr = "{}";
-        else {
-          appendStr = "{";
-          newKeys = objKeys;
-          newLength = objLength;
-        }
-        break;
-      default:
-        appendStr = void 0;
+        case "bigint":
+          throw new TypeError("Do not know how to serialize a BigInt");
+        default:
+          appendStr = void 0;
+      }
     }
     if (keys === void 0) {
       if (index > 0)

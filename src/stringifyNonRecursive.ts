@@ -1,10 +1,12 @@
 
 const escapableTest = /["\\\u0000-\u001f]/;
+const hasOwn = Object.prototype.hasOwnProperty;
 
 export function stringify(
   value: any,
   replacer?: (string | number)[] | ((key: string, value: any) => any),
   space?: number | string,
+  numRep?: (key: string, value: any, typeofValue: string) => string,
 ) {
 
   let repFunc: ((key: string, value: any) => any) | undefined;
@@ -68,48 +70,62 @@ export function stringify(
       typeofValue = typeof value;
     }
 
-    switch (typeofValue) {
-      case 'string':
-        appendStr = escapableTest.test(value) ? JSON.stringify(value) : '"' + value + '"';
-        break;
+    if (repFunc !== undefined) { 
+      value = repFunc(key, value);
+      typeofValue = typeof value;
+    }
 
-      case 'number':
-        appendStr = isFinite(value) ? String(value) : 'null';
-        break;
+    if (numRep === undefined || (appendStr = numRep(key, value, typeofValue)) === undefined) {
 
-      case 'boolean':
-        appendStr = value === true ? 'true' : 'false';
-        break;
-
-      case 'object':
-        if (value === null) {
-          appendStr = 'null';
+      switch (typeofValue) {
+        case 'string':
+          appendStr = escapableTest.test(value) ? JSON.stringify(value) : '"' + value + '"';
           break;
-        }
 
-        if (Array.isArray(value)) {
-          const arrLength = value.length;
-          if (arrLength === 0) appendStr = '[]';
+        case 'number':
+          appendStr = isFinite(value) ? String(value) : 'null';
+          break;
+
+        case 'boolean':
+          appendStr = value === true ? 'true' : 'false';
+          break;
+
+        case 'object':
+          if (value === null) {
+            appendStr = 'null';
+            break;
+          }
+
+          if (Array.isArray(value)) {
+            const arrLength = value.length;
+            if (arrLength === 0) appendStr = '[]';
+            else {
+              appendStr = '[';
+              newKeys = undefined;
+              newLength = arrLength;
+            }
+            break;
+          }
+
+          const objKeys = repArray === undefined ? 
+            Object.keys(value) :
+            repArray.filter(k => hasOwn.call(value, k));
+
+          const objLength = objKeys.length;
+          if (objLength === 0) appendStr = '{}';
           else {
-            appendStr = '[';
-            newKeys = undefined;
-            newLength = arrLength;
+            appendStr = '{';
+            newKeys = objKeys;
+            newLength = objLength;
           }
           break;
-        }
 
-        const objKeys = Object.keys(value);
-        const objLength = objKeys.length;
-        if (objLength === 0) appendStr = '{}';
-        else {
-          appendStr = '{';
-          newKeys = objKeys;
-          newLength = objLength;
-        }
-        break;
+        case "bigint":
+          throw new TypeError('Do not know how to serialize a BigInt');
 
-      default:
-        appendStr = undefined;
+        default:
+          appendStr = undefined;
+      }
     }
 
     // append comma, key and value (as appropriate)
