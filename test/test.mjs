@@ -195,7 +195,7 @@ if (!confOnly) {
     const reps = Number(repsStr);
 
     const [baselineResult, t] = perf(reps, null, () => JSON.parse(json));
-    
+
     const [parseResult] = perf(reps, t, () => parse(json));
     const [parseNonRecResult] = perf(reps, t, () => parseStateMachine(json));
 
@@ -217,7 +217,10 @@ if (!perfOnly) {
   let passes = 0, fails = 0;
   console.log(col.bold(`Running JSON.stringify comparison tests ...`));
 
-  const weirdReplacer = (k, v) => typeof v === 'object' ? { ...v, k } : Array.isArray(v) ? [...v, k] : v + k + v;
+  const weirdReplacer = (k, v) =>
+    Array.isArray(v) ? [...v, k, typeof k] :
+      typeof v === 'object' ? { ...v, k, kType: typeof k } :
+        v + k + typeof k;
 
   function compare(filename, obj, trueFn, trueFnName, testFn, testFnName) {
     for (const replacer of [undefined, ['a', 'x', 'users', 12], /./, weirdReplacer]) {

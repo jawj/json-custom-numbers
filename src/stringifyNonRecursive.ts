@@ -60,11 +60,17 @@ export function stringify(
     // so we're mid-container: deal with a new value
     let newKeys, newLength;
 
-    value = keys === undefined ?
-      container[index] :
-      container[key = keys[index]];
+    if (keys === undefined) {
+      key = String(index);
+      value = container[index];
+
+    } else {
+      key = keys[index];
+      value = container[key];
+    }
 
     let typeofValue = typeof value;
+
     if (value && typeofValue === 'object' && typeof value.toJSON === 'function') {
       value = value.toJSON(key);
       typeofValue = typeof value;
@@ -120,7 +126,7 @@ export function stringify(
           }
           break;
 
-        case "bigint":
+        case 'bigint':
           throw new TypeError('Do not know how to serialize a BigInt');
 
         default:

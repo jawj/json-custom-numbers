@@ -37,7 +37,13 @@ export function stringify(value, replacer, space, numRep) {
       continue;
     }
     let newKeys, newLength;
-    value = keys === void 0 ? container[index] : container[key = keys[index]];
+    if (keys === void 0) {
+      key = String(index);
+      value = container[index];
+    } else {
+      key = keys[index];
+      value = container[key];
+    }
     let typeofValue = typeof value;
     if (value && typeofValue === "object" && typeof value.toJSON === "function") {
       value = value.toJSON(key);
