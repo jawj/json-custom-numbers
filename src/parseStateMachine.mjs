@@ -43,7 +43,7 @@ export function parse(text, reviver, numberParser) {
   if (typeof reviver !== "function")
     reviver = void 0;
   const stack = [];
-  let at = 0, ch, state = 0, depth = 0, container, key = "", value;
+  let at = 0, ch, state = 0, depth = 0, container, key, value;
   function error(m) {
     return new JSONParseError(`${m}
 At character ${at} in JSON: ${text}`);
@@ -128,27 +128,21 @@ At character ${at} in JSON: ${text}`);
           state = 5;
           continue;
         case 123:
+          stack[depth++] = container;
+          stack[depth++] = key;
+          container = {};
           switch (state) {
             case 5:
               stack[depth++] = 6;
-              stack[depth++] = container;
-              stack[depth++] = key;
-              container = {};
               state = 2;
               continue;
             case 8:
             case 7:
               stack[depth++] = 9;
-              stack[depth++] = container;
-              stack[depth++] = key;
-              container = {};
               state = 2;
               continue;
             case 0:
               stack[depth++] = 1;
-              stack[depth++] = container;
-              stack[depth++] = key;
-              container = {};
               state = 2;
               continue;
             default:
@@ -162,38 +156,30 @@ At character ${at} in JSON: ${text}`);
                 reviveContainer(reviver, container);
             case 2:
               value = container;
+              state = stack[--depth];
               key = stack[--depth];
               container = stack[--depth];
-              state = stack[--depth];
               continue;
             default:
               throw error(`Unexpected '}', expecting ${stateDescs[state]}`);
           }
         case 91:
+          stack[depth++] = container;
+          stack[depth++] = key;
+          container = [];
+          key = 0;
           switch (state) {
             case 5:
               stack[depth++] = 6;
-              stack[depth++] = container;
-              stack[depth++] = key;
-              container = [];
-              key = 0;
               state = 7;
               continue;
             case 8:
             case 7:
               stack[depth++] = 9;
-              stack[depth++] = container;
-              stack[depth++] = key;
-              container = [];
-              key = 0;
               state = 7;
               continue;
             case 0:
               stack[depth++] = 1;
-              stack[depth++] = container;
-              stack[depth++] = key;
-              container = [];
-              key = 0;
               state = 7;
               continue;
             default:
@@ -207,9 +193,9 @@ At character ${at} in JSON: ${text}`);
                 reviveContainer(reviver, container);
             case 7:
               value = container;
+              state = stack[--depth];
               key = stack[--depth];
               container = stack[--depth];
-              state = stack[--depth];
               continue;
             default:
               throw error(`Unexpected ']', expecting ${stateDescs[state]}`);

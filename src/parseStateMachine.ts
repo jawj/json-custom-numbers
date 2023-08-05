@@ -97,13 +97,13 @@ export function parse(
   const stack: any[] = [];
 
   let
-    at = 0,         // character index into text
-    ch: number,     // current character code
-    state = go,     // the state of the parser
-    depth = 0,      // the stack pointer
-    container,      // the current container object or array
-    key: any = '',  // the current key
-    value;          // the current value
+    at = 0,       // character index into text
+    ch: number,   // current character code
+    state = go,   // the state of the parser
+    depth = 0,    // the stack pointer
+    container,    // the current container object or array
+    key,          // the current key
+    value;        // the current value
 
   function error(m: string) {
     return new JSONParseError(`${m}\nAt character ${at} in JSON: ${text}`);
@@ -199,27 +199,22 @@ export function parse(
         continue;
 
       case openbrace:
+        stack[depth++] = container;
+        stack[depth++] = key;
+        container = {};
+
         switch (state) {
           case ovalue:
             stack[depth++] = ocomma;
-            stack[depth++] = container;
-            stack[depth++] = key;
-            container = {};
             state = firstokey;
             continue;
           case avalue:
           case firstavalue:
             stack[depth++] = acomma;
-            stack[depth++] = container;
-            stack[depth++] = key;  // (none)
-            container = {};
             state = firstokey;
             continue;
           case go:
             stack[depth++] = ok;
-            stack[depth++] = container;  // (none)
-            stack[depth++] = key;  // (none)
-            container = {};
             state = firstokey;
             continue;
           default:
@@ -234,39 +229,32 @@ export function parse(
           // deliberate fallthrough
           case firstokey:
             value = container;
+            state = stack[--depth];
             key = stack[--depth];
             container = stack[--depth];
-            state = stack[--depth];
             continue;
           default:
             throw error(`Unexpected '}', expecting ${stateDescs[state]}`);
         }
 
       case opensquare:
+        stack[depth++] = container;
+        stack[depth++] = key;
+        container = [];
+        key = 0;
+
         switch (state) {
           case ovalue:
             stack[depth++] = ocomma;
-            stack[depth++] = container;
-            stack[depth++] = key;
-            container = [];
-            key = 0;
             state = firstavalue;
             continue;
           case avalue:
           case firstavalue:
             stack[depth++] = acomma;
-            stack[depth++] = container;
-            stack[depth++] = key;  // (none)
-            container = [];
-            key = 0;
             state = firstavalue;
             continue;
           case go:
             stack[depth++] = ok;
-            stack[depth++] = container;  // (none)
-            stack[depth++] = key;  // (none)
-            container = [];
-            key = 0;
             state = firstavalue;
             continue;
           default:
@@ -278,13 +266,12 @@ export function parse(
           case acomma:
             container[key] = value;  // no need to increment key (= index) on last value
             if (reviver !== undefined) reviveContainer(reviver, container);
-
           // deliberate fall-through
           case firstavalue:
             value = container;
+            state = stack[--depth];
             key = stack[--depth];
             container = stack[--depth];
-            state = stack[--depth];
             continue;
           default:
             throw error(`Unexpected ']', expecting ${stateDescs[state]}`);
