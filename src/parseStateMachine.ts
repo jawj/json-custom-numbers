@@ -75,7 +75,7 @@ function chDesc(ch: number, prefix = '') {
   return (ch > 31 ? `'${prefix}${String.fromCharCode(ch)}', ` : '') + `\\u${paddedHexRep}`;
 }
 
-function reviveObj(reviver: (key: string, value: any) => any, container: Record<string, any>) {
+function reviveContainer(reviver: (key: string, value: any) => any, container: Record<string, any>) {
   const keys = Object.keys(container);
   const numKeys = keys.length;
   for (let i = 0; i < numKeys; i++) {
@@ -94,10 +94,7 @@ export function parse(
   text = String(text);  // force string
   if (typeof reviver !== 'function') reviver = undefined;  // ignore non-function revivers
 
-  const
-    containerStack: (Record<string, any> | any[])[] = [],
-    keyStack: string[] = [],
-    stateStack: number[] = [];
+  const stack: any[] = [];
 
   let
     at = 0,         // character index into text
@@ -204,24 +201,24 @@ export function parse(
       case openbrace:
         switch (state) {
           case ovalue:
-            stateStack[depth] = ocomma;
-            containerStack[depth] = container;
-            keyStack[depth++] = key;
+            stack[depth++] = ocomma;
+            stack[depth++] = container;
+            stack[depth++] = key;
             container = {};
             state = firstokey;
             continue;
           case avalue:
           case firstavalue:
-            stateStack[depth] = acomma;
-            containerStack[depth] = container;
-            keyStack[depth++] = key;  // (none)
+            stack[depth++] = acomma;
+            stack[depth++] = container;
+            stack[depth++] = key;  // (none)
             container = {};
             state = firstokey;
             continue;
           case go:
-            stateStack[depth] = ok;
-            containerStack[depth] = container;  // (none)
-            keyStack[depth++] = key;  // (none)
+            stack[depth++] = ok;
+            stack[depth++] = container;  // (none)
+            stack[depth++] = key;  // (none)
             container = {};
             state = firstokey;
             continue;
@@ -233,13 +230,13 @@ export function parse(
         switch (state) {
           case ocomma:
             (container as Record<string, any>)[key!] = value;
-            if (reviver !== undefined) reviveObj(reviver, container);
+            if (reviver !== undefined) reviveContainer(reviver, container);
           // deliberate fallthrough
           case firstokey:
             value = container;
-            container = containerStack[--depth];
-            key = keyStack[depth];
-            state = stateStack[depth];
+            key = stack[--depth];
+            container = stack[--depth];
+            state = stack[--depth];
             continue;
           default:
             throw error(`Unexpected '}', expecting ${stateDescs[state]}`);
@@ -248,26 +245,26 @@ export function parse(
       case opensquare:
         switch (state) {
           case ovalue:
-            stateStack[depth] = ocomma;
-            containerStack[depth] = container;
-            keyStack[depth++] = key;
+            stack[depth++] = ocomma;
+            stack[depth++] = container;
+            stack[depth++] = key;
             container = [];
             key = 0;
             state = firstavalue;
             continue;
           case avalue:
           case firstavalue:
-            stateStack[depth] = acomma;
-            containerStack[depth] = container;
-            keyStack[depth++] = key;  // (none)
+            stack[depth++] = acomma;
+            stack[depth++] = container;
+            stack[depth++] = key;  // (none)
             container = [];
             key = 0;
             state = firstavalue;
             continue;
           case go:
-            stateStack[depth] = ok;
-            containerStack[depth] = container;  // (none)
-            keyStack[depth++] = key;  // (none)
+            stack[depth++] = ok;
+            stack[depth++] = container;  // (none)
+            stack[depth++] = key;  // (none)
             container = [];
             key = 0;
             state = firstavalue;
@@ -280,22 +277,14 @@ export function parse(
         switch (state) {
           case acomma:
             container[key] = value;  // no need to increment key (= index) on last value
-            if (reviver !== undefined) {
-              const len = container.length;
-              for (let i = 0; i < len; i++) {
-                const vOld = container[i];
-                const vNew = reviver.call(container, String(i), vOld);
-                if (vNew !== undefined) container[i] = vNew;
-                else delete container[i];  // JSON.parse creates sparse arrays in this case
-              }
-            }
+            if (reviver !== undefined) reviveContainer(reviver, container);
 
           // deliberate fall-through
           case firstavalue:
             value = container;
-            container = containerStack[--depth];
-            key = keyStack[depth];
-            state = stateStack[depth];
+            key = stack[--depth];
+            container = stack[--depth];
+            state = stack[--depth];
             continue;
           default:
             throw error(`Unexpected ']', expecting ${stateDescs[state]}`);
@@ -342,7 +331,7 @@ export function parse(
 
   if (reviver !== undefined) {
     value = { '': value };
-    reviveObj(reviver, value);
+    reviveContainer(reviver, value);
     value = value[''];
   }
 

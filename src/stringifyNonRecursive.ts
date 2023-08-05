@@ -1,4 +1,4 @@
-const 
+const
   escapableTest = /["\\\u0000-\u001f]/,
   hasOwn = Object.prototype.hasOwnProperty;
 
@@ -17,19 +17,19 @@ export function stringify(
   }
 
   if (space !== undefined) {
-    space = // 10-char limit: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify#the_space_parameter
-      typeof space === 'string' ? space.slice(0, 10) :
-        typeof space === 'number' ? '          '.slice(0, space) :
-          undefined;
+    // 10-char limit: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify#the_space_parameter
+    space = typeof space === 'string' ? space.slice(0, 10) :
+      typeof space === 'number' ? '          '.slice(0, space) :
+        undefined;
   }
 
-  let 
+  let
     key,
 
     container: any = { '': value },
     index = 0,
     keys = [''] as string[] | undefined,
-    isFirstKeyValue = true,
+    notFirstKeyValue = false,
     length = 1,
 
     stack: any = [],
@@ -39,8 +39,7 @@ export function stringify(
     indent = '\n',
     appendStr;
 
-  do {
-    // loop over the current container (object or array)
+  do {  // loop over the current container (object or array)
 
     if (index === length) {
       // we're at the end of a container: pop values from stack, emit closing symbol, skip to next iteration
@@ -52,7 +51,7 @@ export function stringify(
       json += keys === undefined ? ']' : '}';  // (using the _old_ value of keys)
 
       length = stack[--depth];
-      isFirstKeyValue = stack[--depth];
+      notFirstKeyValue = stack[--depth];
       keys = stack[--depth];
       index = stack[--depth];
       container = stack[--depth];
@@ -60,7 +59,7 @@ export function stringify(
       continue;
     }
 
-    // so we're mid-container: deal with a new value
+    // OK, so we're mid-container: deal with a new value
     let newKeys, newLength;
 
     if (keys === undefined) {
@@ -79,7 +78,7 @@ export function stringify(
       typeofValue = typeof value;
     }
 
-    if (repFunc !== undefined) { 
+    if (repFunc !== undefined) {
       value = repFunc.call(container, key, value);
       typeofValue = typeof value;
     }
@@ -116,7 +115,7 @@ export function stringify(
             break;
           }
 
-          const objKeys = repArray === undefined ? 
+          const objKeys = repArray === undefined ?
             Object.keys(value) :
             repArray.filter(k => hasOwn.call(value, k));
 
@@ -141,14 +140,15 @@ export function stringify(
     if (keys === undefined) {
       // we're in an array
       if (index > 0) json += ',';  // no values can be omitted via the replacer in an array, so this is safe
+      
       if (space !== undefined) json += indent;
       json += appendStr === undefined ? 'null' : appendStr;
 
     } else {
       // we're in an object
       if (appendStr !== undefined) {
-        if (isFirstKeyValue) isFirstKeyValue = false;
-        else json += ',';
+        if (notFirstKeyValue) json += ',';
+        else notFirstKeyValue = true;
 
         if (depth > 0) {
           json += space === undefined ?
@@ -168,7 +168,7 @@ export function stringify(
     stack[depth++] = container;
     stack[depth++] = index;
     stack[depth++] = keys;
-    stack[depth++] = isFirstKeyValue;
+    stack[depth++] = notFirstKeyValue;
     stack[depth++] = length;
 
     if (space !== undefined) {
@@ -179,135 +179,11 @@ export function stringify(
     container = value;
     index = 0;
     keys = newKeys;
-    isFirstKeyValue = true;
+    notFirstKeyValue = false;
     length = newLength;
 
   } while (depth !== 0);
 
   // JSON.stringify returns undefined when the replacer function replaces a simple value with undefined, hence:
   return json || undefined;
-}
-
-
-
-export function stringifyBasic(value: any) {
-  let key;
-
-  let container: any = { '': value };
-  let index = 0;
-  let keys = [''] as string[] | undefined;
-  let length = 1;
-
-  let stack: any = [];
-  let depth = 0;
-
-  let json = '';
-  let appendStr;
-
-  do {
-    // loop over the current container (object or array)
-
-    if (index === length) {
-      // we're at the end of a container: emit closing symbol, update values from stack, skip to next iteration
-      json += keys ? '}' : ']';
-
-      length = stack[--depth];
-      keys = stack[--depth];
-      index = stack[--depth];
-      container = stack[--depth];
-
-      continue;
-    }
-
-    // so we're mid-container: deal with a new value
-    let newKeys, newLength;
-
-    value = keys ?
-      container[key = keys[index]] :
-      container[index];
-
-    let typeofValue = typeof value;
-    if (value && typeofValue === 'object' && typeof value.toJSON === 'function') {
-      value = value.toJSON(key);
-      typeofValue = typeof value;
-    }
-
-    switch (typeofValue) {
-      case 'string':
-        appendStr = escapableTest.test(value) ? JSON.stringify(value) : '"' + value + '"';
-        break;
-
-      case 'number':
-        appendStr = isFinite(value) ? String(value) : 'null';
-        break;
-
-      case 'boolean':
-        appendStr = value === true ? 'true' : 'false';
-        break;
-
-      case 'object':
-        if (value === null) {
-          appendStr = 'null';
-          break;
-        }
-
-        if (Array.isArray(value)) {
-          const arrLength = value.length;
-          if (arrLength === 0) appendStr = '[]';
-          else {
-            appendStr = '[';
-            newKeys = undefined;
-            newLength = arrLength;
-          }
-          break;
-        }
-
-        const objKeys = Object.keys(value);
-        const objLength = objKeys.length;
-        if (objLength === 0) appendStr = '{}';
-        else {
-          appendStr = '{';
-          newKeys = objKeys;
-          newLength = objLength;
-        }
-        break;
-
-      default:
-        appendStr = undefined;
-    }
-
-    // append comma, key and value (as appropriate)
-    if (keys) {
-      // we're in an object
-      if (appendStr !== undefined) {
-        if (index > 0) json += ',';
-        if (depth > 0) json += (escapableTest.test(key) ? JSON.stringify(key) : '"' + key + '"') + ':';
-        json += appendStr;
-      }
-
-    } else {
-      // we're in an array
-      if (index > 0) json += ',';
-      json += appendStr === undefined ? 'null' : appendStr;
-    }
-
-    index++;
-
-    // new value is simple: skip to next iteration
-    if (newLength === undefined) continue;
-
-    // new value is object or array: update stack and values
-    stack[depth++] = container;
-    stack[depth++] = index;
-    stack[depth++] = keys;
-    stack[depth++] = length;
-
-    container = value;
-    index = 0;
-    keys = newKeys;
-    length = newLength;
-
-  } while (depth !== 0);
-
-  return json;
 }

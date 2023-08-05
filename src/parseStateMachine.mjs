@@ -26,7 +26,7 @@ function chDesc(ch, prefix = "") {
   const paddedHexRep = "0000".slice(hexRep.length) + hexRep;
   return (ch > 31 ? `'${prefix}${String.fromCharCode(ch)}', ` : "") + `\\u${paddedHexRep}`;
 }
-function reviveObj(reviver, container) {
+function reviveContainer(reviver, container) {
   const keys = Object.keys(container);
   const numKeys = keys.length;
   for (let i = 0; i < numKeys; i++) {
@@ -42,7 +42,7 @@ export function parse(text, reviver, numberParser) {
   text = String(text);
   if (typeof reviver !== "function")
     reviver = void 0;
-  const containerStack = [], keyStack = [], stateStack = [];
+  const stack = [];
   let at = 0, ch, state = 0, depth = 0, container, key = "", value;
   function error(m) {
     return new JSONParseError(`${m}
@@ -130,24 +130,24 @@ At character ${at} in JSON: ${text}`);
         case 123:
           switch (state) {
             case 5:
-              stateStack[depth] = 6;
-              containerStack[depth] = container;
-              keyStack[depth++] = key;
+              stack[depth++] = 6;
+              stack[depth++] = container;
+              stack[depth++] = key;
               container = {};
               state = 2;
               continue;
             case 8:
             case 7:
-              stateStack[depth] = 9;
-              containerStack[depth] = container;
-              keyStack[depth++] = key;
+              stack[depth++] = 9;
+              stack[depth++] = container;
+              stack[depth++] = key;
               container = {};
               state = 2;
               continue;
             case 0:
-              stateStack[depth] = 1;
-              containerStack[depth] = container;
-              keyStack[depth++] = key;
+              stack[depth++] = 1;
+              stack[depth++] = container;
+              stack[depth++] = key;
               container = {};
               state = 2;
               continue;
@@ -159,12 +159,12 @@ At character ${at} in JSON: ${text}`);
             case 6:
               container[key] = value;
               if (reviver !== void 0)
-                reviveObj(reviver, container);
+                reviveContainer(reviver, container);
             case 2:
               value = container;
-              container = containerStack[--depth];
-              key = keyStack[depth];
-              state = stateStack[depth];
+              key = stack[--depth];
+              container = stack[--depth];
+              state = stack[--depth];
               continue;
             default:
               throw error(`Unexpected '}', expecting ${stateDescs[state]}`);
@@ -172,26 +172,26 @@ At character ${at} in JSON: ${text}`);
         case 91:
           switch (state) {
             case 5:
-              stateStack[depth] = 6;
-              containerStack[depth] = container;
-              keyStack[depth++] = key;
+              stack[depth++] = 6;
+              stack[depth++] = container;
+              stack[depth++] = key;
               container = [];
               key = 0;
               state = 7;
               continue;
             case 8:
             case 7:
-              stateStack[depth] = 9;
-              containerStack[depth] = container;
-              keyStack[depth++] = key;
+              stack[depth++] = 9;
+              stack[depth++] = container;
+              stack[depth++] = key;
               container = [];
               key = 0;
               state = 7;
               continue;
             case 0:
-              stateStack[depth] = 1;
-              containerStack[depth] = container;
-              keyStack[depth++] = key;
+              stack[depth++] = 1;
+              stack[depth++] = container;
+              stack[depth++] = key;
               container = [];
               key = 0;
               state = 7;
@@ -203,22 +203,13 @@ At character ${at} in JSON: ${text}`);
           switch (state) {
             case 9:
               container[key] = value;
-              if (reviver !== void 0) {
-                const len = container.length;
-                for (let i = 0; i < len; i++) {
-                  const vOld = container[i];
-                  const vNew = reviver.call(container, String(i), vOld);
-                  if (vNew !== void 0)
-                    container[i] = vNew;
-                  else
-                    delete container[i];
-                }
-              }
+              if (reviver !== void 0)
+                reviveContainer(reviver, container);
             case 7:
               value = container;
-              container = containerStack[--depth];
-              key = keyStack[depth];
-              state = stateStack[depth];
+              key = stack[--depth];
+              container = stack[--depth];
+              state = stack[--depth];
               continue;
             default:
               throw error(`Unexpected ']', expecting ${stateDescs[state]}`);
@@ -259,7 +250,7 @@ At character ${at} in JSON: ${text}`);
     throw error(`Unexpected end of input, expecting ${stateDescs[state]}`);
   if (reviver !== void 0) {
     value = { "": value };
-    reviveObj(reviver, value);
+    reviveContainer(reviver, value);
     value = value[""];
   }
   return value;
