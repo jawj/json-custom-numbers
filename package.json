@@ -3,13 +3,14 @@
   "version": "2.0.12",
   "description": "JSON parser and stringifier for custom numbers (e.g. BigInt)",
   "files": [
-    "./dist",
+    "dist",
     "index.d.ts",
     "index.js",
     "index.mjs",
-    "./README.md"
+    "README.md",
+    "LICENSE"
   ],
-  "main": "./dist/parse.js",
+  "main": "./dist/index.js",
   "scripts": {
     "test": "npm run compile && node --expose-gc test/test.mjs",
     "testPerf": "npm run compile && node --expose-gc test/test.mjs --perf-only",
@@ -22,7 +23,7 @@
     "build": "npm run testConf && npm run buildCjs && npm run wrapEsm"
   },
   "author": "George MacKerron",
-  "license": "Public domain",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/jawj/json-custom-numbers"
