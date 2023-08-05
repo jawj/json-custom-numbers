@@ -26,7 +26,7 @@ function chDesc(ch, prefix = "") {
   const paddedHexRep = "0000".slice(hexRep.length) + hexRep;
   return (ch > 31 ? `'${prefix}${String.fromCharCode(ch)}', ` : "") + `\\u${paddedHexRep}`;
 }
-export function parse(text) {
+export function parse(text, reviver, numberParser) {
   const containerStack = [], keyStack = [], stateStack = [];
   let at = 0, ch, state = 0, depth = 0, container, key, value;
   function error(m) {
@@ -207,7 +207,7 @@ At character ${at} in JSON: ${text}`);
           at = wordRegExp.lastIndex;
           if (ch < 102) {
             const str = text.slice(startAt, at);
-            value = +str;
+            value = numberParser !== void 0 ? numberParser(str) : +str;
           } else {
             value = ch === 110 ? null : ch === 116;
           }

@@ -1,5 +1,4 @@
-const escapableTest = /["\\\u0000-\u001f]/;
-const hasOwn = Object.prototype.hasOwnProperty;
+const escapableTest = /["\\\u0000-\u001f]/, hasOwn = Object.prototype.hasOwnProperty;
 export function stringify(value, replacer, space, numRep) {
   let repFunc;
   let repArray;
@@ -13,16 +12,7 @@ export function stringify(value, replacer, space, numRep) {
     space = // 10-char limit: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify#the_space_parameter
     typeof space === "string" ? space.slice(0, 10) : typeof space === "number" ? "          ".slice(0, space) : void 0;
   }
-  let key;
-  let container = { "": value };
-  let index = 0;
-  let keys = [""];
-  let length = 1;
-  let stack = [];
-  let depth = 0;
-  let json = "";
-  let indent = "\n";
-  let appendStr;
+  let key, container = { "": value }, index = 0, keys = [""], length = 1, stack = [], depth = 0, json = "", indent = "\n", appendStr;
   do {
     if (index === length) {
       if (space !== void 0) {
@@ -50,7 +40,7 @@ export function stringify(value, replacer, space, numRep) {
       typeofValue = typeof value;
     }
     if (repFunc !== void 0) {
-      value = repFunc(key, value);
+      value = repFunc.call(container, key, value);
       typeofValue = typeof value;
     }
     if (numRep === void 0 || (appendStr = numRep(key, value, typeofValue)) === void 0) {

@@ -75,7 +75,12 @@ function chDesc(ch: number, prefix = '') {
   return (ch > 31 ? `'${prefix}${String.fromCharCode(ch)}', ` : '') + `\\u${paddedHexRep}`;
 }
 
-export function parse(text: string) {
+export function parse(
+  text: string, 
+  reviver?: (key: string, value: any) => any,
+  numberParser?: (string: string) => any,
+) {
+
   const
     containerStack: (Record<string, any> | any[])[] = [],
     keyStack: string[] = [],
@@ -286,8 +291,7 @@ export function parse(text: string) {
 
         if (ch < f) {  // has to be a number
           const str = text.slice(startAt, at);
-          // val = numericReviverFn ? numericReviverFn(str) : +str;
-          value = +str;
+          value = numberParser !== undefined ? numberParser(str) : +str;
 
         } else {  // must be null/true/false
           value = ch === n ? null : ch === t;

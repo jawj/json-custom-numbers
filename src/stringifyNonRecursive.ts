@@ -1,6 +1,6 @@
-
-const escapableTest = /["\\\u0000-\u001f]/;
-const hasOwn = Object.prototype.hasOwnProperty;
+const 
+  escapableTest = /["\\\u0000-\u001f]/,
+  hasOwn = Object.prototype.hasOwnProperty;
 
 export function stringify(
   value: any,
@@ -23,19 +23,20 @@ export function stringify(
           undefined;
   }
 
-  let key;
+  let 
+    key,
 
-  let container: any = { '': value };
-  let index = 0;
-  let keys = [''] as string[] | undefined;
-  let length = 1;
+    container: any = { '': value },
+    index = 0,
+    keys = [''] as string[] | undefined,
+    length = 1,
 
-  let stack: any = [];
-  let depth = 0;
+    stack: any = [],
+    depth = 0,
 
-  let json = '';
-  let indent = '\n';
-  let appendStr;
+    json = '',
+    indent = '\n',
+    appendStr;
 
   do {
     // loop over the current container (object or array)
@@ -77,7 +78,7 @@ export function stringify(
     }
 
     if (repFunc !== undefined) { 
-      value = repFunc(key, value);
+      value = repFunc.call(container, key, value);
       typeofValue = typeof value;
     }
 
