@@ -29,6 +29,7 @@ export function stringify(
     container: any = { '': value },
     index = 0,
     keys = [''] as string[] | undefined,
+    isFirstKeyValue = true,
     length = 1,
 
     stack: any = [],
@@ -51,6 +52,7 @@ export function stringify(
       json += keys === undefined ? ']' : '}';  // (using the _old_ value of keys)
 
       length = stack[--depth];
+      isFirstKeyValue = stack[--depth];
       keys = stack[--depth];
       index = stack[--depth];
       container = stack[--depth];
@@ -138,14 +140,16 @@ export function stringify(
     // append comma, key and value (as appropriate)
     if (keys === undefined) {
       // we're in an array
-      if (index > 0) json += ',';
+      if (index > 0) json += ',';  // no values can be omitted via the replacer in an array, so this is safe
       if (space !== undefined) json += indent;
       json += appendStr === undefined ? 'null' : appendStr;
 
     } else {
       // we're in an object
       if (appendStr !== undefined) {
-        if (index > 0) json += ',';
+        if (isFirstKeyValue) isFirstKeyValue = false;
+        else json += ',';
+
         if (depth > 0) {
           json += space === undefined ?
             (escapableTest.test(key) ? JSON.stringify(key) : '"' + key + '"') + ':' :
@@ -164,6 +168,7 @@ export function stringify(
     stack[depth++] = container;
     stack[depth++] = index;
     stack[depth++] = keys;
+    stack[depth++] = isFirstKeyValue;
     stack[depth++] = length;
 
     if (space !== undefined) {
@@ -174,11 +179,13 @@ export function stringify(
     container = value;
     index = 0;
     keys = newKeys;
+    isFirstKeyValue = true;
     length = newLength;
 
   } while (depth !== 0);
 
-  return json;
+  // JSON.stringify returns undefined when the replacer function replaces a simple value with undefined, hence:
+  return json || undefined;
 }
 
 

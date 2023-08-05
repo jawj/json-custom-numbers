@@ -26,9 +26,32 @@ function chDesc(ch, prefix = "") {
   const paddedHexRep = "0000".slice(hexRep.length) + hexRep;
   return (ch > 31 ? `'${prefix}${String.fromCharCode(ch)}', ` : "") + `\\u${paddedHexRep}`;
 }
+function reviveObj(reviver, container) {
+  const keys = Object.keys(container);
+  const len = keys.length;
+  for (let i = 0; i < len; i++) {
+    const k = keys[i];
+    const v = reviver.call(container, k, container[k]);
+    if (v !== void 0)
+      container[k] = v;
+    else
+      delete container[k];
+  }
+}
+function reviveArr(reviver, container) {
+  const len = container.length;
+  for (let i = 0; i < len; i++) {
+    const vOld = container[i];
+    const vNew = reviver.call(container, String(i), vOld);
+    container[i] = vNew;
+  }
+}
 export function parse(text, reviver, numberParser) {
+  text = String(text);
+  if (typeof reviver !== "function")
+    reviver = void 0;
   const containerStack = [], keyStack = [], stateStack = [];
-  let at = 0, ch, state = 0, depth = 0, container, key, value;
+  let at = 0, ch, state = 0, depth = 0, container, key = "", value;
   function error(m) {
     return new JSONParseError(`${m}
 At character ${at} in JSON: ${text}`);
@@ -143,6 +166,8 @@ At character ${at} in JSON: ${text}`);
           switch (state) {
             case 6:
               container[key] = value;
+              if (reviver !== void 0)
+                reviveObj(reviver, container);
             case 2:
               value = container;
               container = containerStack[--depth];
@@ -186,6 +211,8 @@ At character ${at} in JSON: ${text}`);
           switch (state) {
             case 9:
               container[key] = value;
+              if (reviver !== void 0)
+                reviveArr(reviver, container);
             case 7:
               value = container;
               container = containerStack[--depth];
@@ -229,5 +256,10 @@ At character ${at} in JSON: ${text}`);
     }
   if (state !== 1)
     throw error(`Unexpected end of input, expecting ${stateDescs[state]}`);
+  if (reviver !== void 0) {
+    value = { "": value };
+    reviveObj(reviver, value);
+    value = value[""];
+  }
   return value;
 }

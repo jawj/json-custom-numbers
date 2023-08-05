@@ -15,7 +15,7 @@ const confOnly = process.argv[2] === '--conf-only';
 function weirdTransform (k, v) {
   return Array.isArray(v) ? [...v, k, typeof k, typeof this, this?.length ?? -1] :
     typeof v === 'object' ? { ...v, k, kType: typeof k, thisType: typeof this, thisLength: this?.length ?? -1 } :
-      `v:${v},k:${k},tk:${typeof k},tt:${typeof this},tl:${this?.length ?? -1}`;
+      v === 'main' || v === false ? undefined : `v:${v},k:${k},tk:${typeof k},tt:${typeof this},tl:${this?.length ?? -1}`;
 }
 
 const folderPath = 'test/test_parsing';

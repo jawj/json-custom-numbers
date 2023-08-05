@@ -75,11 +75,33 @@ function chDesc(ch: number, prefix = '') {
   return (ch > 31 ? `'${prefix}${String.fromCharCode(ch)}', ` : '') + `\\u${paddedHexRep}`;
 }
 
+function reviveObj(reviver: (key: string, value: any) => any, container: Record<string, any>) {
+  const keys = Object.keys(container);
+  const len = keys.length;
+  for (let i = 0; i < len; i++) {
+    const k = keys[i];
+    const v = reviver.call(container, k, container[k]);
+    if (v !== undefined) container[k] = v;
+    else delete container[k];
+  }
+}
+
+function reviveArr(reviver: (key: string, value: any) => any, container: any[]) {
+  const len = container.length;
+  for (let i = 0; i < len; i++) {
+    const vOld = container[i];
+    const vNew = reviver.call(container, String(i), vOld);
+    container[i] = vNew;
+  }
+}
+
 export function parse(
-  text: string, 
+  text: string,
   reviver?: (key: string, value: any) => any,
   numberParser?: (string: string) => any,
 ) {
+  text = String(text);  // force string
+  if (typeof reviver !== 'function') reviver = undefined;  // ignore non-function revivers
 
   const
     containerStack: (Record<string, any> | any[])[] = [],
@@ -87,13 +109,13 @@ export function parse(
     stateStack: number[] = [];
 
   let
-    at = 0,       // character index into text
-    ch: number,   // current character code
-    state = go,   // the state of the parser
-    depth = 0,    // the stack pointer
-    container,    // the current container object or array
-    key,          // the current key
-    value;        // the current value
+    at = 0,         // character index into text
+    ch: number,     // current character code
+    state = go,     // the state of the parser
+    depth = 0,      // the stack pointer
+    container,      // the current container object or array
+    key: any = '',  // the current key
+    value;          // the current value
 
   function error(m: string) {
     return new JSONParseError(`${m}\nAt character ${at} in JSON: ${text}`);
@@ -220,6 +242,7 @@ export function parse(
         switch (state) {
           case ocomma:
             (container as Record<string, any>)[key!] = value;
+            if (reviver !== undefined) reviveObj(reviver, container);
           // deliberate fallthrough
           case firstokey:
             value = container;
@@ -266,6 +289,7 @@ export function parse(
         switch (state) {
           case acomma:
             container[key] = value;  // no need to increment key (= index) on last value
+            if (reviver !== undefined) reviveArr(reviver, container);
           // deliberate fall-through
           case firstavalue:
             value = container;
@@ -315,5 +339,12 @@ export function parse(
   }
 
   if (state !== ok) throw error(`Unexpected end of input, expecting ${stateDescs[state]}`);
+
+  if (reviver !== undefined) {
+    value = { '': value };
+    reviveObj(reviver, value);
+    value = value[''];
+  }
+
   return value;
 }

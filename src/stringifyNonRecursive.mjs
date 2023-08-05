@@ -12,7 +12,7 @@ export function stringify(value, replacer, space, numRep) {
     space = // 10-char limit: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify#the_space_parameter
     typeof space === "string" ? space.slice(0, 10) : typeof space === "number" ? "          ".slice(0, space) : void 0;
   }
-  let key, container = { "": value }, index = 0, keys = [""], length = 1, stack = [], depth = 0, json = "", indent = "\n", appendStr;
+  let key, container = { "": value }, index = 0, keys = [""], isFirstKeyValue = true, length = 1, stack = [], depth = 0, json = "", indent = "\n", appendStr;
   do {
     if (index === length) {
       if (space !== void 0) {
@@ -21,6 +21,7 @@ export function stringify(value, replacer, space, numRep) {
       }
       json += keys === void 0 ? "]" : "}";
       length = stack[--depth];
+      isFirstKeyValue = stack[--depth];
       keys = stack[--depth];
       index = stack[--depth];
       container = stack[--depth];
@@ -94,7 +95,9 @@ export function stringify(value, replacer, space, numRep) {
       json += appendStr === void 0 ? "null" : appendStr;
     } else {
       if (appendStr !== void 0) {
-        if (index > 0)
+        if (isFirstKeyValue)
+          isFirstKeyValue = false;
+        else
           json += ",";
         if (depth > 0) {
           json += space === void 0 ? (escapableTest.test(key) ? JSON.stringify(key) : '"' + key + '"') + ":" : indent + (escapableTest.test(key) ? JSON.stringify(key) : '"' + key + '"') + ": ";
@@ -108,6 +111,7 @@ export function stringify(value, replacer, space, numRep) {
     stack[depth++] = container;
     stack[depth++] = index;
     stack[depth++] = keys;
+    stack[depth++] = isFirstKeyValue;
     stack[depth++] = length;
     if (space !== void 0) {
       stack[depth++] = indent;
@@ -116,9 +120,10 @@ export function stringify(value, replacer, space, numRep) {
     container = value;
     index = 0;
     keys = newKeys;
+    isFirstKeyValue = true;
     length = newLength;
   } while (depth !== 0);
-  return json;
+  return json || void 0;
 }
 export function stringifyBasic(value) {
   let key;
