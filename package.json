@@ -17,8 +17,8 @@
     "buildCjs": "npm run compile && esbuild src/*.mjs --platform=neutral --target=es6 --minify --line-limit=80 --format=cjs --outdir=dist",
     "wrapEsm": "npx gen-esm-wrapper dist/index.js dist/index.mjs",
     "compile": "npm run compileParse && npm run compileStringify",
-    "compileParse": "sed '/<cut>/,/<\\/cut>/d' src/parseStateMachine.ts | esbuild --loader=ts --define:go=0 --define:ok=1 --define:firstokey=2 --define:okey=3 --define:ocolon=4 --define:ovalue=5 --define:ocomma=6 --define:firstavalue=7 --define:avalue=8 --define:acomma=9 --define:tab=9 --define:newline=10 --define:cr=13 --define:space=32 --define:quote=34 --define:comma=44 --define:minus=45 --define:colon=58 --define:opensquare=91 --define:closesquare=93 --define:backslash=92 --define:f=102 --define:n=110 --define:t=116 --define:u=117 --define:openbrace=123 --define:closebrace=125 > src/parseStateMachine.mjs",
-    "compileStringify": "esbuild src/stringifyNonRecursive.ts --outfile=src/stringifyNonRecursive.mjs",
+    "compileParse": "sed '/<cut>/,/<\\/cut>/d' src/parse.ts | esbuild --loader=ts --define:go=0 --define:ok=1 --define:firstokey=2 --define:okey=3 --define:ocolon=4 --define:ovalue=5 --define:ocomma=6 --define:firstavalue=7 --define:avalue=8 --define:acomma=9 --define:tab=9 --define:newline=10 --define:cr=13 --define:space=32 --define:quote=34 --define:comma=44 --define:minus=45 --define:colon=58 --define:opensquare=91 --define:closesquare=93 --define:backslash=92 --define:f=102 --define:n=110 --define:t=116 --define:u=117 --define:openbrace=123 --define:closebrace=125 > src/parse.mjs",
+    "compileStringify": "esbuild src/stringify.ts --outfile=src/stringify.mjs",
     "build": "npm run testConf && npm run buildCjs && npm run wrapEsm"
   },
   "author": "George MacKerron",

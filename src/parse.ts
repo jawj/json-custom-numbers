@@ -1,3 +1,9 @@
+/**
+ * json-custom-numbers
+ * @copyright Copyright (c) 2023 George MacKerron (mackerron.com)
+ * @licence MIT
+ */
+
 "use strict";
 
 export class JSONParseError extends Error { }

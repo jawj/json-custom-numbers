@@ -1,3 +1,11 @@
+/**
+ * json-custom-numbers
+ * @copyright Copyright (c) 2023 George MacKerron (mackerron.com)
+ * @licence MIT
+ */
+
+"use strict";
+
 const
   escapableTest = /["\\\u0000-\u001f]/,
   hasOwn = Object.prototype.hasOwnProperty;
@@ -140,7 +148,7 @@ export function stringify(
     if (keys === undefined) {
       // we're in an array
       if (index > 0) json += ',';  // no values can be omitted via the replacer in an array, so this is safe
-      
+
       if (space !== undefined) json += indent;
       json += appendStr === undefined ? 'null' : appendStr;
 
