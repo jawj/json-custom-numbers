@@ -1,68 +1,22 @@
-"use strict";var O=Object.defineProperty;var A=Object.getOwnPropertyDescriptor;var v=Object.getOwnPropertyNames;var _=Object.prototype.hasOwnProperty;var I=(o,f)=>{for(var t in f)O(o,t,{get:f[t],enumerable:!0})},k=(o,f,t,e)=>{if(f&&
-typeof f=="object"||typeof f=="function")for(let s of v(f))!_.call(o,s)&&s!==t&&
-O(o,s,{get:()=>f[s],enumerable:!(e=A(f,s))||e.enumerable});return o};var E=o=>k(O({},"__esModule",{value:!0}),o);var R={};I(R,{stringify:()=>F});module.exports=E(R);let l,b,g,p;const h=/["\\\u0000-\u001f]/,
-S="Do not know how to serialize a BigInt";function J(o,f){let t=f[o],e=typeof t;
-t&&e==="object"&&typeof t.toJSON=="function"&&(t=t.toJSON(o)),t=g.call(f,o,t),e=
-typeof t;let s;if(p&&(s=p(t,e))!==void 0)return s;switch(e){case"string":return h.
-test(t)?JSON.stringify(t):'"'+t+'"';case"boolean":return t?"true":"false";case"o\
-bject":if(!t)return"null";if(Array.isArray(t)){let i="[";const r=t.length;for(let n=0;n<
-r;n++)n!==0&&(i+=","),i+=J(n,t)||"null";return i+"]"}let c="{";const u=Object.keys(
-t),a=u.length;for(let i=0;i<a;i++){const r=u[i],n=J(r,t);n&&(i!==0&&(c+=","),c+=
-(h.test(r)?JSON.stringify(r):'"'+r+'"')+":"+n)}return c+"}";case"number":return isFinite(
-t)?String(t):"null";case"bigint":throw new TypeError(S)}}function N(o,f){let t=l,
-e=f[o],s=typeof e;e&&s==="object"&&typeof e.toJSON=="function"&&(e=e.toJSON(o)),
-e=g.call(f,o,e),s=typeof e;let c;if(p&&(c=p(e,s))!==void 0)return c;switch(s){case"\
-string":return h.test(e)?JSON.stringify(e):'"'+e+'"';case"boolean":return e?"tru\
-e":"false";case"object":if(!e)return"null";if(l+=b,Array.isArray(e)){const r=e.length;
-if(r===0)return l=t,"[]";let n=`[
-`+l;for(let y=0;y<r;y++)y!==0&&(n+=`,
-`+l),n+=N(y,e)||"null";return n+=`
-`+t+"]",l=t,n}const u=Object.keys(e),a=u.length;if(a===0)return l=t,"{}";let i=`\
-{
-`+l;for(let r=0;r<a;r++){const n=u[r],y=N(n,e);y&&(r!==0&&(i+=`,
-`+l),i+=(h.test(n)?JSON.stringify(n):'"'+n+'"')+": "+y)}return i+=`
-`+t+"}",l=t,i;case"number":return isFinite(e)?String(e):"null";case"bigint":throw new TypeError(
-S)}}function w(o,f){let t=f[o],e=typeof t;t&&e==="object"&&typeof t.toJSON=="fun\
-ction"&&(t=t.toJSON(o),e=typeof t);let s;if(p&&(s=p(t,e))!==void 0)return s;switch(e){case"\
-string":return h.test(t)?JSON.stringify(t):'"'+t+'"';case"boolean":return t?"tru\
-e":"false";case"object":if(!t)return"null";if(Array.isArray(t)){let i="[";const r=t.
-length;for(let n=0;n<r;n++)n!==0&&(i+=","),i+=w(n,t)||"null";return i+"]"}let c="\
-{",u=!1;const a=g.length;for(let i=0;i<a;i++){const r=g[i],n=w(r,t);n&&(u?c+=",":
-u=!0,c+=(h.test(r)?JSON.stringify(r):'"'+r+'"')+":"+n)}return c+"}";case"number":
-return isFinite(t)?String(t):"null";case"bigint":throw new TypeError(S)}}function d(o,f){
-let t=l,e=f[o],s=typeof e;e&&s==="object"&&typeof e.toJSON=="function"&&(e=e.toJSON(
-o),s=typeof e);let c;if(p&&(c=p(e,s))!==void 0)return c;switch(s){case"string":return h.
-test(e)?JSON.stringify(e):'"'+e+'"';case"boolean":return e?"true":"false";case"o\
-bject":if(!e)return"null";if(l+=b,Array.isArray(e)){const i=e.length;if(i===0)return l=
-t,"[]";let r=`[
-`+l;for(let n=0;n<i;n++)n!==0&&(r+=`,
-`+l),r+=d(n,e)||"null";return r+=`
-`+t+"]",l=t,r}let u;const a=g.length;for(let i=0;i<a;i++){const r=g[i],n=d(r,e);
-n&&(u?u+=`,
-`+l:u=`{
-`+l,u+=(h.test(r)?JSON.stringify(r):'"'+r+'"')+": "+n)}return u?u+=`
-`+t+"}":u="{}",l=t,u;case"number":return isFinite(e)?String(e):"null";case"bigin\
-t":throw new TypeError(S)}}function m(o,f){let t=f[o],e=typeof t;t&&e==="object"&&
-typeof t.toJSON=="function"&&(t=t.toJSON(o),e=typeof t);let s;if(p&&(s=p(t,e))!==
-void 0)return s;switch(e){case"string":return h.test(t)?JSON.stringify(t):'"'+t+
-'"';case"boolean":return t?"true":"false";case"object":if(!t)return"null";if(Array.
-isArray(t)){let i="[";const r=t.length;for(let n=0;n<r;n++)n!==0&&(i+=","),i+=m(
-n,t)||"null";return i+"]"}let c="{";const u=Object.keys(t),a=u.length;for(let i=0;i<
-a;i++){const r=u[i],n=m(r,t);n&&(i!==0&&(c+=","),c+=(h.test(r)?JSON.stringify(r):
-'"'+r+'"')+":"+n)}return c+"}";case"number":return isFinite(t)?String(t):"null";case"\
-bigint":throw new TypeError(S)}}function j(o,f){let t=l,e=f[o],s=typeof e;e&&s===
-"object"&&typeof e.toJSON=="function"&&(e=e.toJSON(o),s=typeof e);let c;if(p&&(c=
-p(e,s))!==void 0)return c;switch(s){case"string":return h.test(e)?JSON.stringify(
-e):'"'+e+'"';case"boolean":return e?"true":"false";case"object":if(!e)return"nul\
-l";if(l+=b,Array.isArray(e)){const r=e.length;if(r===0)return l=t,"[]";let n=`[
-`+l;for(let y=0;y<r;y++)y!==0&&(n+=`,
-`+l),n+=j(y,e)||"null";return n+=`
-`+t+"]",l=t,n}const u=Object.keys(e),a=u.length;if(a===0)return l=t,"{}";let i=`\
-{
-`+l;for(let r=0;r<a;r++){const n=u[r],y=j(n,e);y&&(r!==0&&(i+=`,
-`+l),i+=(h.test(n)?JSON.stringify(n):'"'+n+'"')+": "+y)}return i+=`
-`+t+"}",l=t,i;case"number":return isFinite(e)?String(e):"null";case"bigint":throw new TypeError(
-S)}}function F(o,f,t,e){l="",b="";const s=typeof t;if(s==="number")for(let a=0;a<
-t;a++)b+=" ";else s==="string"&&(b=t);g=f;const c=typeof g=="function",u=Array.isArray(
-g);return u&&(g=g.filter(a=>typeof a=="string")),g&&!c&&!u&&(g=void 0),p=e,(b?g?
-u?d:N:j:g?u?w:J:m)("",{"":o})}
+"use strict";var J=Object.defineProperty;var K=Object.getOwnPropertyDescriptor;var L=Object.getOwnPropertyNames;var x=Object.prototype.hasOwnProperty;var T=(i,o)=>{for(var t in o)J(i,t,{get:o[t],enumerable:!0})},V=(i,o,t,h)=>{if(o&&
+typeof o=="object"||typeof o=="function")for(let s of L(o))!x.call(i,s)&&s!==t&&
+J(i,s,{get:()=>o[s],enumerable:!(h=K(o,s))||h.enumerable});return i};var m=i=>V(J({},"__esModule",{value:!0}),i);var D={};T(D,{stringify:()=>B});module.exports=m(D);const N=/["\\\u0000-\u001f]/,
+z=Object.prototype.hasOwnProperty;function B(i,o,t,h){let s,j;o!==void 0&&(typeof o==
+"function"?s=o:Array.isArray(o)&&(j=o)),t!==void 0&&(t=typeof t=="string"?t.slice(
+0,10):typeof t=="number"?"          ".slice(0,t):void 0);let f,g={"":i},d=0,b=[""],
+k=!1,w=1,r=[],n=0,y="",c=`
+`,e;do{if(d===w){t!==void 0&&(c=r[--n],y+=c),y+=b===void 0?"]":"}",w=r[--n],k=r[--n],
+b=r[--n],d=r[--n],g=r[--n];continue}let A,O;b===void 0?(f=String(d),i=g[d]):(f=b[d],
+i=g[f]);let l=typeof i;if(i&&l==="object"&&typeof i.toJSON=="function"&&(i=i.toJSON(
+f),l=typeof i),s!==void 0&&(i=s.call(g,f,i),l=typeof i),h===void 0||(e=h(f,i,l))===
+void 0)switch(l){case"string":e=N.test(i)?JSON.stringify(i):'"'+i+'"';break;case"\
+number":e=isFinite(i)?String(i):"null";break;case"boolean":e=i===!0?"true":"fals\
+e";break;case"object":if(i===null){e="null";break}if(Array.isArray(i)){const S=i.
+length;S===0?e="[]":(e="[",A=void 0,O=S);break}const p=j===void 0?Object.keys(i):
+j.filter(S=>z.call(i,S)),F=p.length;F===0?e="{}":(e="{",A=p,O=F);break;case"bigi\
+nt":throw new TypeError("Do not know how to serialize a BigInt");default:e=void 0}
+b===void 0?(d>0&&(y+=","),t!==void 0&&(y+=c),y+=e===void 0?"null":e):e!==void 0&&
+(k?y+=",":k=!0,n>0&&(y+=t===void 0?(N.test(f)?JSON.stringify(f):'"'+f+'"')+":":c+
+(N.test(f)?JSON.stringify(f):'"'+f+'"')+": "),y+=e),d++,O!==void 0&&(r[n++]=g,r[n++]=
+d,r[n++]=b,r[n++]=k,r[n++]=w,t!==void 0&&(r[n++]=c,c+=t),g=i,d=0,b=A,k=!1,w=O)}while(n!==
+0);return y||void 0}

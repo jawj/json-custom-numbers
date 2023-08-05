@@ -1,6 +1,6 @@
 /**
- * json-custom-numbers
- * @copyright Copyright (c) 2023 George MacKerron (mackerron.com)
+ * https://github.com/jawj/json-custom-numbers
+ * @copyright Copyright (c) 2023 George MacKerron
  * @licence MIT
  */
 
