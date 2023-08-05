@@ -12,10 +12,14 @@ import { parse as parseLossless, stringify as stringifyLossless } from 'lossless
 const perfOnly = process.argv[2] === '--perf-only';
 const confOnly = process.argv[2] === '--conf-only';
 
-function weirdTransform (k, v) {
-  return Array.isArray(v) ? [...v, k, typeof k, typeof this, this?.length ?? -1] :
-    typeof v === 'object' ? { ...v, k, kType: typeof k, thisType: typeof this, thisLength: this?.length ?? -1 } :
-      v === 'main' || v === false ? undefined : `v:${v},k:${k},tk:${typeof k},tt:${typeof this},tl:${this?.length ?? -1}`;
+function weirdTransform(k, v) {
+  return Array.isArray(v) ? [...v, typeof v, k, typeof k, typeof this, this.length] :
+    typeof v === 'object' ? { ...v, vType: typeof v, k, kType: typeof k, thisType: typeof this, thisLength: Object.keys(this).length } :
+      v === 'main' || v === false ? undefined : `v:${v},tv:${typeof v},k:${k},tk:${typeof k},tt:${typeof this},tl:${Array.isArray(this) ? this.length : Object.keys(this).length}`;
+}
+
+function undefinedTransform(k, v) {
+  return undefined;
 }
 
 const folderPath = 'test/test_parsing';
@@ -71,7 +75,8 @@ if (!perfOnly) {
   for (const filename of filenames) {
     const json = fs.readFileSync(path.join(folderPath, filename), 'utf8');
     compare(filename, json, JSON.parse, 'JSON.parse', parse, 'parse');
-    compare(filename, json, json => JSON.parse(json, weirdTransform), 'JSON.parse (reviver)', json => parse(json, weirdTransform), 'parse (reviver)');
+    compare(filename, json, json => JSON.parse(json, weirdTransform), 'JSON.parse (verbose reviver)', json => parse(json, weirdTransform), 'parse (verbose reviver)');
+    compare(filename, json, json => JSON.parse(json, undefinedTransform), 'JSON.parse (undefined reviver)', json => parse(json, undefinedTransform), 'parse (undefined reviver)');
   }
 
   console.log(`\n${passes} passes, ${fails} fails\n`);
@@ -219,7 +224,7 @@ if (!perfOnly) {
   console.log(col.bold(`Running JSON.stringify comparison tests ...`));
 
   function compare(filename, obj, trueFn, trueFnName, testFn, testFnName) {
-    for (const replacer of [undefined, ['a', 'x', 'users', 12], /./, weirdTransform]) {
+    for (const replacer of [undefined, ['a', 'x', 'users', 12], /./, weirdTransform, undefinedTransform]) {
       for (const indent of [undefined, 2, 15, ' '.repeat(15), '\t', '--']) {
         const trueResult = trueFn(obj, replacer, indent);
         const testResult = testFn(obj, replacer, indent);

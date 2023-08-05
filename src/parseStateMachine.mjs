@@ -28,22 +28,14 @@ function chDesc(ch, prefix = "") {
 }
 function reviveObj(reviver, container) {
   const keys = Object.keys(container);
-  const len = keys.length;
-  for (let i = 0; i < len; i++) {
+  const numKeys = keys.length;
+  for (let i = 0; i < numKeys; i++) {
     const k = keys[i];
     const v = reviver.call(container, k, container[k]);
     if (v !== void 0)
       container[k] = v;
     else
       delete container[k];
-  }
-}
-function reviveArr(reviver, container) {
-  const len = container.length;
-  for (let i = 0; i < len; i++) {
-    const vOld = container[i];
-    const vNew = reviver.call(container, String(i), vOld);
-    container[i] = vNew;
   }
 }
 export function parse(text, reviver, numberParser) {
@@ -211,8 +203,17 @@ At character ${at} in JSON: ${text}`);
           switch (state) {
             case 9:
               container[key] = value;
-              if (reviver !== void 0)
-                reviveArr(reviver, container);
+              if (reviver !== void 0) {
+                const len = container.length;
+                for (let i = 0; i < len; i++) {
+                  const vOld = container[i];
+                  const vNew = reviver.call(container, String(i), vOld);
+                  if (vNew !== void 0)
+                    container[i] = vNew;
+                  else
+                    delete container[i];
+                }
+              }
             case 7:
               value = container;
               container = containerStack[--depth];

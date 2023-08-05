@@ -77,21 +77,12 @@ function chDesc(ch: number, prefix = '') {
 
 function reviveObj(reviver: (key: string, value: any) => any, container: Record<string, any>) {
   const keys = Object.keys(container);
-  const len = keys.length;
-  for (let i = 0; i < len; i++) {
+  const numKeys = keys.length;
+  for (let i = 0; i < numKeys; i++) {
     const k = keys[i];
     const v = reviver.call(container, k, container[k]);
     if (v !== undefined) container[k] = v;
     else delete container[k];
-  }
-}
-
-function reviveArr(reviver: (key: string, value: any) => any, container: any[]) {
-  const len = container.length;
-  for (let i = 0; i < len; i++) {
-    const vOld = container[i];
-    const vNew = reviver.call(container, String(i), vOld);
-    container[i] = vNew;
   }
 }
 
@@ -289,7 +280,16 @@ export function parse(
         switch (state) {
           case acomma:
             container[key] = value;  // no need to increment key (= index) on last value
-            if (reviver !== undefined) reviveArr(reviver, container);
+            if (reviver !== undefined) {
+              const len = container.length;
+              for (let i = 0; i < len; i++) {
+                const vOld = container[i];
+                const vNew = reviver.call(container, String(i), vOld);
+                if (vNew !== undefined) container[i] = vNew;
+                else delete container[i];  // JSON.parse creates sparse arrays in this case
+              }
+            }
+
           // deliberate fall-through
           case firstavalue:
             value = container;
