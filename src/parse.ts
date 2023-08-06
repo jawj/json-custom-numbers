@@ -2,6 +2,10 @@
  * https://github.com/jawj/json-custom-numbers
  * @copyright Copyright (c) 2023 George MacKerron
  * @licence MIT
+ * 
+ * This file implements a non-recursive, state machine-based JSON parser that's
+ * intended to precisely match native `JSON.parse` behaviour but also allow for
+ * custom number parsing.
  */
 
 "use strict";
@@ -9,7 +13,8 @@
 export class JSONParseError extends Error { }
 
 const
-  /* <cut> -- sed will cut this section and esbuild will define as literals */
+  /* <cut> -- sed will cut this section and esbuild will define constants as literals */
+
   // parser states
   go = 0,           // starting state
   ok = 1,           // final valid state
@@ -22,7 +27,7 @@ const
   avalue = 8,       // ready for the next value of an array
   acomma = 9,       // ready for a comma or closing ]
 
-  // char codes
+  // useful char codes
   tab = 9,
   newline = 10,
   quote = 34,
@@ -37,9 +42,10 @@ const
   u = 117,
   openbrace = 123,
   closebrace = 125,
+
   /* </cut> */
 
-  stateDescs = [
+  stateDescs = [  // array indices match the parser state values
     'JSON value',
     'end of input',
     "'}' or first key in object",
@@ -60,9 +66,6 @@ const
   // e.g. \n -> 'n'.charCodeAt() === 110, so escapes[110] === '\n'
   x = "",
   escapes = [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, "\"", x, x, x, x, x, x, x, x, x, x, x, x, "/", x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, "\\", x, x, x, x, x, "\b", x, x, x, "\f", x, x, x, x, x, x, x, "\n", x, x, x, "\r", x, "\t"],
-
-  //noKey = '',
-  //noContainer = [],
 
   // these arrays are indexed by the char code of a hex digit, used for \uXXXX escapes
   y = 65536,  // = 0xffff + 1: signals a bad character, since it's out of range
@@ -97,11 +100,10 @@ export function parse(
   reviver?: (key: string, value: any) => any,
   numberParser?: (string: string) => any,
 ) {
-  text = String(text);  // force string
-  if (typeof reviver !== 'function') reviver = undefined;  // ignore non-function revivers
+  if (typeof text !== 'string') text = String(text);  // force string
+  if (typeof reviver !== 'function') reviver = undefined;  // ignore non-function revivers, like JSON.parse
 
   const stack: any[] = [];
-
   let
     at = 0,       // character index into text
     ch: number,   // current character code
@@ -159,7 +161,7 @@ export function parse(
                   hexLookup1[text.charCodeAt(at++)] + hexLookup2[text.charCodeAt(at++)] +
                   hexLookup3[text.charCodeAt(at++)] + hexLookup4[text.charCodeAt(at++)];
 
-                if (charCode < 65536) {  // (NaN also fails this test)
+                if (charCode < y) {  // (NaN also fails this test)
                   value += String.fromCharCode(charCode);
                   continue;
                 }
@@ -295,12 +297,19 @@ export function parse(
 
         at = wordRegExp.lastIndex;
 
-        if (ch < f) {  // has to be a number
-          const str = text.slice(startAt, at);
-          value = numberParser !== undefined ? numberParser(str) : +str;
-
-        } else {  // must be null/true/false
-          value = ch === n ? null : ch === t;
+        switch (ch) {
+          case t:
+            value = true;
+            break;
+          case f:
+            value = false;
+            break;
+          case n:
+            value = null;
+            break;
+          default:
+            const str = text.slice(startAt, at);
+            value = numberParser !== undefined ? numberParser(str) : +str;
         }
 
         switch (state) {

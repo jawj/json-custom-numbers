@@ -2,6 +2,7 @@
 export class JSONParseError extends Error {
 }
 const stateDescs = [
+  // array indices match the parser state values
   "JSON value",
   "end of input",
   "'}' or first key in object",
@@ -39,7 +40,8 @@ function reviveContainer(reviver, container) {
   }
 }
 export function parse(text, reviver, numberParser) {
-  text = String(text);
+  if (typeof text !== "string")
+    text = String(text);
   if (typeof reviver !== "function")
     reviver = void 0;
   const stack = [];
@@ -86,7 +88,7 @@ At character ${at} in JSON: ${text}`);
                   ch = text.charCodeAt(at++);
                   if (ch === 117) {
                     const charCode = hexLookup1[text.charCodeAt(at++)] + hexLookup2[text.charCodeAt(at++)] + hexLookup3[text.charCodeAt(at++)] + hexLookup4[text.charCodeAt(at++)];
-                    if (charCode < 65536) {
+                    if (charCode < y) {
                       value += String.fromCharCode(charCode);
                       continue;
                     }
@@ -210,11 +212,19 @@ At character ${at} in JSON: ${text}`);
             throw error(`Unexpected ${chDesc(ch)}, expecting ${stateDescs[state]}`);
           }
           at = wordRegExp.lastIndex;
-          if (ch < 102) {
-            const str = text.slice(startAt, at);
-            value = numberParser !== void 0 ? numberParser(str) : +str;
-          } else {
-            value = ch === 110 ? null : ch === 116;
+          switch (ch) {
+            case 116:
+              value = true;
+              break;
+            case 102:
+              value = false;
+              break;
+            case 110:
+              value = null;
+              break;
+            default:
+              const str = text.slice(startAt, at);
+              value = numberParser !== void 0 ? numberParser(str) : +str;
           }
           switch (state) {
             case 5:

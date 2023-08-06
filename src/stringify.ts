@@ -2,6 +2,10 @@
  * https://github.com/jawj/json-custom-numbers
  * @copyright Copyright (c) 2023 George MacKerron
  * @licence MIT
+ * 
+ * This file implements a non-recursive JSON stringifier that's intended to
+ * precisely match native `JSON.stringify` behaviour but also allow for custom
+ * stringifying of numbers.
  */
 
 "use strict";
