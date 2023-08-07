@@ -13,7 +13,7 @@ const stateDescs = [
   "']' or first value in array",
   "value in array",
   "',' or ']' in array"
-], stringChunkRegExp = /[^"\\\u0000-\u001f]*/y, wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y, x = "", escapes = [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, '"', x, x, x, x, x, x, x, x, x, x, x, x, "/", x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, "\\", x, x, x, x, x, "\b", x, x, x, "\f", x, x, x, x, x, x, x, "\n", x, x, x, "\r", x, "	"], y = 65536, hexLookup1 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 4096, 8192, 12288, 16384, 20480, 24576, 28672, 32768, 36864, y, y, y, y, y, y, y, 40960, 45056, 49152, 53248, 57344, 61440, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 40960, 45056, 49152, 53248, 57344, 61440]), hexLookup2 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 256, 512, 768, 1024, 1280, 1536, 1792, 2048, 2304, y, y, y, y, y, y, y, 2560, 2816, 3072, 3328, 3584, 3840, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 2560, 2816, 3072, 3328, 3584, 3840]), hexLookup3 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 16, 32, 48, 64, 80, 96, 112, 128, 144, y, y, y, y, y, y, y, 160, 176, 192, 208, 224, 240, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 160, 176, 192, 208, 224, 240]), hexLookup4 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, y, y, y, y, y, y, y, 10, 11, 12, 13, 14, 15, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 10, 11, 12, 13, 14, 15]);
+], stringChunkRegExp = /[^"\\\u0000-\u001f]*/y, wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y, x = "", escapes = [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, '"', x, x, x, x, x, x, x, x, x, x, x, x, "/", x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, "\\", x, x, x, x, x, "\b", x, x, x, "\f", x, x, x, x, x, x, x, "\n", x, x, x, "\r", x, "	"], y = 65536, hexLookup1 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 4096, 8192, 12288, 16384, 20480, 24576, 28672, 32768, 36864, y, y, y, y, y, y, y, 40960, 45056, 49152, 53248, 57344, 61440, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 40960, 45056, 49152, 53248, 57344, 61440]), hexLookup2 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 256, 512, 768, 1024, 1280, 1536, 1792, 2048, 2304, y, y, y, y, y, y, y, 2560, 2816, 3072, 3328, 3584, 3840, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 2560, 2816, 3072, 3328, 3584, 3840]), hexLookup3 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 16, 32, 48, 64, 80, 96, 112, 128, 144, y, y, y, y, y, y, y, 160, 176, 192, 208, 224, 240, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 160, 176, 192, 208, 224, 240]), hexLookup4 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, y, y, y, y, y, y, y, 10, 11, 12, 13, 14, 15, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 10, 11, 12, 13, 14, 15]), depthErrMsg = "Maximum nesting depth exceeded";
 function chDesc(ch, prefix = "") {
   if (!(ch >= 0))
     return "end of input";
@@ -39,13 +39,13 @@ function reviveContainer(reviver, container) {
       delete container[k];
   }
 }
-export function parse(text, reviver, numberParser) {
+export function parse(text, reviver, numberParser, maxDepth = Infinity) {
   if (typeof text !== "string")
     text = String(text);
   if (typeof reviver !== "function")
     reviver = void 0;
-  const stack = [];
-  let at = 0, ch, state = 0, depth = 0, container, key, value;
+  const stack = [], maxStackPtr = maxDepth * 3;
+  let at = 0, ch, state = 0, stackPtr = 0, container, key, value;
   function error(m) {
     return new JSONParseError(`${m}
 At character ${at} in JSON: ${text}`);
@@ -130,21 +130,23 @@ At character ${at} in JSON: ${text}`);
           state = 5;
           continue;
         case 123:
-          stack[depth++] = container;
-          stack[depth++] = key;
+          stack[stackPtr++] = container;
+          stack[stackPtr++] = key;
           container = {};
+          if (stackPtr > maxStackPtr)
+            throw error(depthErrMsg);
           switch (state) {
             case 5:
-              stack[depth++] = 6;
+              stack[stackPtr++] = 6;
               state = 2;
               continue;
             case 8:
             case 7:
-              stack[depth++] = 9;
+              stack[stackPtr++] = 9;
               state = 2;
               continue;
             case 0:
-              stack[depth++] = 1;
+              stack[stackPtr++] = 1;
               state = 2;
               continue;
             default:
@@ -158,30 +160,32 @@ At character ${at} in JSON: ${text}`);
                 reviveContainer(reviver, container);
             case 2:
               value = container;
-              state = stack[--depth];
-              key = stack[--depth];
-              container = stack[--depth];
+              state = stack[--stackPtr];
+              key = stack[--stackPtr];
+              container = stack[--stackPtr];
               continue;
             default:
               throw error(`Unexpected '}', expecting ${stateDescs[state]}`);
           }
         case 91:
-          stack[depth++] = container;
-          stack[depth++] = key;
+          stack[stackPtr++] = container;
+          stack[stackPtr++] = key;
           container = [];
           key = 0;
+          if (stackPtr > maxStackPtr)
+            throw error(depthErrMsg);
           switch (state) {
             case 5:
-              stack[depth++] = 6;
+              stack[stackPtr++] = 6;
               state = 7;
               continue;
             case 8:
             case 7:
-              stack[depth++] = 9;
+              stack[stackPtr++] = 9;
               state = 7;
               continue;
             case 0:
-              stack[depth++] = 1;
+              stack[stackPtr++] = 1;
               state = 7;
               continue;
             default:
@@ -195,9 +199,9 @@ At character ${at} in JSON: ${text}`);
                 reviveContainer(reviver, container);
             case 7:
               value = container;
-              state = stack[--depth];
-              key = stack[--depth];
-              container = stack[--depth];
+              state = stack[--stackPtr];
+              key = stack[--stackPtr];
+              container = stack[--stackPtr];
               continue;
             default:
               throw error(`Unexpected ']', expecting ${stateDescs[state]}`);

@@ -2,49 +2,53 @@
 
 https://github.com/jawj/json-custom-numbers
 
-This package offers heavily modified versions of [Douglas Crockford's recursive-descent JSON parser](https://github.com/douglascrockford/JSON-js/blob/03157639c7a7cddd2e9f032537f346f1a87c0f6d/json_parse.js) and [stringifier](https://github.com/douglascrockford/JSON-js/blob/03157639c7a7cddd2e9f032537f346f1a87c0f6d/json2.js).
+This package implements JSON `parse` and `stringify` functions to support custom number parsing and stringification.
 
-These modifications:
+Similar packages exist, but this one has some attractive features:
 
-* **enable custom number parsing and stringification** via functions you supply: this is the reason you might use this library
+* Totally flexible number parsing and stringification, via functions you supply.
 
-* match `JSON.parse()` behaviour, by allowing duplicate object keys (last value wins), and by being strict about whitespace characters, number formats (`.5`, `5.` and `05` are errors), unicode escapes, and unescaped `\t`, `\n` and control characters in strings
+* Drop-in replacement for native `JSON.parse` and `JSON.stringify`: aims to exactly reproduce all other native behaviour.
 
-* match `JSON.stringify()` behaviour, by harmonising character escaping
+* Non-recursive implementations, meaning deeply nested objects can't overflow the call stack.
 
-* significantly optimise performance
+* Faster than the alternatives.
 
-* add more informative error messages
+* Informative error messages.
+
+Note: the `stringify()` function makes use of native `JSON.stringify()` for string escaping, and is thus not a full replacement for the native function. If this is a problem for you, let me know: `replace()`, which is slightly slower, can easily be used for escaping instead.
 
 
 ## Conformance and compatibility
 
-The `parse()` function matches the behaviour of `JSON.parse()` for every test in the [JSON Parsing Test Suite](https://github.com/nst/JSONTestSuite).
+The `parse()` function matches the behaviour of `JSON.parse()` for every test in the [JSON Parsing Test Suite](https://github.com/nst/JSONTestSuite), and a few more besides.
 
-The `stringify()` function matches `JSON.stringify()` for every valid case in the suite, with a variety of `indent` and `replacer` arguments.
+The `stringify()` function matches `JSON.stringify()` for every valid case in the suite, and some others, with a variety of `indent` and `replacer` arguments.
 
-Both functions are implemented with recursion, and circular references are not detected. Objects nested many thousands of levels deep, and objects that contain circular references, will therefore throw `maximum call stack size exceeded` or `too much recursion` errors.
 
-If you discover any other behaviour (other than the wording of error messages) that differs between these functions and the built-in JSON functions, please file an issue.
+### Known differences
 
-Note: the `stringify()` function makes use of built-in `JSON.stringify()` for string escaping.
+* The `stringify()` implementation is non-recursive, and the maximum allowable nesting depth is thus explicitly configurable (and defaults to 50,000). By contrast, native `JSON.stringify()` appears to be implemented with recursion, and maximum depth is thus limited by the call stack size.
+
+* Error messages do not match any of the native implementations (which are all different).
+
+If you discover any other behaviour that differs between these functions and the native JSON functions, please file an issue.
 
 
 ## Performance
 
-I've put some effort into optimising performance, and this library is substantially faster than some similar libraries.
+I've put some effort into optimising performance, and this library is substantially faster than similar libraries.
 
 Performance comparisons depend both on the JavaScript engine and on the nature of the JSON data to be parsed/generated. If you figure out how to make either `parse()` or `stringify()` reliably faster, I'd be glad to hear about it.
+
 
 ### Parse
 
 On Node.js 20:
 
-* The best case is JSON that's all long strings with few escape sequences. On these sorts of inputs, this library may be up to **20% faster** than `JSON.parse()`.
+* The best case is JSON that's all long strings with few escape sequences. On these sorts of inputs, this library may be **25% faster** than `JSON.parse()`.
 
-* The worst case is JSON that's all strings that are mainly escape sequences. In such cases, this library may be up to 4x slower than `JSON.parse()`.
-
-* Typically, this library is 2 – 3x slower than `JSON.parse()`.
+* Typically, this library is 2 – 4x slower than `JSON.parse()`.
 
 Tests are included to compare the performance of this library, [Crockford's reference implementation]((https://github.com/douglascrockford/JSON-js/blob/03157639c7a7cddd2e9f032537f346f1a87c0f6d/json_parse.js)), and the [json-bigint](https://www.npmjs.com/package/json-bigint) and [lossless-json](https://www.npmjs.com/package/lossless-json) libraries against native `JSON.parse` across a range of inputs. Here's some example output, from Node.js 20.0 on a 2020 Intel MacBook Pro:
 
@@ -52,16 +56,16 @@ Tests are included to compare the performance of this library, [Crockford's refe
 
 ```
 test               x   reps |  native |     this library |        crockford |      json-bigint |    lossless-json
-01_typical_3kb     x  10000 |   128ms |   287ms  (x2.24) |   614ms  (x4.79) |   468ms  (x3.65) |   638ms  (x4.98)
-02_typical_28kb    x   1000 |   100ms |   296ms  (x2.96) |   541ms  (x5.42) |   466ms  (x4.67) |   642ms  (x6.43)
-03_mixed_83b       x  50000 |    93ms |   207ms  (x2.21) |   339ms  (x3.63) |   365ms  (x3.91) |   380ms  (x4.07)
-04_short_numbers   x  50000 |   112ms |   368ms  (x3.27) |   454ms  (x4.04) |   436ms  (x3.88) |   484ms  (x4.30)
-05_long_numbers    x  50000 |   100ms |   173ms  (x1.73) |   432ms  (x4.30) |   674ms  (x6.71) |   321ms  (x3.20)
-06_short_strings   x  50000 |   100ms |   116ms  (x1.16) |   178ms  (x1.78) |   196ms  (x1.96) |   237ms  (x2.36)
-07_long_strings    x   2500 |   142ms |   109ms  (x0.77) |  1761ms (x12.37) |  1245ms  (x8.75) |  1121ms  (x7.88)
-08_string_escapes  x 100000 |   108ms |   375ms  (x3.47) |  1069ms  (x9.89) |  1016ms  (x9.41) |   616ms  (x5.70)
-09_bool_null       x 100000 |    99ms |   238ms  (x2.40) |   400ms  (x4.03) |   395ms  (x3.98) |   584ms  (x5.89)
-10_package_json    x  25000 |   103ms |   189ms  (x1.83) |   534ms  (x5.16) |   484ms  (x4.68) |   481ms  (x4.66)
+01_typical_3kb     x  10000 |   131ms |   316ms  (x2.41) |   615ms  (x4.70) |   470ms  (x3.59) |   648ms  (x4.95)
+02_typical_28kb    x   1000 |    98ms |   333ms  (x3.42) |   552ms  (x5.66) |   453ms  (x4.64) |   622ms  (x6.38)
+03_mixed_83b       x  50000 |    98ms |   206ms  (x2.11) |   334ms  (x3.42) |   372ms  (x3.82) |   355ms  (x3.64)
+04_short_numbers   x  50000 |   112ms |   386ms  (x3.46) |   424ms  (x3.79) |   440ms  (x3.94) |   472ms  (x4.22)
+05_long_numbers    x  50000 |   102ms |   164ms  (x1.60) |   404ms  (x3.95) |   672ms  (x6.57) |   327ms  (x3.20)
+06_short_strings   x  50000 |   109ms |   136ms  (x1.25) |   197ms  (x1.81) |   197ms  (x1.80) |   235ms  (x2.15)
+07_long_strings    x   2500 |   140ms |   104ms  (x0.74) |  1761ms (x12.56) |  1284ms  (x9.15) |  1130ms  (x8.06)
+08_string_escapes  x 100000 |   108ms |   380ms  (x3.50) |  1017ms  (x9.38) |   992ms  (x9.14) |   622ms  (x5.73)
+09_bool_null       x 100000 |   101ms |   277ms  (x2.75) |   377ms  (x3.73) |   373ms  (x3.69) |   651ms  (x6.45)
+10_package_json    x  25000 |   131ms |   244ms  (x1.86) |   796ms  (x6.05) |   705ms  (x5.36) |   675ms  (x5.14)
 ```
 
 ### Stringify
@@ -72,16 +76,16 @@ The numbers for `stringify()` follow a more or less similar pattern, but perform
 
 ```
 test               x   reps |  native |     this library |        crockford |      json-bigint |    lossless-json
-01_typical_3kb     x  10000 |   106ms |   172ms  (x1.63) |   274ms  (x2.59) |   303ms  (x2.85) |   351ms  (x3.32)
-02_typical_28kb    x   1000 |    71ms |   152ms  (x2.14) |   223ms  (x3.14) |   248ms  (x3.49) |   339ms  (x4.77)
-03_mixed_83b       x  50000 |    83ms |   119ms  (x1.42) |   214ms  (x2.56) |   276ms  (x3.31) |   245ms  (x2.94)
-04_short_numbers   x  50000 |   120ms |   211ms  (x1.76) |   277ms  (x2.31) |   339ms  (x2.84) |   424ms  (x3.54)
-05_long_numbers    x  50000 |   117ms |    57ms  (x0.49) |    97ms  (x0.83) |   118ms  (x1.01) |   226ms  (x1.93)
-06_short_strings   x  50000 |    68ms |   151ms  (x2.21) |   171ms  (x2.51) |   206ms  (x3.02) |   226ms  (x3.32)
-07_long_strings    x   2500 |   252ms |   289ms  (x1.15) |   220ms  (x0.87) |   203ms  (x0.80) |   270ms  (x1.07)
-08_string_escapes  x 100000 |    68ms |    85ms  (x1.26) |   369ms  (x5.44) |   372ms  (x5.48) |    87ms  (x1.29)
-09_bool_null       x 100000 |   116ms |   155ms  (x1.34) |   277ms  (x2.39) |   323ms  (x2.79) |   487ms  (x4.20)
-10_package_json    x  25000 |    87ms |   124ms  (x1.43) |   174ms  (x2.01) |   190ms  (x2.20) |   252ms  (x2.91)
+01_typical_3kb     x  10000 |    92ms |   190ms  (x2.07) |   257ms  (x2.80) |   285ms  (x3.11) |   328ms  (x3.57)
+02_typical_28kb    x   1000 |    67ms |   185ms  (x2.77) |   213ms  (x3.20) |   224ms  (x3.37) |   325ms  (x4.88)
+03_mixed_83b       x  50000 |    79ms |   136ms  (x1.72) |   194ms  (x2.46) |   210ms  (x2.65) |   220ms  (x2.78)
+04_short_numbers   x  50000 |   113ms |   206ms  (x1.82) |   235ms  (x2.07) |   285ms  (x2.51) |   384ms  (x3.39)
+05_long_numbers    x  50000 |   111ms |    65ms  (x0.59) |    99ms  (x0.89) |   107ms  (x0.96) |   203ms  (x1.83)
+06_short_strings   x  50000 |    63ms |   161ms  (x2.54) |   165ms  (x2.61) |   189ms  (x2.97) |   219ms  (x3.45)
+07_long_strings    x   2500 |   239ms |   265ms  (x1.11) |   184ms  (x0.77) |   187ms  (x0.78) |   255ms  (x1.07)
+08_string_escapes  x 100000 |    65ms |    82ms  (x1.27) |   332ms  (x5.15) |   344ms  (x5.33) |    75ms  (x1.16)
+09_bool_null       x 100000 |   115ms |   169ms  (x1.47) |   248ms  (x2.16) |   316ms  (x2.75) |   449ms  (x3.90)
+10_package_json    x  25000 |   112ms |   178ms  (x1.59) |   217ms  (x1.93) |   231ms  (x2.06) |   278ms  (x2.48)
 ```
 
 In contrast with the situation for parsing, this library's `stringify()` is not faster than every alternative library in every case. This comes down to the approach taken to string escaping: I've optimised for the average and worst cases, rather than the best.

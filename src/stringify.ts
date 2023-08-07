@@ -18,7 +18,8 @@ export function stringify(
   value: any,
   replacer?: (string | number)[] | ((key: string, value: any) => any),
   space?: number | string,
-  numRep?: (key: string, value: any, typeofValue: string) => string,
+  customSerializer?: (key: string, value: any, typeofValue: string) => string,
+  maxDepth = 50000,  // at the time of writing, Bun and Safari's maximum (via call stack limits) is 40,000, and all others are lower
 ) {
 
   let repFunc: ((key: string, value: any) => any) | undefined;
@@ -35,6 +36,8 @@ export function stringify(
         undefined;
   }
 
+  const maxStackPtr = maxDepth * (space === undefined ? 5 : 6);  // 5 or 6 is the number of entries added to the stack per container
+
   let
     key,
 
@@ -45,28 +48,32 @@ export function stringify(
     length = 1,
 
     stack: any = [],
-    depth = 0,
+    stackPtr = 0,
 
     json = '',
     indent = '\n',
-    appendStr;
+    appendStr,
+    
+    seen: Set<any> = new Set([]);
 
   do {  // loop over the current container (object or array)
 
     if (index === length) {
-      // we're at the end of a container: pop values from stack, emit closing symbol, skip to next iteration
+      // we're at the end of a container: unsee it, pop values from stack, emit closing symbol, skip to next iteration
+      seen.delete(container);
+
       if (space !== undefined) {
-        indent = stack[--depth];  // closing symbol is at previous level of indentation
+        indent = stack[--stackPtr];  // closing symbol is at previous level of indentation
         json += indent;
       }
 
       json += keys === undefined ? ']' : '}';  // (using the _old_ value of keys)
 
-      length = stack[--depth];
-      notFirstKeyValue = stack[--depth];
-      keys = stack[--depth];
-      index = stack[--depth];
-      container = stack[--depth];
+      length = stack[--stackPtr];
+      notFirstKeyValue = stack[--stackPtr];
+      keys = stack[--stackPtr];
+      index = stack[--stackPtr];
+      container = stack[--stackPtr];
 
       continue;
     }
@@ -95,7 +102,7 @@ export function stringify(
       typeofValue = typeof value;
     }
 
-    if (numRep === undefined || (appendStr = numRep(key, value, typeofValue)) === undefined) {
+    if (customSerializer === undefined || (appendStr = customSerializer(key, value, typeofValue)) === undefined) {
 
       switch (typeofValue) {
         case 'string':
@@ -162,7 +169,7 @@ export function stringify(
         if (notFirstKeyValue) json += ',';
         else notFirstKeyValue = true;
 
-        if (depth > 0) {
+        if (stackPtr > 0) {
           json += space === undefined ?
             (escapableTest.test(key) ? JSON.stringify(key) : '"' + key + '"') + ':' :
             indent + (escapableTest.test(key) ? JSON.stringify(key) : '"' + key + '"') + ': ';
@@ -176,15 +183,15 @@ export function stringify(
     // new value is simple: skip to next iteration
     if (newLength === undefined) continue;
 
-    // new value is object or array: update stack and values
-    stack[depth++] = container;
-    stack[depth++] = index;
-    stack[depth++] = keys;
-    stack[depth++] = notFirstKeyValue;
-    stack[depth++] = length;
+    // new value is object or array: update stack and values, check cycles and depth
+    stack[stackPtr++] = container;
+    stack[stackPtr++] = index;
+    stack[stackPtr++] = keys;
+    stack[stackPtr++] = notFirstKeyValue;
+    stack[stackPtr++] = length;
 
     if (space !== undefined) {
-      stack[depth++] = indent;
+      stack[stackPtr++] = indent;
       indent += space;
     }
 
@@ -194,7 +201,12 @@ export function stringify(
     notFirstKeyValue = false;
     length = newLength;
 
-  } while (depth !== 0);
+    if (stackPtr > maxStackPtr) throw new RangeError(`Maximum nesting depth exceeded (current maximum is ${maxDepth})`);
+
+    if (seen.has(container)) throw new TypeError('Cannot stringify circular structure');
+    seen.add(container);
+
+  } while (stackPtr !== 0);
 
   // JSON.stringify returns undefined when the replacer function replaces a simple value with undefined, hence:
   return json || undefined;

@@ -31,58 +31,66 @@ const filenames = fs
   )
   .sort();
 
+function compare(filename, json, trueFn, trueFnName, testFn, testFnName, outcomes, format = JSON.stringify) {
+  let trueErr = undefined;
+  let trueResult = undefined;
+  try {
+    trueResult = trueFn(json);
+  } catch (err) {
+    trueErr = err;
+  }
+
+  let testErr = undefined;
+  let testResult = undefined;
+  try {
+    testResult = testFn(json);
+  } catch (err) {
+    testErr = err;
+  }
+
+  if (!!testErr !== !!trueErr) {
+    console.log(filename, json);
+    console.log(trueErr ? trueErr.message : testErr.message);
+    console.log(`  FAIL: ${trueFnName} ${trueErr ? 'error' : 'OK'}, ${testFnName} ${testErr ? 'error' : 'OK'}\n`);
+    // process.exit(1);
+    outcomes.fails += 1;
+
+  } else if (format(testResult) !== format(trueResult)) {
+    console.log(filename, json);
+    console.log(`  FAIL: ${trueFnName} (${format(trueResult)}) !== ${testFnName} (${format(testResult)})\n`);
+    // process.exit(1);
+    outcomes.fails += 1;
+
+  } else {
+    outcomes.passes += 1;
+  }
+}
+
 console.log(col.inverse((`=== parse ===\n`)));
 
 if (!perfOnly) {
-  let passes = 0, fails = 0;
+  const outcomes = { passes: 0, fails: 0 };
   console.log(col.bold(`Running JSON.parse comparison tests ...`));
 
-  function compare(filename, json, trueFn, trueFnName, testFn, testFnName) {
-    let trueErr = undefined;
-    let trueResult = undefined;
-    try {
-      trueResult = trueFn(json);
-    } catch (err) {
-      trueErr = err;
+  for (const filename of [...filenames, ':deep']) {
+    let json;
+    switch (filename) {
+      case ':deep':
+        const n = 1e5;
+        json = JSON.parse('['.repeat(n) + '"x"' + ']'.repeat(n));
+        break;
+
+      default:
+        json = fs.readFileSync(path.join(folderPath, filename), 'utf8');
     }
-
-    let testErr = undefined;
-    let testResult = undefined;
-    try {
-      testResult = testFn(json);
-    } catch (err) {
-      testErr = err;
-    }
-
-    if (!!testErr !== !!trueErr) {
-      console.log(filename, json);
-      console.log(trueErr ? trueErr.message : testErr.message);
-      console.log(`  FAIL: ${trueFnName} ${trueErr ? 'error' : 'OK'}, ${testFnName} ${testErr ? 'error' : 'OK'}\n`);
-      // process.exit(1);
-      fails += 1;
-
-    } else if (JSON.stringify(testResult) !== JSON.stringify(trueResult)) {
-      console.log(filename, json);
-      console.log(`  FAIL: ${trueFnName} (${JSON.stringify(trueResult)}) !== ${testFnName} (${JSON.stringify(testResult)})\n`);
-      // process.exit(1);
-      fails += 1;
-
-    } else {
-      passes += 1;
-    }
+    compare(filename, json, JSON.parse, 'JSON.parse', parse, 'parse', outcomes);
+    compare(filename, json, json => JSON.parse(json, weirdTransform), 'JSON.parse (verbose reviver)', json => parse(json, weirdTransform), 'parse (verbose reviver)', outcomes);
+    compare(filename, json, json => JSON.parse(json, undefinedTransform), 'JSON.parse (undefined reviver)', json => parse(json, undefinedTransform), 'parse (undefined reviver)', outcomes);
   }
 
-  for (const filename of filenames) {
-    const json = fs.readFileSync(path.join(folderPath, filename), 'utf8');
-    compare(filename, json, JSON.parse, 'JSON.parse', parse, 'parse');
-    compare(filename, json, json => JSON.parse(json, weirdTransform), 'JSON.parse (verbose reviver)', json => parse(json, weirdTransform), 'parse (verbose reviver)');
-    compare(filename, json, json => JSON.parse(json, undefinedTransform), 'JSON.parse (undefined reviver)', json => parse(json, undefinedTransform), 'parse (undefined reviver)');
-  }
+  console.log(`\n${outcomes.passes} passes, ${outcomes.fails} fails\n`);
 
-  console.log(`\n${passes} passes, ${fails} fails\n`);
-
-  if (fails > 0) process.exit(1);
-
+  if (outcomes.fails > 0) process.exit(1);
 
   console.log(col.bold(`Running number parsing test ...\n`));
 
@@ -111,7 +119,6 @@ if (!perfOnly) {
   console.log(col.bold(`\nRunning error messages test ...\n`));
 
   const testErr = (json, message) => {
-    // return;
     let caught = undefined;
     try {
       parse(json);
@@ -121,7 +128,7 @@ if (!perfOnly) {
     if (!caught || !caught.message.startsWith(message)) {
       console.log('Expected error: ' + message);
       console.log(caught ? 'Got: ' + caught.message : 'No error thrown');
-      fails += 1;
+      outcomes.fails += 1;
     }
   }
 
@@ -159,7 +166,7 @@ if (!perfOnly) {
   `, `Invalid escape sequence in string: \\n`);
 
 
-  if (fails > 0) process.exit(1);
+  if (outcomes.fails > 0) process.exit(1);
 
   console.log('Pass\n');
 }
@@ -220,26 +227,8 @@ if (!confOnly) {
 console.log(col.inverse((`=== stringify ===\n`)));
 
 if (!perfOnly) {
-  let passes = 0, fails = 0;
+  const outcomes = { passes: 0, fails: 0 };
   console.log(col.bold(`Running JSON.stringify comparison tests ...`));
-
-  function compare(filename, obj, trueFn, trueFnName, testFn, testFnName) {
-    for (const replacer of [undefined, ['a', 'x', 'users', 12], /./, weirdTransform, undefinedTransform]) {
-      for (const indent of [undefined, 2, 15, ' '.repeat(15), '\t', '--']) {
-        const trueResult = trueFn(obj, replacer, indent);
-        const testResult = testFn(obj, replacer, indent);
-        if (trueResult !== testResult) {
-          console.log(filename, obj, 'replacer:', replacer, 'indent:', indent);
-          console.log(`  FAIL: ${trueFnName} (${trueResult}) !== ${testFnName} (${testResult})\n`);
-          // process.exit(1);
-          fails += 1;
-
-        } else {
-          passes += 1;
-        }
-      }
-    }
-  }
 
   class X {
     #a = 1;
@@ -253,25 +242,49 @@ if (!perfOnly) {
     }
   }
 
-  for (const filename of [...filenames, null]) {
+  for (const filename of [...filenames, ':mixed', ':circular', ':repeat-obj', ':deep']) {
     let obj;
+    switch (filename) {
+      case ':mixed':
+        // wide range of non-JSON types
+        obj = {
+          a: 0, b: "", c: null, d: undefined, e: new Date(), f: /./, g: X, h: new X(), i: 1 + undefined, j: Infinity,
+          k: [0, "", null, undefined, new Date(), /./, X, new X(), 1 + undefined, Infinity], l: new Y()
+        };
+        break;
 
-    if (filename === null) {
-      obj = {
-        a: 0, b: "", c: null, d: undefined, e: new Date(), f: /./, g: X, h: new X(), i: 1 + undefined, j: Infinity,
-        k: [0, "", null, undefined, new Date(), /./, X, new X(), 1 + undefined, Infinity], l: new Y()
-      };
+      case ':circular':
+        // circular reference
+        obj = { a: 1 };
+        obj.b = obj;
+        break;
 
-    } else {
-      if (/^[niz]_/.test(filename)) continue;
-      const json = fs.readFileSync(path.join(folderPath, filename), 'utf8');
-      obj = JSON.parse(json);
+      case ':repeat-obj':
+        // non-circular repeated reference
+        const ref = [1];
+        obj = { a: ref, b: ref };
+        break;
+
+      case ':deep':
+        // deeply-nested object
+        const n = 1e5;  // all implementations are expected to fail at this depth
+        obj = JSON.parse('['.repeat(n) + ']'.repeat(n));
+        break;
+
+      default:
+        if (/^[niz]_/.test(filename)) continue;
+        const json = fs.readFileSync(path.join(folderPath, filename), 'utf8');
+        obj = JSON.parse(json);
     }
 
-    compare(filename, obj, JSON.stringify, 'JSON.stringify', stringify, 'stringify');
+    for (const replacer of [undefined, ['a', 'x', 'users', 12], /./, weirdTransform, undefinedTransform]) {
+      for (const indent of [undefined, 2, 15, ' '.repeat(15), '\t', '--']) {
+        compare(filename, obj, x => JSON.stringify(x, replacer, indent), 'JSON.stringify', x => stringify(x, replacer, indent), 'stringify', outcomes, x => x);
+      }
+    }
   }
 
-  console.log(`\n${passes} passes, ${fails} fails\n`);
+  console.log(`\n${outcomes.passes} passes, ${outcomes.fails} fails\n`);
 
   const bigInt = 9007199254740993n
   const bigIntJSON = stringify(bigInt, undefined, undefined, (k, v, t) => { if (t === 'bigint') return v.toString() });
@@ -279,7 +292,7 @@ if (!perfOnly) {
   if (bigIntJSON === bigInt.toString()) console.log('Pass: BigInt stringified\n');
   else console.log('Fail: BigInt stringify failed\n');
 
-  if (fails > 0) process.exit(1);
+  if (outcomes.fails > 0) process.exit(1);
 }
 
 if (!confOnly) {

@@ -1,6 +1,6 @@
 "use strict";
 const escapableTest = /["\\\u0000-\u001f]/, hasOwn = Object.prototype.hasOwnProperty;
-export function stringify(value, replacer, space, numRep) {
+export function stringify(value, replacer, space, customSerializer, maxDepth = 5e4) {
   let repFunc;
   let repArray;
   if (replacer !== void 0) {
@@ -12,19 +12,21 @@ export function stringify(value, replacer, space, numRep) {
   if (space !== void 0) {
     space = typeof space === "string" ? space.slice(0, 10) : typeof space === "number" ? "          ".slice(0, space) : void 0;
   }
-  let key, container = { "": value }, index = 0, keys = [""], notFirstKeyValue = false, length = 1, stack = [], depth = 0, json = "", indent = "\n", appendStr;
+  const maxStackPtr = maxDepth * (space === void 0 ? 5 : 6);
+  let key, container = { "": value }, index = 0, keys = [""], notFirstKeyValue = false, length = 1, stack = [], stackPtr = 0, json = "", indent = "\n", appendStr, seen = /* @__PURE__ */ new Set([]);
   do {
     if (index === length) {
+      seen.delete(container);
       if (space !== void 0) {
-        indent = stack[--depth];
+        indent = stack[--stackPtr];
         json += indent;
       }
       json += keys === void 0 ? "]" : "}";
-      length = stack[--depth];
-      notFirstKeyValue = stack[--depth];
-      keys = stack[--depth];
-      index = stack[--depth];
-      container = stack[--depth];
+      length = stack[--stackPtr];
+      notFirstKeyValue = stack[--stackPtr];
+      keys = stack[--stackPtr];
+      index = stack[--stackPtr];
+      container = stack[--stackPtr];
       continue;
     }
     let newKeys, newLength;
@@ -44,7 +46,7 @@ export function stringify(value, replacer, space, numRep) {
       value = repFunc.call(container, key, value);
       typeofValue = typeof value;
     }
-    if (numRep === void 0 || (appendStr = numRep(key, value, typeofValue)) === void 0) {
+    if (customSerializer === void 0 || (appendStr = customSerializer(key, value, typeofValue)) === void 0) {
       switch (typeofValue) {
         case "string":
           appendStr = escapableTest.test(value) ? JSON.stringify(value) : '"' + value + '"';
@@ -99,7 +101,7 @@ export function stringify(value, replacer, space, numRep) {
           json += ",";
         else
           notFirstKeyValue = true;
-        if (depth > 0) {
+        if (stackPtr > 0) {
           json += space === void 0 ? (escapableTest.test(key) ? JSON.stringify(key) : '"' + key + '"') + ":" : indent + (escapableTest.test(key) ? JSON.stringify(key) : '"' + key + '"') + ": ";
         }
         json += appendStr;
@@ -108,13 +110,13 @@ export function stringify(value, replacer, space, numRep) {
     index++;
     if (newLength === void 0)
       continue;
-    stack[depth++] = container;
-    stack[depth++] = index;
-    stack[depth++] = keys;
-    stack[depth++] = notFirstKeyValue;
-    stack[depth++] = length;
+    stack[stackPtr++] = container;
+    stack[stackPtr++] = index;
+    stack[stackPtr++] = keys;
+    stack[stackPtr++] = notFirstKeyValue;
+    stack[stackPtr++] = length;
     if (space !== void 0) {
-      stack[depth++] = indent;
+      stack[stackPtr++] = indent;
       indent += space;
     }
     container = value;
@@ -122,6 +124,11 @@ export function stringify(value, replacer, space, numRep) {
     keys = newKeys;
     notFirstKeyValue = false;
     length = newLength;
-  } while (depth !== 0);
+    if (stackPtr > maxStackPtr)
+      throw new RangeError(`Maximum nesting depth exceeded (current maximum is ${maxDepth})`);
+    if (seen.has(container))
+      throw new TypeError("Cannot stringify circular structure");
+    seen.add(container);
+  } while (stackPtr !== 0);
   return json || void 0;
 }

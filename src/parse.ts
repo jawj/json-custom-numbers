@@ -72,7 +72,9 @@ const
   hexLookup1 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 4096, 8192, 12288, 16384, 20480, 24576, 28672, 32768, 36864, y, y, y, y, y, y, y, 40960, 45056, 49152, 53248, 57344, 61440, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 40960, 45056, 49152, 53248, 57344, 61440]),
   hexLookup2 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 256, 512, 768, 1024, 1280, 1536, 1792, 2048, 2304, y, y, y, y, y, y, y, 2560, 2816, 3072, 3328, 3584, 3840, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 2560, 2816, 3072, 3328, 3584, 3840]),
   hexLookup3 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 16, 32, 48, 64, 80, 96, 112, 128, 144, y, y, y, y, y, y, y, 160, 176, 192, 208, 224, 240, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 160, 176, 192, 208, 224, 240]),
-  hexLookup4 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, y, y, y, y, y, y, y, 10, 11, 12, 13, 14, 15, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 10, 11, 12, 13, 14, 15]);
+  hexLookup4 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, y, y, y, y, y, y, y, 10, 11, 12, 13, 14, 15, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 10, 11, 12, 13, 14, 15]),
+  
+  depthErrMsg = 'Maximum nesting depth exceeded';
 
 function chDesc(ch: number, prefix = '') {
   if (!(ch >= 0)) return 'end of input';
@@ -99,19 +101,23 @@ export function parse(
   text: string,
   reviver?: (key: string, value: any) => any,
   numberParser?: (string: string) => any,
+  maxDepth = Infinity,  // all native implementations fail with an out-of-memory error when depth is too large
 ) {
   if (typeof text !== 'string') text = String(text);  // force string
   if (typeof reviver !== 'function') reviver = undefined;  // ignore non-function revivers, like JSON.parse
 
-  const stack: any[] = [];
+  const
+    stack: any[] = [],
+    maxStackPtr = maxDepth * 3;  // 3 is the number of entries added to the stack per container
+
   let
-    at = 0,       // character index into text
-    ch: number,   // current character code
-    state = go,   // the state of the parser
-    depth = 0,    // the stack pointer
-    container,    // the current container object or array
-    key,          // the current key
-    value;        // the current value
+    at = 0,         // character index into text
+    ch: number,     // current character code
+    state = go,     // the state of the parser
+    stackPtr = 0,   // the stack pointer
+    container,      // the current container object or array
+    key,            // the current key
+    value;          // the current value
 
   function error(m: string) {
     return new JSONParseError(`${m}\nAt character ${at} in JSON: ${text}`);
@@ -207,22 +213,24 @@ export function parse(
         continue;
 
       case openbrace:
-        stack[depth++] = container;
-        stack[depth++] = key;
+        stack[stackPtr++] = container;
+        stack[stackPtr++] = key;
         container = {};
+
+        if (stackPtr > maxStackPtr) throw error(depthErrMsg);
 
         switch (state) {
           case ovalue:
-            stack[depth++] = ocomma;
+            stack[stackPtr++] = ocomma;
             state = firstokey;
             continue;
           case avalue:
           case firstavalue:
-            stack[depth++] = acomma;
+            stack[stackPtr++] = acomma;
             state = firstokey;
             continue;
           case go:
-            stack[depth++] = ok;
+            stack[stackPtr++] = ok;
             state = firstokey;
             continue;
           default:
@@ -237,32 +245,34 @@ export function parse(
           // deliberate fallthrough
           case firstokey:
             value = container;
-            state = stack[--depth];
-            key = stack[--depth];
-            container = stack[--depth];
+            state = stack[--stackPtr];
+            key = stack[--stackPtr];
+            container = stack[--stackPtr];
             continue;
           default:
             throw error(`Unexpected '}', expecting ${stateDescs[state]}`);
         }
 
       case opensquare:
-        stack[depth++] = container;
-        stack[depth++] = key;
+        stack[stackPtr++] = container;
+        stack[stackPtr++] = key;
         container = [];
         key = 0;
 
+        if (stackPtr > maxStackPtr) throw error(depthErrMsg);
+
         switch (state) {
           case ovalue:
-            stack[depth++] = ocomma;
+            stack[stackPtr++] = ocomma;
             state = firstavalue;
             continue;
           case avalue:
           case firstavalue:
-            stack[depth++] = acomma;
+            stack[stackPtr++] = acomma;
             state = firstavalue;
             continue;
           case go:
-            stack[depth++] = ok;
+            stack[stackPtr++] = ok;
             state = firstavalue;
             continue;
           default:
@@ -277,9 +287,9 @@ export function parse(
           // deliberate fall-through
           case firstavalue:
             value = container;
-            state = stack[--depth];
-            key = stack[--depth];
-            container = stack[--depth];
+            state = stack[--stackPtr];
+            key = stack[--stackPtr];
+            container = stack[--stackPtr];
             continue;
           default:
             throw error(`Unexpected ']', expecting ${stateDescs[state]}`);
