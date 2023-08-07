@@ -152,6 +152,13 @@ stringify(9007199254740993n, undefined, undefined, bigIntReplacer);  // => 90071
 ```
 
 
+## Orientation
+
+The code is in `src/parse.ts` and `src/stringify.ts`.
+
+Currently, there are two build stages: the first creates `.mjs` files in `src`, and the second creates minified `.js` files in `dist`. The only `package.json` scripts you're likely to need to call directly are `build` and `test`/`testConf`/`testPerf`.
+
+
 ## Licence
 
 Public Domain.

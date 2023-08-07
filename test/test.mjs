@@ -66,6 +66,7 @@ function compare(filename, json, trueFn, trueFnName, testFn, testFnName, outcome
   }
 }
 
+
 console.log(col.inverse((`=== parse ===\n`)));
 
 if (!perfOnly) {
@@ -113,8 +114,7 @@ if (!perfOnly) {
 
   console.log(bigNumPass ? 'Pass' : 'Fail');
 
-  //if (!bigNumPass) process.exit(1);
-
+  // if (!bigNumPass) process.exit(1);
 
   console.log(col.bold(`\nRunning error messages test ...\n`));
 
@@ -318,4 +318,3 @@ if (!confOnly) {
 
   console.log();
 }
-
