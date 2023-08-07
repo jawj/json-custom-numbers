@@ -1,7 +1,7 @@
 
 /**
  * JSON parser that allows custom number parsing. The first two arguments match
- * `JSON.parse()`. The third is novel.
+ * `JSON.parse()`. The third and fourth are novel.
  * @param text A valid JSON string.
  * @param reviver A function that transforms the results. This function is
  * called for each member of the object. If a member contains nested objects,
@@ -22,7 +22,7 @@ export function parse(
 
 /**
  * JSON stringifier that allows custom stringification. The first three
- * arguments match `JSON.stringify()`. The fourth is novel.
+ * arguments match `JSON.stringify()`. The fourth and fifth are novel.
  * @param obj A JavaScript value, usually an object or array, to be converted.
  * @param replacer An array of object keys to be included in the output, or a
  * function that transforms the results.
