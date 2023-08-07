@@ -159,10 +159,8 @@ The code is in `src/parse.ts` and `src/stringify.ts`.
 Currently, there are two build stages: the first creates `.mjs` files in `src`, and the second creates minified `.js` files in `dist`. The only `package.json` scripts you're likely to need to call directly are `build` and `test`/`testConf`/`testPerf`.
 
 
-## Licence
+## License
 
-Public Domain.
+[MIT licensed](LICENSE).
 
-NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
-
-Except: most tests in the [`test_parsing`](test/test_parsing/) folder that start with `y_`, `n_` or `i_` are from Nicolas Seriot's [JSON Test Suite](https://github.com/nst/JSONTestSuite), which is MIT licenced.
+Note that most tests in the [`test_parsing`](test/test_parsing/) folder that start with `y_`, `n_` or `i_` are from Nicolas Seriot's [JSON Test Suite](https://github.com/nst/JSONTestSuite), which is also MIT licensed.
