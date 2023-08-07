@@ -1,4 +1,13 @@
 "use strict";
+/**
+ * https://github.com/jawj/json-custom-numbers
+ * @copyright Copyright (c) 2023 George MacKerron
+ * @license MIT
+ * 
+ * This file implements a non-recursive JSON stringifier that's intended to
+ * precisely match native `JSON.stringify` behaviour but also allow for custom
+ * stringifying of numbers.
+ */
 const escapableTest = /["\\\u0000-\u001f]/, hasOwn = Object.prototype.hasOwnProperty;
 export function stringify(value, replacer, space, customSerializer, maxDepth = 5e4) {
   let repFunc;

@@ -1,7 +1,7 @@
 /**
  * https://github.com/jawj/json-custom-numbers
  * @copyright Copyright (c) 2023 George MacKerron
- * @licence MIT
+ * @license MIT
  * 
  * This file implements a non-recursive, state machine-based JSON parser that's
  * intended to precisely match native `JSON.parse` behaviour but also allow for

@@ -1,13 +1,20 @@
 "use strict";var k=Object.defineProperty;var E=Object.getOwnPropertyDescriptor;var j=Object.getOwnPropertyNames;var L=Object.prototype.hasOwnProperty;var O=(c,i)=>{for(var h in i)k(c,h,{get:i[h],enumerable:!0})},R=(c,i,h,w)=>{if(i&&
 typeof i=="object"||typeof i=="function")for(let s of j(i))!L.call(c,s)&&s!==h&&
-k(c,s,{get:()=>i[s],enumerable:!(w=E(i,s))||w.enumerable});return c};var X=c=>R(k({},"__esModule",{value:!0}),c);var q={};O(q,{JSONParseError:()=>S,parse:()=>P});module.exports=X(q);class S extends Error{}
-const l=["JSON value","end of input","'}' or first key in object","key in object",
-"':'","value in object","',' or '}' in object","']' or first value in array","va\
-lue in array","',' or ']' in array"],y=/[^"\\\u0000-\u001f]*/y,C=/-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y,
-t="",v=[t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,'"',
-t,t,t,t,t,t,t,t,t,t,t,t,"/",t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,
-t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,"\\",t,t,t,t,t,"\b",t,t,t,"\f",t,t,t,t,t,t,t,
-`
+k(c,s,{get:()=>i[s],enumerable:!(w=E(i,s))||w.enumerable});return c};var X=c=>R(k({},"__esModule",{value:!0}),c);var q={};O(q,{JSONParseError:()=>S,parse:()=>P});module.exports=X(q);/**
+ * https://github.com/jawj/json-custom-numbers
+ * @copyright Copyright (c) 2023 George MacKerron
+ * @license MIT
+ * 
+ * This file implements a non-recursive, state machine-based JSON parser that's
+ * intended to precisely match native `JSON.parse` behaviour but also allow for
+ * custom number parsing.
+ */class S extends Error{}const l=["JSON value","end of input","'}' or first key\
+ in object","key in object","':'","value in object","',' or '}' in object","']' \
+or first value in array","value in array","',' or ']' in array"],y=/[^"\\\u0000-\u001f]*/y,
+C=/-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y,t="",v=[t,t,
+t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,'"',t,t,t,t,t,t,
+t,t,t,t,t,t,"/",t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,t,
+t,t,t,t,t,t,t,t,t,t,t,t,"\\",t,t,t,t,t,"\b",t,t,t,"\f",t,t,t,t,t,t,t,`
 `,t,t,t,"\r",t,"	"],e=65536,J=new Uint32Array([e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,
 e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,0,4096,8192,12288,
 16384,20480,24576,28672,32768,36864,e,e,e,e,e,e,e,40960,45056,49152,53248,57344,

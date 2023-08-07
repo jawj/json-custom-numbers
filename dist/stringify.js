@@ -1,10 +1,17 @@
 "use strict";var J=Object.defineProperty;var E=Object.getOwnPropertyDescriptor;var F=Object.getOwnPropertyNames;var K=Object.prototype.hasOwnProperty;var L=(t,e)=>{for(var i in e)J(t,i,{get:e[i],enumerable:!0})},P=(t,e,i,h)=>{if(e&&
 typeof e=="object"||typeof e=="function")for(let c of F(e))!K.call(t,c)&&c!==i&&
-J(t,c,{get:()=>e[c],enumerable:!(h=E(e,c))||h.enumerable});return t};var T=t=>P(J({},"__esModule",{value:!0}),t);var C={};L(C,{stringify:()=>B});module.exports=T(C);const N=/["\\\u0000-\u001f]/,
-V=Object.prototype.hasOwnProperty;function B(t,e,i,h,c=5e4){let j,m;e!==void 0&&
-(typeof e=="function"?j=e:Array.isArray(e)&&(m=e)),i!==void 0&&(i=typeof i=="str\
-ing"?i.slice(0,10):typeof i=="number"?"          ".slice(0,i):void 0);const u=c*
-(i===void 0?5:6);let r,s={"":t},d=0,g=[""],w=!1,l=1,f=[],n=0,y="",b=`
+J(t,c,{get:()=>e[c],enumerable:!(h=E(e,c))||h.enumerable});return t};var T=t=>P(J({},"__esModule",{value:!0}),t);var C={};L(C,{stringify:()=>B});module.exports=T(C);/**
+ * https://github.com/jawj/json-custom-numbers
+ * @copyright Copyright (c) 2023 George MacKerron
+ * @license MIT
+ * 
+ * This file implements a non-recursive JSON stringifier that's intended to
+ * precisely match native `JSON.stringify` behaviour but also allow for custom
+ * stringifying of numbers.
+ */const N=/["\\\u0000-\u001f]/,V=Object.prototype.hasOwnProperty;function B(t,e,i,h,c=5e4){
+let j,m;e!==void 0&&(typeof e=="function"?j=e:Array.isArray(e)&&(m=e)),i!==void 0&&
+(i=typeof i=="string"?i.slice(0,10):typeof i=="number"?"          ".slice(0,i):void 0);
+const u=c*(i===void 0?5:6);let r,s={"":t},d=0,g=[""],w=!1,l=1,f=[],n=0,y="",b=`
 `,o,x=new Set([]);do{if(d===l){x.delete(s),i!==void 0&&(b=f[--n],y+=b),y+=g===void 0?
 "]":"}",l=f[--n],w=f[--n],g=f[--n],d=f[--n],s=f[--n];continue}let A,O;g===void 0?
 (r=String(d),t=s[d]):(r=g[d],t=s[r]);let k=typeof t;if(t&&k==="object"&&typeof t.
