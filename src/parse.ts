@@ -108,7 +108,7 @@ export function parse(
 
   const
     stack: any[] = [],
-    maxStackPtr = maxDepth * 3;  // 3 is the number of entries added to the stack per container
+    maxStackPtr = maxDepth * 3;  // 3 is the number of entries added to the stack per nested container
 
   let
     at = 0,         // character index into text

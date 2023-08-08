@@ -36,7 +36,7 @@ export function stringify(
         undefined;
   }
 
-  const maxStackPtr = maxDepth * (space === undefined ? 5 : 6);  // 5 or 6 is the number of entries added to the stack per container
+  const maxStackPtr = maxDepth * (space === undefined ? 5 : 6);  // 5 or 6 is the number of entries added to the stack per nested container
 
   let
     key,
