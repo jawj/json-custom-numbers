@@ -1,6 +1,6 @@
 {
   "name": "json-custom-numbers",
-  "version": "2.0.15",
+  "version": "2.0.16",
   "description": "JSON parser and stringifier for custom numbers (e.g. BigInt)",
   "files": [
     "dist",
