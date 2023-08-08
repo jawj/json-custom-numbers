@@ -9,13 +9,10 @@ import { stringify as stringifyCrockford } from './test_comparison/crockford_str
 import { parse as parseBigInt, stringify as stringifyBigInt } from 'json-bigint';
 import { parse as parseLossless, stringify as stringifyLossless } from 'lossless-json';
 
-function customSerializer(k, v, type) { if (type === 'bigint') return v.toString(); }
-console.log(stringify(9007199254740993n, undefined, undefined, customSerializer));
-
 const perfOnly = process.argv[2] === '--perf-only';
 const confOnly = process.argv[2] === '--conf-only';
 
-function throughTransform(k, v) {
+function thoroughTransform(k, v) {
   return Array.isArray(v) ? [...v, typeof v, k, typeof k, typeof this, this.length] :
     typeof v === 'object' ? { ...v, vType: typeof v, k, kType: typeof k, thisType: typeof this, thisLength: Object.keys(this).length } :
       v === 'main' || v === false ? undefined : `v:${v},tv:${typeof v},k:${k},tk:${typeof k},tt:${typeof this},tl:${Array.isArray(this) ? this.length : Object.keys(this).length}`;
@@ -88,7 +85,7 @@ if (!perfOnly) {
         json = fs.readFileSync(path.join(folderPath, filename), 'utf8');
     }
     compare(filename, json, JSON.parse, 'JSON.parse', parse, 'parse', outcomes);
-    compare(filename, json, json => JSON.parse(json, throughTransform), 'JSON.parse (verbose reviver)', json => parse(json, throughTransform), 'parse (verbose reviver)', outcomes);
+    compare(filename, json, json => JSON.parse(json, thoroughTransform), 'JSON.parse (thorough reviver)', json => parse(json, thoroughTransform), 'parse (thorough reviver)', outcomes);
     compare(filename, json, json => JSON.parse(json, undefinedTransform), 'JSON.parse (undefined reviver)', json => parse(json, undefinedTransform), 'parse (undefined reviver)', outcomes);
   }
 
@@ -252,7 +249,7 @@ if (!perfOnly) {
         // wide range of non-JSON types
         obj = {
           a: 0, b: "", c: null, d: undefined, e: new Date(), f: /./, g: X, h: new X(), i: 1 + undefined, j: Infinity,
-          k: [0, "", null, undefined, new Date(), /./, X, new X(), 1 + undefined, Infinity], l: new Y()
+          k: [0, "", null, undefined, new Date(), /./, X, new X(), 1 + undefined, Infinity], l: new Y(), m: []
         };
         break;
 
@@ -280,7 +277,7 @@ if (!perfOnly) {
         obj = JSON.parse(json);
     }
 
-    for (const replacer of [undefined, ['a', 'x', 'users', 12], /./, throughTransform, undefinedTransform]) {
+    for (const replacer of [undefined, ['a', 'x', 'users', 12], /./, thoroughTransform, undefinedTransform]) {
       for (const indent of [undefined, 2, 15, ' '.repeat(15), '\t', '--']) {
         compare(filename, obj, x => JSON.stringify(x, replacer, indent), 'JSON.stringify', x => stringify(x, replacer, indent), 'stringify', outcomes, x => x);
       }

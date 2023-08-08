@@ -16,17 +16,17 @@ const
 
 export function stringify(
   value: any,
-  replacer?: (string | number)[] | ((key: string, value: any) => any),
+  replacer?: (string | number)[] | ((key: string, value: any) => any) | null,
   space?: number | string,
   customSerializer?: (key: string, value: any, typeofValue: string) => string,
   maxDepth = 50000,  // at the time of writing, Bun and Safari's maximum (via call stack limits) is 40,000, and all others are lower
 ) {
 
   let repFunc: ((key: string, value: any) => any) | undefined;
-  let repArray: (string | number)[] | undefined;
+  let repArray: string[] | undefined;
   if (replacer !== undefined) {
     if (typeof replacer === 'function') repFunc = replacer;
-    else if (Array.isArray(replacer)) repArray = replacer;
+    else if (Array.isArray(replacer)) repArray = replacer.map(x => String(x));
   }
 
   if (space !== undefined) {
@@ -53,7 +53,7 @@ export function stringify(
     json = '',
     indent = '\n',
     appendStr,
-    
+
     seen: Set<any> = new Set([]);
 
   do {  // loop over the current container (object or array)

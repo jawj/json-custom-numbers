@@ -64,17 +64,25 @@ const
 
   // this array is indexed by the char code of an escape character 
   // e.g. \n -> 'n'.charCodeAt() === 110, so escapes[110] === '\n'
-  x = "",
-  escapes = [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, "\"", x, x, x, x, x, x, x, x, x, x, x, x, "/", x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, "\\", x, x, x, x, x, "\b", x, x, x, "\f", x, x, x, x, x, x, x, "\n", x, x, x, "\r", x, "\t"],
+  escapes = '.................................."............./.............................................\\......\b....\f........\n....\r..\t'.split('.'),
 
   // these arrays are indexed by the char code of a hex digit, used for \uXXXX escapes
-  y = 65536,  // = 0xffff + 1: signals a bad character, since it's out of range
-  hexLookup1 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 4096, 8192, 12288, 16384, 20480, 24576, 28672, 32768, 36864, y, y, y, y, y, y, y, 40960, 45056, 49152, 53248, 57344, 61440, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 40960, 45056, 49152, 53248, 57344, 61440]),
-  hexLookup2 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 256, 512, 768, 1024, 1280, 1536, 1792, 2048, 2304, y, y, y, y, y, y, y, 2560, 2816, 3072, 3328, 3584, 3840, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 2560, 2816, 3072, 3328, 3584, 3840]),
-  hexLookup3 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 16, 32, 48, 64, 80, 96, 112, 128, 144, y, y, y, y, y, y, y, 160, 176, 192, 208, 224, 240, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 160, 176, 192, 208, 224, 240]),
-  hexLookup4 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, y, y, y, y, y, y, y, 10, 11, 12, 13, 14, 15, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 10, 11, 12, 13, 14, 15]),
-  
+  badChar = 65536,  // = 0xffff + 1: signals a bad character, since it's out of range
+  hexLookup: Uint32Array[] = [],
+
   depthErrMsg = 'Maximum nesting depth exceeded';
+
+for (let i = 0; i < 4; i++) {
+  const arr = hexLookup[i] = new Uint32Array(f + 1);
+  const shift = i << 2;
+  let j = 0;
+  for (; j < 48; j++) arr[j] = badChar;
+  for (; j < 58; j++) arr[j] = (j - 48) << shift;  // 0 - 9
+  for (; j < 65; j++) arr[j] = badChar;
+  for (; j < 71; j++) arr[j] = (j - 55) << shift;  // A - F
+  for (; j < 97; j++) arr[j] = badChar;
+  for (; j < 103; j++) arr[j] = (j - 87) << shift;  // a - f
+}
 
 function chDesc(ch: number, prefix = '') {
   if (!(ch >= 0)) return 'end of input';
@@ -111,16 +119,16 @@ export function parse(
     maxStackPtr = maxDepth * 3;  // 3 is the number of entries added to the stack per nested container
 
   let
+    stackPtr = 0,   // the stack pointer
     at = 0,         // character index into text
     ch: number,     // current character code
     state = go,     // the state of the parser
-    stackPtr = 0,   // the stack pointer
     container,      // the current container object or array
     key,            // the current key
     value;          // the current value
 
   function error(m: string) {
-    return new JSONParseError(`${m}\nAt character ${at} in JSON: ${text}`);
+    throw new JSONParseError(`${m}\nAt character ${at} in JSON: ${text}`);
   }
 
   parseloop: for (; ;) {
@@ -140,7 +148,7 @@ export function parse(
             state = avalue;
             continue;
           default:
-            throw error(`Unexpected ',', expecting ${stateDescs[state]}`);
+            error(`Unexpected ',', expecting ${stateDescs[state]}`);
         }
 
       case quote:
@@ -164,14 +172,16 @@ export function parse(
               ch = text.charCodeAt(at++);
               if (ch === u) {  // Unicode \uXXXX escape
                 const charCode =
-                  hexLookup1[text.charCodeAt(at++)] + hexLookup2[text.charCodeAt(at++)] +
-                  hexLookup3[text.charCodeAt(at++)] + hexLookup4[text.charCodeAt(at++)];
+                  hexLookup[3][text.charCodeAt(at++)] +
+                  hexLookup[2][text.charCodeAt(at++)] +
+                  hexLookup[1][text.charCodeAt(at++)] +
+                  hexLookup[0][text.charCodeAt(at++)];
 
-                if (charCode < y) {  // (NaN also fails this test)
+                if (charCode < badChar) {  // (NaN also fails this test)
                   value += String.fromCharCode(charCode);
                   continue;
                 }
-                throw error('Invalid \\uXXXX escape in string');
+                error('Invalid \\uXXXX escape in string');
               }
 
               const esc = escapes[ch];  // single-character escape
@@ -179,12 +189,12 @@ export function parse(
                 value += esc;
                 continue;
               }
-              throw error(`Invalid escape sequence in string: ${chDesc(ch, '\\')}`);
+              error(`Invalid escape sequence in string: ${chDesc(ch, '\\')}`);
           }
 
           // something is wrong
-          if (!(ch >= 0)) throw error('Unterminated string');
-          throw error(`Invalid unescaped ${chDesc(ch)} in string`);
+          if (!(ch >= 0)) error('Unterminated string');
+          error(`Invalid unescaped ${chDesc(ch)} in string`);
         }
 
         switch (state) {
@@ -204,11 +214,11 @@ export function parse(
             state = ok;
             continue;
           default:
-            throw error(`Unexpected '"', expecting ${stateDescs[state]}`);
+            error(`Unexpected '"', expecting ${stateDescs[state]}`);
         }
 
       case colon:
-        if (state !== ocolon) throw error(`Unexpected ':', expecting ${stateDescs[state]}`);
+        if (state !== ocolon) error(`Unexpected ':', expecting ${stateDescs[state]}`);
         state = ovalue;
         continue;
 
@@ -217,7 +227,7 @@ export function parse(
         stack[stackPtr++] = key;
         container = {};
 
-        if (stackPtr > maxStackPtr) throw error(depthErrMsg);
+        if (stackPtr > maxStackPtr) error(depthErrMsg);
 
         switch (state) {
           case ovalue:
@@ -234,14 +244,14 @@ export function parse(
             state = firstokey;
             continue;
           default:
-            throw error(`Unexpected '{', expecting ${stateDescs[state]}`);
+            error(`Unexpected '{', expecting ${stateDescs[state]}`);
         }
 
       case closebrace:
         switch (state) {
           case ocomma:
             (container as Record<string, any>)[key!] = value;
-            if (reviver !== undefined) reviveContainer(reviver, container);
+            if (reviver !== undefined) reviveContainer(reviver, container);  // reviving only applies to contained items, so is not needed in state firstokey
           // deliberate fallthrough
           case firstokey:
             value = container;
@@ -250,7 +260,7 @@ export function parse(
             container = stack[--stackPtr];
             continue;
           default:
-            throw error(`Unexpected '}', expecting ${stateDescs[state]}`);
+            error(`Unexpected '}', expecting ${stateDescs[state]}`);
         }
 
       case opensquare:
@@ -259,7 +269,7 @@ export function parse(
         container = [];
         key = 0;
 
-        if (stackPtr > maxStackPtr) throw error(depthErrMsg);
+        if (stackPtr > maxStackPtr) error(depthErrMsg);
 
         switch (state) {
           case ovalue:
@@ -276,14 +286,14 @@ export function parse(
             state = firstavalue;
             continue;
           default:
-            throw error(`Unexpected '[', expecting ${stateDescs[state]}`);
+            error(`Unexpected '[', expecting ${stateDescs[state]}`);
         }
 
       case closesquare:
         switch (state) {
           case acomma:
             container[key] = value;  // no need to increment key (= index) on last value
-            if (reviver !== undefined) reviveContainer(reviver, container);
+            if (reviver !== undefined) reviveContainer(reviver, container);  // reviving only applies to contained items, so is not needed in state firstavalue
           // deliberate fall-through
           case firstavalue:
             value = container;
@@ -292,7 +302,7 @@ export function parse(
             container = stack[--stackPtr];
             continue;
           default:
-            throw error(`Unexpected ']', expecting ${stateDescs[state]}`);
+            error(`Unexpected ']', expecting ${stateDescs[state]}`);
         }
 
       default:  // numbers, true, false, null
@@ -302,7 +312,7 @@ export function parse(
         const matched = wordRegExp.test(text);
         if (!matched) {
           if (!(ch >= 0)) break parseloop;  // end of input reached
-          throw error(`Unexpected ${chDesc(ch)}, expecting ${stateDescs[state]}`);
+          error(`Unexpected ${chDesc(ch)}, expecting ${stateDescs[state]}`);
         }
 
         at = wordRegExp.lastIndex;
@@ -334,12 +344,12 @@ export function parse(
             state = ok;
             continue;
           default:
-            throw error(`Unexpected '${value}', expecting ${stateDescs[state]}`);
+            error(`Unexpected '${value}', expecting ${stateDescs[state]}`);
         }
     }
   }
 
-  if (state !== ok) throw error(`Unexpected end of input, expecting ${stateDescs[state]}`);
+  if (state !== ok) error(`Unexpected end of input, expecting ${stateDescs[state]}`);
 
   if (reviver !== undefined) {
     value = { '': value };

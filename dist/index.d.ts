@@ -42,7 +42,7 @@ export function parse(
 
 export function stringify(
   obj: any,
-  replacer?: string[] | ((key: string, value: any) => any),
+  replacer?: (string | number)[] | ((key: string, value: any) => any) | null,
   indent?: string | number,
   customSerializer?: (key: string, value: any, typeofValue: string) => string | void,
   maxDepth?: number,

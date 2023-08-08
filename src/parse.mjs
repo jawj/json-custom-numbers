@@ -22,7 +22,24 @@ const stateDescs = [
   "']' or first value in array",
   "value in array",
   "',' or ']' in array"
-], stringChunkRegExp = /[^"\\\u0000-\u001f]*/y, wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y, x = "", escapes = [x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, '"', x, x, x, x, x, x, x, x, x, x, x, x, "/", x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, "\\", x, x, x, x, x, "\b", x, x, x, "\f", x, x, x, x, x, x, x, "\n", x, x, x, "\r", x, "	"], y = 65536, hexLookup1 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 4096, 8192, 12288, 16384, 20480, 24576, 28672, 32768, 36864, y, y, y, y, y, y, y, 40960, 45056, 49152, 53248, 57344, 61440, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 40960, 45056, 49152, 53248, 57344, 61440]), hexLookup2 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 256, 512, 768, 1024, 1280, 1536, 1792, 2048, 2304, y, y, y, y, y, y, y, 2560, 2816, 3072, 3328, 3584, 3840, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 2560, 2816, 3072, 3328, 3584, 3840]), hexLookup3 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 16, 32, 48, 64, 80, 96, 112, 128, 144, y, y, y, y, y, y, y, 160, 176, 192, 208, 224, 240, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 160, 176, 192, 208, 224, 240]), hexLookup4 = new Uint32Array([y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, y, y, y, y, y, y, y, 10, 11, 12, 13, 14, 15, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, y, 10, 11, 12, 13, 14, 15]), depthErrMsg = "Maximum nesting depth exceeded";
+], stringChunkRegExp = /[^"\\\u0000-\u001f]*/y, wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y, escapes = '.................................."............./.............................................\\......\b....\f........\n....\r..	'.split("."), badChar = 65536, hexLookup = [], depthErrMsg = "Maximum nesting depth exceeded";
+for (let i = 0; i < 4; i++) {
+  const arr = hexLookup[i] = new Uint32Array(102 + 1);
+  const shift = i << 2;
+  let j = 0;
+  for (; j < 48; j++)
+    arr[j] = badChar;
+  for (; j < 58; j++)
+    arr[j] = j - 48 << shift;
+  for (; j < 65; j++)
+    arr[j] = badChar;
+  for (; j < 71; j++)
+    arr[j] = j - 55 << shift;
+  for (; j < 97; j++)
+    arr[j] = badChar;
+  for (; j < 103; j++)
+    arr[j] = j - 87 << shift;
+}
 function chDesc(ch, prefix = "") {
   if (!(ch >= 0))
     return "end of input";
@@ -54,9 +71,9 @@ export function parse(text, reviver, numberParser, maxDepth = Infinity) {
   if (typeof reviver !== "function")
     reviver = void 0;
   const stack = [], maxStackPtr = maxDepth * 3;
-  let at = 0, ch, state = 0, stackPtr = 0, container, key, value;
+  let stackPtr = 0, at = 0, ch, state = 0, container, key, value;
   function error(m) {
-    return new JSONParseError(`${m}
+    throw new JSONParseError(`${m}
 At character ${at} in JSON: ${text}`);
   }
   parseloop:
@@ -76,7 +93,7 @@ At character ${at} in JSON: ${text}`);
               state = 8;
               continue;
             default:
-              throw error(`Unexpected ',', expecting ${stateDescs[state]}`);
+              error(`Unexpected ',', expecting ${stateDescs[state]}`);
           }
         case 34:
           value = "";
@@ -96,23 +113,23 @@ At character ${at} in JSON: ${text}`);
                 case 92:
                   ch = text.charCodeAt(at++);
                   if (ch === 117) {
-                    const charCode = hexLookup1[text.charCodeAt(at++)] + hexLookup2[text.charCodeAt(at++)] + hexLookup3[text.charCodeAt(at++)] + hexLookup4[text.charCodeAt(at++)];
-                    if (charCode < y) {
+                    const charCode = hexLookup[3][text.charCodeAt(at++)] + hexLookup[2][text.charCodeAt(at++)] + hexLookup[1][text.charCodeAt(at++)] + hexLookup[0][text.charCodeAt(at++)];
+                    if (charCode < badChar) {
                       value += String.fromCharCode(charCode);
                       continue;
                     }
-                    throw error("Invalid \\uXXXX escape in string");
+                    error("Invalid \\uXXXX escape in string");
                   }
                   const esc = escapes[ch];
                   if (esc) {
                     value += esc;
                     continue;
                   }
-                  throw error(`Invalid escape sequence in string: ${chDesc(ch, "\\")}`);
+                  error(`Invalid escape sequence in string: ${chDesc(ch, "\\")}`);
               }
               if (!(ch >= 0))
-                throw error("Unterminated string");
-              throw error(`Invalid unescaped ${chDesc(ch)} in string`);
+                error("Unterminated string");
+              error(`Invalid unescaped ${chDesc(ch)} in string`);
             }
           switch (state) {
             case 3:
@@ -131,11 +148,11 @@ At character ${at} in JSON: ${text}`);
               state = 1;
               continue;
             default:
-              throw error(`Unexpected '"', expecting ${stateDescs[state]}`);
+              error(`Unexpected '"', expecting ${stateDescs[state]}`);
           }
         case 58:
           if (state !== 4)
-            throw error(`Unexpected ':', expecting ${stateDescs[state]}`);
+            error(`Unexpected ':', expecting ${stateDescs[state]}`);
           state = 5;
           continue;
         case 123:
@@ -143,7 +160,7 @@ At character ${at} in JSON: ${text}`);
           stack[stackPtr++] = key;
           container = {};
           if (stackPtr > maxStackPtr)
-            throw error(depthErrMsg);
+            error(depthErrMsg);
           switch (state) {
             case 5:
               stack[stackPtr++] = 6;
@@ -159,7 +176,7 @@ At character ${at} in JSON: ${text}`);
               state = 2;
               continue;
             default:
-              throw error(`Unexpected '{', expecting ${stateDescs[state]}`);
+              error(`Unexpected '{', expecting ${stateDescs[state]}`);
           }
         case 125:
           switch (state) {
@@ -174,7 +191,7 @@ At character ${at} in JSON: ${text}`);
               container = stack[--stackPtr];
               continue;
             default:
-              throw error(`Unexpected '}', expecting ${stateDescs[state]}`);
+              error(`Unexpected '}', expecting ${stateDescs[state]}`);
           }
         case 91:
           stack[stackPtr++] = container;
@@ -182,7 +199,7 @@ At character ${at} in JSON: ${text}`);
           container = [];
           key = 0;
           if (stackPtr > maxStackPtr)
-            throw error(depthErrMsg);
+            error(depthErrMsg);
           switch (state) {
             case 5:
               stack[stackPtr++] = 6;
@@ -198,7 +215,7 @@ At character ${at} in JSON: ${text}`);
               state = 7;
               continue;
             default:
-              throw error(`Unexpected '[', expecting ${stateDescs[state]}`);
+              error(`Unexpected '[', expecting ${stateDescs[state]}`);
           }
         case 93:
           switch (state) {
@@ -213,7 +230,7 @@ At character ${at} in JSON: ${text}`);
               container = stack[--stackPtr];
               continue;
             default:
-              throw error(`Unexpected ']', expecting ${stateDescs[state]}`);
+              error(`Unexpected ']', expecting ${stateDescs[state]}`);
           }
         default:
           const startAt = at - 1;
@@ -222,7 +239,7 @@ At character ${at} in JSON: ${text}`);
           if (!matched) {
             if (!(ch >= 0))
               break parseloop;
-            throw error(`Unexpected ${chDesc(ch)}, expecting ${stateDescs[state]}`);
+            error(`Unexpected ${chDesc(ch)}, expecting ${stateDescs[state]}`);
           }
           at = wordRegExp.lastIndex;
           switch (ch) {
@@ -251,12 +268,12 @@ At character ${at} in JSON: ${text}`);
               state = 1;
               continue;
             default:
-              throw error(`Unexpected '${value}', expecting ${stateDescs[state]}`);
+              error(`Unexpected '${value}', expecting ${stateDescs[state]}`);
           }
       }
     }
   if (state !== 1)
-    throw error(`Unexpected end of input, expecting ${stateDescs[state]}`);
+    error(`Unexpected end of input, expecting ${stateDescs[state]}`);
   if (reviver !== void 0) {
     value = { "": value };
     reviveContainer(reviver, value);

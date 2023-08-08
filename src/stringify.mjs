@@ -16,13 +16,13 @@ export function stringify(value, replacer, space, customSerializer, maxDepth = 5
     if (typeof replacer === "function")
       repFunc = replacer;
     else if (Array.isArray(replacer))
-      repArray = replacer;
+      repArray = replacer.map((x) => String(x));
   }
   if (space !== void 0) {
     space = typeof space === "string" ? space.slice(0, 10) : typeof space === "number" ? "          ".slice(0, space) : void 0;
   }
   const maxStackPtr = maxDepth * (space === void 0 ? 5 : 6);
-  let key, container = { "": value }, index = 0, keys = [""], notFirstKeyValue = false, length = 1, stack = [], stackPtr = 0, json = "", indent = "\n", appendStr, seen = /* @__PURE__ */ new Set([]);
+  let key, container = { "": value }, index = 0, keys = [""], subsequentKeyValue = false, length = 1, stack = [], stackPtr = 0, json = "", indent = "\n", appendStr, seen = /* @__PURE__ */ new Set([]);
   do {
     if (index === length) {
       seen.delete(container);
@@ -32,7 +32,7 @@ export function stringify(value, replacer, space, customSerializer, maxDepth = 5
       }
       json += keys === void 0 ? "]" : "}";
       length = stack[--stackPtr];
-      notFirstKeyValue = stack[--stackPtr];
+      subsequentKeyValue = stack[--stackPtr];
       keys = stack[--stackPtr];
       index = stack[--stackPtr];
       container = stack[--stackPtr];
@@ -106,10 +106,10 @@ export function stringify(value, replacer, space, customSerializer, maxDepth = 5
       json += appendStr === void 0 ? "null" : appendStr;
     } else {
       if (appendStr !== void 0) {
-        if (notFirstKeyValue)
+        if (subsequentKeyValue)
           json += ",";
         else
-          notFirstKeyValue = true;
+          subsequentKeyValue = true;
         if (stackPtr > 0) {
           json += space === void 0 ? (escapableTest.test(key) ? JSON.stringify(key) : '"' + key + '"') + ":" : indent + (escapableTest.test(key) ? JSON.stringify(key) : '"' + key + '"') + ": ";
         }
@@ -122,7 +122,7 @@ export function stringify(value, replacer, space, customSerializer, maxDepth = 5
     stack[stackPtr++] = container;
     stack[stackPtr++] = index;
     stack[stackPtr++] = keys;
-    stack[stackPtr++] = notFirstKeyValue;
+    stack[stackPtr++] = subsequentKeyValue;
     stack[stackPtr++] = length;
     if (space !== void 0) {
       stack[stackPtr++] = indent;
@@ -131,7 +131,7 @@ export function stringify(value, replacer, space, customSerializer, maxDepth = 5
     container = value;
     index = 0;
     keys = newKeys;
-    notFirstKeyValue = false;
+    subsequentKeyValue = false;
     length = newLength;
     if (stackPtr > maxStackPtr)
       throw new RangeError(`Maximum nesting depth exceeded (current maximum is ${maxDepth})`);
