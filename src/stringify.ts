@@ -44,7 +44,7 @@ export function stringify(
     container: any = { '': value },
     index = 0,
     keys = [''] as string[] | undefined,
-    notFirstKeyValue = false,
+    subsequentKeyValue = false,
     length = 1,
 
     stack: any = [],
@@ -70,7 +70,7 @@ export function stringify(
       json += keys === undefined ? ']' : '}';  // (using the _old_ value of keys)
 
       length = stack[--stackPtr];
-      notFirstKeyValue = stack[--stackPtr];
+      subsequentKeyValue = stack[--stackPtr];
       keys = stack[--stackPtr];
       index = stack[--stackPtr];
       container = stack[--stackPtr];
@@ -166,8 +166,8 @@ export function stringify(
     } else {
       // we're in an object
       if (appendStr !== undefined) {
-        if (notFirstKeyValue) json += ',';
-        else notFirstKeyValue = true;
+        if (subsequentKeyValue) json += ',';
+        else subsequentKeyValue = true;
 
         if (stackPtr > 0) {
           json += space === undefined ?
@@ -187,7 +187,7 @@ export function stringify(
     stack[stackPtr++] = container;
     stack[stackPtr++] = index;
     stack[stackPtr++] = keys;
-    stack[stackPtr++] = notFirstKeyValue;
+    stack[stackPtr++] = subsequentKeyValue;
     stack[stackPtr++] = length;
 
     if (space !== undefined) {
@@ -198,7 +198,7 @@ export function stringify(
     container = value;
     index = 0;
     keys = newKeys;
-    notFirstKeyValue = false;
+    subsequentKeyValue = false;
     length = newLength;
 
     if (stackPtr > maxStackPtr) throw new RangeError(`Maximum nesting depth exceeded (current maximum is ${maxDepth})`);

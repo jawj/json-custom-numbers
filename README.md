@@ -113,11 +113,11 @@ import { parse } from 'json-custom-numbers';
 
 // `JSON.parse` loses precision for large integers
 JSON.parse("9007199254740991"); // => 9007199254740991
-JSON.parse("9007199254740993"); // => 9007199254740992 <- different number
+JSON.parse("9007199254740993"); // => 9007199254740992 <- wrong number
 
-// without a `numberReviver` function, our behaviour is identical
+// without a `numberParser` function, our behaviour is identical
 parse("9007199254740991"); // => 9007199254740991
-parse("9007199254740993"); // => 9007199254740992 <- different number
+parse("9007199254740993"); // => 9007199254740992 <- wrong number
 
 // this function converts only large integers to `BigInt`
 function numberReviver(s) {
@@ -141,14 +141,15 @@ import { stringify } from 'json-custom-numbers';
 JSON.stringify(9007199254740993n);
 
 // this serializes BigInt as a quoted string
+JSON.stringify(9007199254740993n, (k, v) => typeof v === 'bigint' ? v.toString() : v);  // => "9007199254740993"
+
+// this also serializes BigInt as a quoted string
 BigInt.prototype.toJSON = function() { return this.toString(); }
 JSON.stringify(9007199254740993n);  // => "9007199254740993"
 
-// this serializes BigInt as an unquoted string
-function bigIntReplacer(x) {
-  if (typeof x === 'bigint') return x.toString();
-}
-stringify(9007199254740993n, undefined, undefined, bigIntReplacer);  // => 9007199254740993
+// this serializes BigInt as a long number (i.e. unquoted), like Postgres does
+function customSerializer(k, v, type) { if (type === 'bigint') return v.toString(); }
+stringify(9007199254740993n, undefined, undefined, customSerializer);  // => 9007199254740993
 ```
 
 
@@ -156,7 +157,7 @@ stringify(9007199254740993n, undefined, undefined, bigIntReplacer);  // => 90071
 
 The code is in `src/parse.ts` and `src/stringify.ts`.
 
-Currently, there are two build stages: the first creates `.mjs` files in `src`, and the second creates minified `.js` files in `dist`. The only `package.json` scripts you're likely to need to call directly are `build` and `test`/`testConf`/`testPerf`.
+Currently, there are two build stages: the first creates `.mjs` files in `src`, while the second creates minified `.js` files in `dist`. The only `package.json` scripts you're likely to need to call directly are `build` and `test`/`testConf`/`testPerf`.
 
 
 ## License
