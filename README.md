@@ -120,14 +120,14 @@ parse("9007199254740991"); // => 9007199254740991
 parse("9007199254740993"); // => 9007199254740992 <- wrong number
 
 // this function converts only large integers to `BigInt`
-function numberReviver(s) {
+function numberParser(s) {
   const n = +s;
   if (n >= Number.MIN_SAFE_INTEGER && n <= Number.MAX_SAFE_INTEGER) return n;
   if (s.indexOf('.') !== -1 || s.indexOf('e') !== -1 || s.indexOf('E') !== -1) return n;
   return BigInt(s);
 }
-parse("9007199254740991", null, numberReviver);  // => 9007199254740991
-parse("9007199254740993", null, numberReviver);  // => 9007199254740993n <- now correct
+parse("9007199254740991", null, numberParser);  // => 9007199254740991
+parse("9007199254740993", null, numberParser);  // => 9007199254740993n <- now correct
 ```
 
 ### Stringifying `BigInt`
