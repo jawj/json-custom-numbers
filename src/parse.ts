@@ -4,8 +4,6 @@ export class JSONParseError extends Error { }
 
 const
   /* <cut> -- sed will cut this section and esbuild will define constants as literals */
-
-  // useful char codes
   tab = 9,
   newline = 10,
   cr = 13,
@@ -17,12 +15,9 @@ const
   closesquare = 93,
   backslash = 92,
   f = 102,
-  n = 110,
-  t = 116,
   u = 117,
   openbrace = 123,
   closebrace = 125,
-
   /* </cut> */
 
   // these 'sticky' RegExps are used to parse (1) strings and (2) numbers, true/false and null
@@ -83,7 +78,7 @@ export function parse(
 
   const
     stack: any[] = [],
-    maxStackPtr = maxDepth * 2;  // 2 is the number of entries added to the stack per nested container
+    maxStackPtr = (maxDepth - 1) * 2;  // 2 is the number of entries added to the stack per nested container
 
   let
     stackPtr = 0,     // the stack pointer
@@ -145,7 +140,7 @@ export function parse(
               hexLookup[2][text.charCodeAt(at++)] +
               hexLookup[1][text.charCodeAt(at++)] +
               hexLookup[0][text.charCodeAt(at++)];
-            
+
             if (charCode < badChar) {  // (NaN also fails this test)
               str += String.fromCharCode(charCode);
               continue;
@@ -171,71 +166,52 @@ export function parse(
 
   parse: {
     do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
-    
-    parsefirst: {
-      switch (ch) {
-        case openbrace:
-          do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
-          if (ch === closebrace) {
-            ch = text.charCodeAt(at++)
-            value = {};
-            break parse;  // finished parsing: got empty object
 
-          } else {
-            container = {};
-            key = undefined;
-            isArray = false;
-            break parsefirst;  // skip to containers loop
-          }
+    switch (ch) {
+      case openbrace:
+        container = {};
+        key = undefined;
+        isArray = false;
+        break;
 
-        case opensquare:
-          do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
-          if (ch === closesquare) {
-            ch = text.charCodeAt(at++)
-            value = [];
-            break parse;  // finished parsing: got empty array
+      case opensquare:
+        container = [];
+        key = 0;
+        isArray = true;
+        break;
 
-          } else {
-            container = [];
-            key = 0;
-            isArray = true;
-            break parsefirst;  // skip to containers loop
-          }
+      case quote:
+        value = string();
+        break parse;
 
-        case quote:
-          value = string();
-          break parse;
-
-        default:
-          value = word();
-          break parse;
-      }
+      default:
+        value = word();
+        break parse;
     }
 
+    do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
+
     parseloop: for (; ;) {
-      if (stackPtr > maxStackPtr) error(`Structure too deeply nested (current maximum is ${maxDepth})`);
       if (isArray) {
-        for (; ;) {
-          if (ch === closesquare) { // TODO: refactor closesquare and closebrace to top?
+        arrayloop: for (; ;) {
+          if (ch === closesquare) {
             do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
             if (reviver !== undefined) reviveContainer(reviver, container);
             value = container;
-
             if (stackPtr === 0) break parse;
 
             container = stack[--stackPtr];
             key = stack[--stackPtr];
             isArray = typeof key === 'number';
             container[isArray ? key++ : key] = value;
-            continue parseloop;
+            continue parseloop;  // skips stackPtr check
           }
 
-          if (key > 0) {
+          if (key !== 0) {
             if (ch !== comma) error("Expected ',' or ']' but got " + chDesc(ch) + " after value in array");
             do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
           }
 
-          // value
           switch (ch) {
             case quote:
               (container as any[])[key++] = string();
@@ -254,7 +230,7 @@ export function parse(
                 container = {};
                 key = undefined;
                 isArray = false;
-                continue parseloop;  // skip to containers loop
+                break arrayloop;
               }
 
             case opensquare:
@@ -270,7 +246,7 @@ export function parse(
                 container = [];
                 key = 0;
                 isArray = true;
-                continue parseloop;  // skip to containers loop at greater depth
+                break arrayloop;
               }
 
             default:
@@ -279,9 +255,9 @@ export function parse(
 
           while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab)) ch = text.charCodeAt(at++);
         }
-        
+
       } else {
-        for (; ;) {
+        objectloop: for (; ;) {
           if (ch === closebrace) {
             do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
             if (reviver !== undefined) reviveContainer(reviver, container);
@@ -292,8 +268,7 @@ export function parse(
             key = stack[--stackPtr];
             isArray = typeof key === 'number';
             container[isArray ? key++ : key] = value;
-
-            continue parseloop;
+            continue parseloop;  // skips stackPtr check
           }
 
           if (key !== undefined) {
@@ -302,13 +277,13 @@ export function parse(
           }
 
           if (ch !== quote) error("Expected '\"' but got " + chDesc(ch) + " in object");
+
           key = string();
-
           while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab)) ch = text.charCodeAt(at++);
-          if (ch !== colon) error("Expected ':' but got " + chDesc(ch) + " after key in object");
 
-          // value
+          if (ch !== colon) error("Expected ':' but got " + chDesc(ch) + " after key in object");          
           do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
+          
           switch (ch) {
             case quote:
               (container as Obj)[key] = string();
@@ -327,7 +302,7 @@ export function parse(
                 container = {};
                 key = undefined;
                 isArray = false;
-                continue parseloop;  // skip to containers loop
+                break objectloop;
               }
 
             case opensquare:
@@ -343,7 +318,7 @@ export function parse(
                 container = [];
                 key = 0;
                 isArray = true;
-                continue parseloop;  // skip to containers loop at greater depth
+                break objectloop;
               }
 
             default:
@@ -353,6 +328,8 @@ export function parse(
           while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab)) ch = text.charCodeAt(at++);
         }
       }
+
+      if (stackPtr > maxStackPtr) error(`Structure too deeply nested (current maximum is ${maxDepth})`);
     }
   }
 
