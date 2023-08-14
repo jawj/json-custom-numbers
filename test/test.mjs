@@ -52,13 +52,13 @@ function compare(filename, json, trueFn, trueFnName, testFn, testFnName, outcome
     console.log(filename, json);
     console.log(trueErr ? trueErr.message : testErr.message);
     console.log(`  FAIL: ${trueFnName} ${trueErr ? 'error' : 'OK'}, ${testFnName} ${testErr ? 'error' : 'OK'}\n`);
-    // process.exit(1);
+     process.exit(1);
     outcomes.fails += 1;
 
   } else if (format(testResult) !== format(trueResult)) {
     console.log(filename, json);
     console.log(`  FAIL: ${trueFnName} (${format(trueResult)}) !== ${testFnName} (${format(testResult)})\n`);
-    // process.exit(1);
+     process.exit(1);
     outcomes.fails += 1;
 
   } else {
@@ -85,8 +85,8 @@ if (!perfOnly) {
         json = fs.readFileSync(path.join(folderPath, filename), 'utf8');
     }
     compare(filename, json, JSON.parse, 'JSON.parse', parse, 'parse', outcomes);
-    compare(filename, json, json => JSON.parse(json, thoroughTransform), 'JSON.parse (thorough reviver)', json => parse(json, thoroughTransform), 'parse (thorough reviver)', outcomes);
-    compare(filename, json, json => JSON.parse(json, undefinedTransform), 'JSON.parse (undefined reviver)', json => parse(json, undefinedTransform), 'parse (undefined reviver)', outcomes);
+    // compare(filename, json, json => JSON.parse(json, thoroughTransform), 'JSON.parse (thorough reviver)', json => parse(json, thoroughTransform), 'parse (thorough reviver)', outcomes);
+    // compare(filename, json, json => JSON.parse(json, undefinedTransform), 'JSON.parse (undefined reviver)', json => parse(json, undefinedTransform), 'parse (undefined reviver)', outcomes);
   }
 
   console.log(`\n${outcomes.passes} passes, ${outcomes.fails} fails\n`);

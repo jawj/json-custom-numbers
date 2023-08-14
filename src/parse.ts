@@ -1,13 +1,3 @@
-/**
- * https://github.com/jawj/json-custom-numbers
- * @copyright Copyright (c) 2023 George MacKerron
- * @license MIT
- * 
- * This file implements a non-recursive, state machine-based JSON parser that's
- * intended to precisely match native `JSON.parse` behaviour but also allow for
- * custom number parsing.
- */
-
 "use strict";
 
 export class JSONParseError extends Error { }
@@ -15,21 +5,11 @@ export class JSONParseError extends Error { }
 const
   /* <cut> -- sed will cut this section and esbuild will define constants as literals */
 
-  // parser states
-  go = 0,           // starting state
-  ok = 1,           // final valid state
-  firstokey = 2,    // ready for the first key of the object or the closing of an empty object
-  okey = 3,         // ready for the next key of the object
-  ocolon = 4,       // ready for the colon
-  ovalue = 5,       // ready for the value half of a key/value pair
-  ocomma = 6,       // ready for a comma or closing }
-  firstavalue = 7,  // ready for the first value of an array or an empty array
-  avalue = 8,       // ready for the next value of an array
-  acomma = 9,       // ready for a comma or closing ]
-
   // useful char codes
   tab = 9,
   newline = 10,
+  cr = 13,
+  space = 32,
   quote = 34,
   comma = 44,
   colon = 58,
@@ -45,19 +25,6 @@ const
 
   /* </cut> */
 
-  stateDescs = [  // array indices match the parser state values
-    'JSON value',
-    'end of input',
-    "'}' or first key in object",
-    'key in object',
-    "':'",
-    'value in object',
-    "',' or '}' in object",
-    "']' or first value in array",
-    'value in array',
-    "',' or ']' in array"
-  ],
-
   // these 'sticky' RegExps are used to parse (1) strings and (2) numbers, true/false and null
   stringChunkRegExp = /[^"\\\u0000-\u001f]*/y,
   wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y,
@@ -68,9 +35,9 @@ const
 
   // these arrays are indexed by the char code of a hex digit, used for \uXXXX escapes
   badChar = 65536,  // = 0xffff + 1: signals a bad character, since it's out of range
-  hexLookup: Uint32Array[] = [],
+  hexLookup: Uint32Array[] = [];
 
-  depthErrMsg = 'Maximum nesting depth exceeded';
+type Obj = Record<string, any>;
 
 for (let i = 0; i < 4; i++) {
   const arr = hexLookup[i] = new Uint32Array(f + 1);
@@ -104,7 +71,6 @@ function reviveContainer(reviver: (key: string, value: any) => any, container: R
     else delete container[k];
   }
 }
-
 export function parse(
   text: string,
   reviver?: (key: string, value: any) => any,
@@ -116,240 +82,285 @@ export function parse(
 
   const
     stack: any[] = [],
-    maxStackPtr = maxDepth * 3;  // 3 is the number of entries added to the stack per nested container
+    maxStackPtr = maxDepth * 2;  // 2 is the number of entries added to the stack per nested container
 
   let
-    stackPtr = 0,   // the stack pointer
-    at = 0,         // character index into text
-    ch: number,     // current character code
-    state = go,     // the state of the parser
-    container,      // the current container object or array
-    key,            // the current key
-    value;          // the current value
+    stackPtr = 0,     // the stack pointer
+    at = 0,           // character index into text
+    ch: number,       // current character code
+    container,        // the current container
+    isArray: boolean, // is the current container an array? (if not, it's an object)
+    key: any,         // the current key (number or string)
+    value: any;       // the current value
 
   function error(m: string) {
     throw new JSONParseError(`${m}\nAt character ${at} in JSON: ${text}`);
   }
 
-  parseloop: for (; ;) {
-    // whitespace
-    do { ch = text.charCodeAt(at++) } while (ch < 33 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
+  function word() {
+    const startAt = at - 1;  // the first digit/letter was already consumed, so go back 1
+    wordRegExp.lastIndex = startAt;
+    const matched = wordRegExp.test(text);
+    if (!matched) error(`Unexpected ${chDesc(ch)}, expecting number, true, false or null`);
+    at = wordRegExp.lastIndex;
 
-    // next token
-    switch (ch) {
-      case comma:
-        switch (state) {
-          case ocomma:
-            (container as Record<string, any>)[key!] = value;
-            state = okey;
-            continue;
-          case acomma:
-            container[key++] = value;
-            state = avalue;
-            continue;
-          default:
-            error(`Unexpected ',', expecting ${stateDescs[state]}`);
-        }
+    let val;
+    if (ch < 102 /* f */) {  // has to be a number
+      const str = text.slice(startAt, at);
+      val = numberParser ? numberParser(str) : +str;
 
-      case quote:
-        value = '';
-        stringloop: for (; ;) {
-          stringChunkRegExp.lastIndex = at;  // find next chunk without \ or " or invalid chars
-          stringChunkRegExp.test(text);
+    } else {  // must be null/true/false
+      val = ch === 110 /* n */ ? null : ch === 116 /* t */;
+    }
 
-          const lastIndex = stringChunkRegExp.lastIndex;
-          if (lastIndex > at) {
-            value += text.slice(at, lastIndex);
-            at = lastIndex;
+    ch = text.charCodeAt(at++);
+    return val;
+  };
+
+  function string() {  // note: it's on you to check that ch == '"'.charCodeAt() before you call this
+    let str = '';
+    for (; ;) {
+      stringChunkRegExp.lastIndex = at;  // find next chunk without \ or " or invalid chars
+      stringChunkRegExp.test(text);
+      const lastIndex = stringChunkRegExp.lastIndex;
+
+      if (lastIndex > at) {
+        str += text.slice(at, lastIndex);
+        at = lastIndex;
+      }
+
+      ch = text.charCodeAt(at++);  // what comes after it?
+      switch (ch) {
+        case quote:  // end of string
+          ch = text.charCodeAt(at++);
+          return str;
+
+        case backslash:
+          ch = text.charCodeAt(at++);
+          if (ch === u) {  // Unicode \uXXXX escape
+            const charCode =
+              hexLookup[3][text.charCodeAt(at++)] +
+              hexLookup[2][text.charCodeAt(at++)] +
+              hexLookup[1][text.charCodeAt(at++)] +
+              hexLookup[0][text.charCodeAt(at++)];
+            
+            if (charCode < badChar) {  // (NaN also fails this test)
+              str += String.fromCharCode(charCode);
+              continue;
+            }
+            error('Invalid \\uXXXX escape in string');
           }
 
-          ch = text.charCodeAt(at++);  // what comes after it?
-          switch (ch) {
-            case quote:  // end of string
-              break stringloop;
-
-            case backslash:
-              ch = text.charCodeAt(at++);
-              if (ch === u) {  // Unicode \uXXXX escape
-                const charCode =
-                  hexLookup[3][text.charCodeAt(at++)] +
-                  hexLookup[2][text.charCodeAt(at++)] +
-                  hexLookup[1][text.charCodeAt(at++)] +
-                  hexLookup[0][text.charCodeAt(at++)];
-
-                if (charCode < badChar) {  // (NaN also fails this test)
-                  value += String.fromCharCode(charCode);
-                  continue;
-                }
-                error('Invalid \\uXXXX escape in string');
-              }
-
-              const esc = escapes[ch];  // single-character escape
-              if (esc) {
-                value += esc;
-                continue;
-              }
-              error(`Invalid escape sequence in string: ${chDesc(ch, '\\')}`);
+          const esc = escapes[ch];  // single-character escape
+          if (esc) {
+            str += esc;
+            continue;
           }
+          error(`Invalid escape sequence in string: ${chDesc(ch, '\\')}`);
 
+        default:
           // something is wrong
           if (!(ch >= 0)) error('Unterminated string');
           error(`Invalid unescaped ${chDesc(ch)} in string`);
-        }
+      }
 
-        switch (state) {
-          case okey:
-          case firstokey:
-            key = value;
-            state = ocolon;
-            continue;
-          case ovalue:
-            state = ocomma;
-            continue;
-          case avalue:
-          case firstavalue:
-            state = acomma;
-            continue;
-          case go:
-            state = ok;
-            continue;
-          default:
-            error(`Unexpected '"', expecting ${stateDescs[state]}`);
-        }
+    }
+  };
 
-      case colon:
-        if (state !== ocolon) error(`Unexpected ':', expecting ${stateDescs[state]}`);
-        state = ovalue;
-        continue;
+  parse: {
+    do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
+    
+    parseprimitive: {
+      switch (ch) {
+        case openbrace:
+          do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
+          if (ch === closebrace) {
+            value = {};
+            break parse;  // finished parsing: got empty object
 
-      case openbrace:
-        stack[stackPtr++] = container;
-        stack[stackPtr++] = key;
-        container = {};
+          } else {
+            container = {};
+            key = undefined;
+            isArray = false;
+            break parseprimitive;  // skip to containers loop
+          }
 
-        if (stackPtr > maxStackPtr) error(depthErrMsg);
+        case opensquare:
+          do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
+          if (ch === closesquare) {
+            value = [];
+            break parse;  // finished parsing: got empty array
 
-        switch (state) {
-          case ovalue:
-            stack[stackPtr++] = ocomma;
-            state = firstokey;
-            continue;
-          case avalue:
-          case firstavalue:
-            stack[stackPtr++] = acomma;
-            state = firstokey;
-            continue;
-          case go:
-            stack[stackPtr++] = ok;
-            state = firstokey;
-            continue;
-          default:
-            error(`Unexpected '{', expecting ${stateDescs[state]}`);
-        }
+          } else {
+            container = [];
+            key = 0;
+            isArray = true;
+            break parseprimitive;  // skip to containers loop
+          }
 
-      case closebrace:
-        switch (state) {
-          case ocomma:
-            (container as Record<string, any>)[key!] = value;
-            if (reviver !== undefined) reviveContainer(reviver, container);  // reviving only applies to contained items, so is not needed in state firstokey
-          // deliberate fallthrough
-          case firstokey:
+        case quote:
+          value = string();
+          break parse;
+
+        default:
+          value = word();
+          break parse;
+      }
+    }
+
+    parseloop: for (; ;) {
+      if (!(ch >= 0)) error('Premature end of JSON data');
+      if (stackPtr > maxStackPtr) error(`Structure too deeply nested (current maximum is ${maxDepth})`);
+
+      // object with at least one item
+      if (!isArray) {
+        for (; ;) {
+          if (ch === closebrace) {
+            do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
+            if (reviver !== undefined) reviveContainer(reviver, container);
             value = container;
-            state = stack[--stackPtr];
-            key = stack[--stackPtr];
+            if (stackPtr === 0) break parse;
+
             container = stack[--stackPtr];
-            continue;
-          default:
-            error(`Unexpected '}', expecting ${stateDescs[state]}`);
+            key = stack[--stackPtr];
+            isArray = typeof key === 'number';
+            container[isArray ? key++ : key] = value;
+
+            continue parseloop;
+          }
+
+          if (key !== undefined) {
+            if (ch !== comma) error("Expected ',' or '}' but got " + chDesc(ch) + " after value in object");
+            do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
+          }
+
+          if (ch !== quote) error("Expected '\"' but got " + chDesc(ch) + " in object");
+          key = string();
+
+          while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab)) ch = text.charCodeAt(at++);
+          if (ch !== colon) error("Expected ':' but got " + chDesc(ch) + " after key in object");
+
+          // value
+          do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
+          switch (ch) {
+            case quote:
+              (container as Obj)[key] = string();
+              break;
+
+            case openbrace:
+              do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
+              if (ch === closebrace) {
+                (container as Obj)[key] = {};
+                ch = text.charCodeAt(at++);
+                break;
+
+              } else {
+                stack[stackPtr++] = key;
+                stack[stackPtr++] = container;
+                container = {};
+                key = undefined;
+                isArray = false;
+                continue parseloop;  // skip to containers loop
+              }
+
+            case opensquare:
+              do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
+              if (ch === closesquare) {
+                (container as Obj)[key] = [];
+                ch = text.charCodeAt(at++);
+                break;
+
+              } else {
+                stack[stackPtr++] = key;
+                stack[stackPtr++] = container;
+                container = [];
+                key = 0;
+                isArray = true;
+                continue parseloop;  // skip to containers loop at greater depth
+              }
+
+            default:
+              (container as Obj)[key] = word();
+          }
+
+          while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab)) ch = text.charCodeAt(at++);
         }
 
-      case opensquare:
-        stack[stackPtr++] = container;
-        stack[stackPtr++] = key;
-        container = [];
-        key = 0;
 
-        if (stackPtr > maxStackPtr) error(depthErrMsg);
-
-        switch (state) {
-          case ovalue:
-            stack[stackPtr++] = ocomma;
-            state = firstavalue;
-            continue;
-          case avalue:
-          case firstavalue:
-            stack[stackPtr++] = acomma;
-            state = firstavalue;
-            continue;
-          case go:
-            stack[stackPtr++] = ok;
-            state = firstavalue;
-            continue;
-          default:
-            error(`Unexpected '[', expecting ${stateDescs[state]}`);
-        }
-
-      case closesquare:
-        switch (state) {
-          case acomma:
-            container[key] = value;  // no need to increment key (= index) on last value
-            if (reviver !== undefined) reviveContainer(reviver, container);  // reviving only applies to contained items, so is not needed in state firstavalue
-          // deliberate fall-through
-          case firstavalue:
+      } else {
+        // array with at least one item
+        for (; ;) {
+          if (ch === closesquare) { // TODO: refactor closesquare and closebrace to top?
+            do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
+            if (reviver !== undefined) reviveContainer(reviver, container);
             value = container;
-            state = stack[--stackPtr];
-            key = stack[--stackPtr];
+
+            if (stackPtr === 0) break parse;
+
             container = stack[--stackPtr];
-            continue;
-          default:
-            error(`Unexpected ']', expecting ${stateDescs[state]}`);
+            key = stack[--stackPtr];
+            isArray = typeof key === 'number';
+            container[isArray ? key++ : key] = value;
+            continue parseloop;
+          }
+
+          if (key > 0) {
+            if (ch !== comma) error("Expected ',' or ']' but got " + chDesc(ch) + " after value in array");
+            do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
+          }
+
+          // value
+          switch (ch) {
+            case quote:
+              (container as any[])[key++] = string();
+              break;
+
+            case openbrace:
+              do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
+              if (ch === closebrace) {
+                (container as any[])[key++] = {};
+                ch = text.charCodeAt(at++);
+                break;
+
+              } else {
+                stack[stackPtr++] = key;
+                stack[stackPtr++] = container;
+                container = {};
+                key = undefined;
+                isArray = false;
+                continue parseloop;  // skip to containers loop
+              }
+
+            case opensquare:
+              do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
+              if (ch === closesquare) {
+                (container as any[])[key++] = [];
+                ch = text.charCodeAt(at++);
+                break;
+
+              } else {
+                stack[stackPtr++] = key;
+                stack[stackPtr++] = container;
+                container = [];
+                key = 0;
+                isArray = true;
+                continue parseloop;  // skip to containers loop at greater depth
+              }
+
+            default:
+              (container as any[])[key++] = word();
+          }
+
+          while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab)) ch = text.charCodeAt(at++);
         }
-
-      default:  // numbers, true, false, null
-        const startAt = at - 1;  // the first digit/letter was already consumed, so go back 1
-
-        wordRegExp.lastIndex = startAt;
-        const matched = wordRegExp.test(text);
-        if (!matched) {
-          if (!(ch >= 0)) break parseloop;  // end of input reached
-          error(`Unexpected ${chDesc(ch)}, expecting ${stateDescs[state]}`);
-        }
-
-        at = wordRegExp.lastIndex;
-
-        switch (ch) {
-          case t:
-            value = true;
-            break;
-          case f:
-            value = false;
-            break;
-          case n:
-            value = null;
-            break;
-          default:
-            const str = text.slice(startAt, at);
-            value = numberParser !== undefined ? numberParser(str) : +str;
-        }
-
-        switch (state) {
-          case ovalue:
-            state = ocomma;
-            continue;
-          case avalue:
-          case firstavalue:
-            state = acomma;
-            continue;
-          case go:
-            state = ok;
-            continue;
-          default:
-            error(`Unexpected '${value}', expecting ${stateDescs[state]}`);
-        }
+      }
     }
   }
 
-  if (state !== ok) error(`Unexpected end of input, expecting ${stateDescs[state]}`);
+  // if (stackPtr !== 0) error('Premature end of JSON data');
+
+  while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
+  if (ch >= 0) error('Unexpected data after end of JSON');
 
   if (reviver !== undefined) {
     value = { '': value };
@@ -359,3 +370,9 @@ export function parse(
 
   return value;
 }
+
+// console.log(parse(' { "a": 1 , "b": 2 , "c": [false, true, {}, [ [ ], [], ["x"] ], { } ] , "d" : { "e": 1, "x": { "bloop": "y" } } , "f" : true, "g": {}, "goodbye" : [], "arr": [1, 2 ,3] } '))
+// console.log(parse('"ciao"'))
+// console.log(parse('8'))
+// console.log(parse(' [ ] '))
+// console.log(parse('{}'))
