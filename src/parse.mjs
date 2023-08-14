@@ -30,7 +30,7 @@ for (let i = 0; i < 4; i++) {
 }
 function chDesc(ch, prefix = "") {
   if (!(ch >= 0))
-    return "end of input";
+    return "end of JSON input";
   if (ch > 31 && ch < 127)
     return `'${prefix}${String.fromCharCode(ch)}'`;
   if (ch === 10)
@@ -307,7 +307,7 @@ At character ${at} in JSON: ${text}`);
             }
         }
         if (stackPtr > maxStackPtr)
-          error(`Structure too deeply nested (current maximum is ${maxDepth})`);
+          error(`Structure too deeply nested (maximum is set to ${maxDepth})`);
       }
   }
   while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9))

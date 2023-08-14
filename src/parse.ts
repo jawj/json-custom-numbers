@@ -60,7 +60,7 @@ for (let i = 0; i < 4; i++) {
 }
 
 function chDesc(ch: number, prefix = '') {
-  if (!(ch >= 0)) return 'end of input';
+  if (!(ch >= 0)) return 'end of JSON input';
   if (ch > 31 && ch < 127) return `'${prefix}${String.fromCharCode(ch)}'`;
   if (ch === newline) return '\\n';
   if (ch === tab) return '\\t';
@@ -222,6 +222,7 @@ export function parse(
         arrayloop: for (; ;) {
           if (ch === closesquare) {
             do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
+
             if (reviver !== undefined) reviveContainer(reviver, container);
             value = container;
             if (stackPtr === 0) break parse;
@@ -245,6 +246,7 @@ export function parse(
 
             case openbrace:
               do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
+
               if (ch === closebrace) {
                 (container as any[])[key++] = {};
                 ch = text.charCodeAt(at++);
@@ -261,6 +263,7 @@ export function parse(
 
             case opensquare:
               do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
+
               if (ch === closesquare) {
                 (container as any[])[key++] = [];
                 ch = text.charCodeAt(at++);
@@ -286,6 +289,7 @@ export function parse(
         objectloop: for (; ;) {
           if (ch === closebrace) {
             do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
+            
             if (reviver !== undefined) reviveContainer(reviver, container);
             value = container;
             if (stackPtr === 0) break parse;
@@ -317,6 +321,7 @@ export function parse(
 
             case openbrace:
               do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
+
               if (ch === closebrace) {
                 (container as Obj)[key] = {};
                 ch = text.charCodeAt(at++);
@@ -333,6 +338,7 @@ export function parse(
 
             case opensquare:
               do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
+
               if (ch === closesquare) {
                 (container as Obj)[key] = [];
                 ch = text.charCodeAt(at++);
@@ -355,7 +361,7 @@ export function parse(
         }
       }
 
-      if (stackPtr > maxStackPtr) error(`Structure too deeply nested (current maximum is ${maxDepth})`);
+      if (stackPtr > maxStackPtr) error(`Structure too deeply nested (maximum is set to ${maxDepth})`);
     }
   }
 
