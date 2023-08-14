@@ -1,4 +1,13 @@
 "use strict";
+/**
+ * https://github.com/jawj/json-custom-numbers
+ * @copyright Copyright (c) 2023 George MacKerron
+ * @license MIT
+ * 
+ * This file implements a non-recursive JSON parser that's intended to
+ * precisely match native `JSON.parse` behaviour but also allow for custom
+ * number parsing.
+ */
 export class JSONParseError extends Error {
 }
 const stringChunkRegExp = /[^"\\\u0000-\u001f]*/y, wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y, escapes = '.................................."............./.............................................\\......\b....\f........\n....\r..	'.split("."), badChar = 65536, hexLookup = [];
@@ -65,11 +74,19 @@ At character ${at} in JSON: ${text}`);
       error(`Unexpected ${chDesc(ch)}, expecting number, true, false or null`);
     at = wordRegExp.lastIndex;
     let val;
-    if (ch < 102) {
-      const str = text.slice(startAt, at);
-      val = numberParser ? numberParser(str) : +str;
-    } else {
-      val = ch === 110 ? null : ch === 116;
+    switch (ch) {
+      case 102:
+        val = false;
+        break;
+      case 110:
+        val = null;
+        break;
+      case 116:
+        val = true;
+        break;
+      default:
+        const str = text.slice(startAt, at);
+        val = numberParser ? numberParser(str) : +str;
     }
     ch = text.charCodeAt(at++);
     return val;

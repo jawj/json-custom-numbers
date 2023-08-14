@@ -52,13 +52,13 @@ function compare(filename, json, trueFn, trueFnName, testFn, testFnName, outcome
     console.log(filename, json);
     console.log(trueErr ? trueErr.message : testErr.message);
     console.log(`  FAIL: ${trueFnName} ${trueErr ? 'error' : 'OK'}, ${testFnName} ${testErr ? 'error' : 'OK'}\n`);
-     process.exit(1);
+    // process.exit(1);
     outcomes.fails += 1;
 
   } else if (format(testResult) !== format(trueResult)) {
     console.log(filename, json);
     console.log(`  FAIL: ${trueFnName} (${format(trueResult)}) !== ${testFnName} (${format(testResult)})\n`);
-     process.exit(1);
+    // process.exit(1);
     outcomes.fails += 1;
 
   } else {
@@ -182,17 +182,29 @@ const cpuUsage = (prev) => {
   }
 }
 
+export function median(data) {
+  const { length } = data;
+  data.sort((a, b) => a - b);
+  return length % 2 === 1 ?
+    data[(length - 1) * .5] :
+    .5 * data[length * .5 - 1] + .5 * data[length * .5];
+}
+
 const ljust = (s, len) => s + ' '.repeat(Math.max(0, len - s.length));
 const rjust = (s, len) => ' '.repeat(Math.max(0, len - s.length)) + s;
+
+const repsPerTrial = 50;
 const perf = (reps, baseline, fn) => {
-  if (global.gc) global.gc();
-
-  const t0 = cpuUsage();
-  for (let i = 0; i < reps; i++) fn();
-  if (global.gc) global.gc();
-  const t = cpuUsage(t0);
-
-  let result = rjust(t.toFixed(), 5) + 'ms';
+  const timings = [];
+  for (let i = 0; i < reps / repsPerTrial; i++) {
+    const t0 = cpuUsage();
+    for (let j = 0; j < repsPerTrial; j ++) fn();
+    const t = cpuUsage(t0) / repsPerTrial;
+    timings.push(t);
+  }
+  const t = median(timings);
+  
+  let result = rjust((t * 1000).toFixed(1), 5) + 'μs';
   if (typeof baseline === 'number') {
     const factor = t / baseline;
     const highlight = factor < 1 ? col.green : factor > 10 ? col.red : factor > 5 ? col.yellow : x => x;

@@ -1,57 +1,63 @@
-"use strict";class j extends Error{}const E=/[^"\\\u0000-\u001f]*/y,I=/-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y,
-v=`.................................."............./............................\
+"use strict";var $=Object.defineProperty;var v=Object.getOwnPropertyDescriptor;var O=Object.getOwnPropertyNames;var J=Object.prototype.hasOwnProperty;var N=(r,a)=>{for(var d in a)$(r,d,{get:a[d],enumerable:!0})},R=(r,a,d,i)=>{if(a&&
+typeof a=="object"||typeof a=="function")for(let c of O(a))!J.call(r,c)&&c!==d&&
+$(r,c,{get:()=>a[c],enumerable:!(i=v(a,c))||i.enumerable});return r};var U=r=>R($({},"__esModule",{value:!0}),r);var q={};N(q,{JSONParseError:()=>j,parse:()=>P});module.exports=U(q);/**
+ * https://github.com/jawj/json-custom-numbers
+ * @copyright Copyright (c) 2023 George MacKerron
+ * @license MIT
+ * 
+ * This file implements a non-recursive JSON parser that's intended to
+ * precisely match native `JSON.parse` behaviour but also allow for custom
+ * number parsing.
+ */class j extends Error{}const S=/[^"\\\u0000-\u001f]*/y,E=/-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y,
+X=`.................................."............./............................\
 .................\\......\b....\f........
-....\r..	`.split("."),m=65536,k=[],N="Maximum nesting depth exceeded";for(let o=0;o<
-4;o++){const c=k[o]=new Uint32Array(103),f=o<<2;let i=0;for(;i<48;i++)c[i]=m;for(;i<
-58;i++)c[i]=i-48<<f;for(;i<65;i++)c[i]=m;for(;i<71;i++)c[i]=i-55<<f;for(;i<97;i++)
-c[i]=m;for(;i<103;i++)c[i]=i-87<<f}function C(o,c=""){if(!(o>=0))return"end of i\
-nput";if(o>31&&o<127)return`'${c}${String.fromCharCode(o)}'`;if(o===10)return"\\n";
-if(o===9)return"\\t";const f=o.toString(16),i="0000".slice(f.length)+f;return(o>
-31?`'${c}${String.fromCharCode(o)}', `:"")+`\\u${i}`}function S(o,c){const f=Object.
-keys(c),i=f.length;for(let s=0;s<i;s++){const A=f[s],t=o.call(c,A,c[A]);t!==void 0?
-c[A]=t:delete c[A]}}function p(o,c,f,i=1/0){typeof o!="string"&&(o=String(o)),typeof c!=
-"function"&&(c=void 0);const s=[],A=i*2;let t=0,r=0,e,a,l,n,d;function u(h){throw new j(
-`${h}
-At character ${r} in JSON: ${o}`)}function $(){const h=r-1;I.lastIndex=h,I.test(
-o)||u(`Unexpected ${C(e)}, expecting number, true, false or null`),r=I.lastIndex;
-let b;if(e<102){const g=o.slice(h,r);b=f?f(g):+g}else b=e===110?null:e===116;return e=
-o.charCodeAt(r++),b}function w(){let h="";for(;;){E.lastIndex=r,E.test(o);const y=E.
-lastIndex;switch(y>r&&(h+=o.slice(r,y),r=y),e=o.charCodeAt(r++),e){case 34:return e=
-o.charCodeAt(r++),h;case 92:if(e=o.charCodeAt(r++),e===117){const g=k[3][o.charCodeAt(
-r++)]+k[2][o.charCodeAt(r++)]+k[1][o.charCodeAt(r++)]+k[0][o.charCodeAt(r++)];if(g<
-m){d+=String.fromCharCode(g);continue}u("Invalid \\uXXXX escape in string")}const b=v[e];
-if(b){d+=b;continue}u(`Invalid escape sequence in string: ${C(e,"\\")}`);default:
-e>=0||u("Unterminated string"),u(`Invalid unescaped ${C(e)} in string`)}}}o:{do e=
-o.charCodeAt(r++);while(e<=32&&(e===32||e===10||e===13||e===9));e:switch(e){case 123:
-do e=o.charCodeAt(r++);while(e<=32&&(e===32||e===10||e===13||e===9));if(e===125){
-d={};break o}else{a={},l=!1;break e}case 91:do e=o.charCodeAt(r++);while(e<=32&&
-(e===32||e===10||e===13||e===9));if(e===93){d=[];break o}else{a=[],l=!0;break e}case 34:
-d=w();break o;default:d=$();break o}e:for(;!isNaN(e);)if(t>A&&u(`Structure too d\
-eeply nested (current maximum is ${i})`),l)for(;;){if(e===93){if(c!==void 0&&S(c,
-a),d=a,t===0)break o;a=s[--t],n=s[--t],l=typeof n=="number",a[l?n++:n]=d;do e=o.
-charCodeAt(r++);while(e<=32&&(e===32||e===10||e===13||e===9));continue e}if(n>0){
-e!==44&&u("Expected ',' or ']' but got "+C(e)+" after value in array");do e=o.charCodeAt(
-r++);while(e<=32&&(e===32||e===10||e===13||e===9))}switch(e){case 34:a[n++]=w();
-break;case 123:do e=o.charCodeAt(r++);while(e<=32&&(e===32||e===10||e===13||e===
-9));if(e===125){a[n++]={},e=o.charCodeAt(r++);break}else{s[t++]=n,s[t++]=a,a={},
-n=void 0,l=!1;continue e}case 91:do e=o.charCodeAt(r++);while(e<=32&&(e===32||e===
-10||e===13||e===9));if(e===93){a[n++]=[],e=o.charCodeAt(r++);break}else{s[t++]=n,
-s[t++]=a,a=[],n=0,l=!0;continue e}default:a[n++]=$()}for(;e<=32&&(e===32||e===10||
-e===13||e===9);)e=o.charCodeAt(r++)}else for(;;){if(e===125){if(c!==void 0&&S(c,
-a),d=a,t===0)break o;a=s[--t],n=s[--t],l=typeof n=="number",a[l?n++:n]=d;do e=o.
-charCodeAt(r++);while(e<=32&&(e===32||e===10||e===13||e===9));continue e}if(n!==
-void 0){e!==44&&u("Expected ',' or '}' but got "+C(e)+" after value in object");
-do e=o.charCodeAt(r++);while(e<=32&&(e===32||e===10||e===13||e===9))}for(e!==34&&
-u(`Expected '"' but got `+C(e)+" in object"),n=w();e<=32&&(e===32||e===10||e===13||
-e===9);)e=o.charCodeAt(r++);e!==58&&u("Expected ':' but got "+C(e)+" after key i\
-n object");do e=o.charCodeAt(r++);while(e<=32&&(e===32||e===10||e===13||e===9));
-switch(e){case 34:a[n]=w();break;case 123:do e=o.charCodeAt(r++);while(e<=32&&(e===
-32||e===10||e===13||e===9));if(e===125){a[n]={},e=o.charCodeAt(r++);break}else{s[t++]=
-n,s[t++]=a,a={},n=void 0,l=!1;continue e}case 91:do e=o.charCodeAt(r++);while(e<=
-32&&(e===32||e===10||e===13||e===9));if(e===93){a[n]=[],e=o.charCodeAt(r++);break}else{
-s[t++]=n,s[t++]=a,a=[],n=0,l=!0;continue e}default:a[n]=$()}for(;e<=32&&(e===32||
-e===10||e===13||e===9);)e=o.charCodeAt(r++)}}return c!==void 0&&(d={"":d},S(c,d),
-d=d[""]),d}console.log(p(' { "a": 1 , "b": 2 , "c": [false, true, {}, [ [ ], [],\
- ["x"] ], { } ] , "d" : { "e": 1, "x": { "bloop": "y" } } , "f" : true, "g": {},\
- "goodbye" : [], "arr": [1, 2 ,3] } ')),console.log(p('"ciao"')),console.log(p("\
-8")),console.log(p(" [ ] ")),console.log(p("{}"));
+....\r..	`.split("."),y=65536,p=[];for(let r=0;r<4;r++){const a=p[r]=new Uint32Array(
+103),d=r<<2;let i=0;for(;i<48;i++)a[i]=y;for(;i<58;i++)a[i]=i-48<<d;for(;i<65;i++)
+a[i]=y;for(;i<71;i++)a[i]=i-55<<d;for(;i<97;i++)a[i]=y;for(;i<103;i++)a[i]=i-87<<
+d}function b(r,a=""){if(!(r>=0))return"end of input";if(r>31&&r<127)return`'${a}${String.
+fromCharCode(r)}'`;if(r===10)return"\\n";if(r===9)return"\\t";const d=r.toString(
+16),i="0000".slice(d.length)+d;return(r>31?`'${a}${String.fromCharCode(r)}', `:"")+
+`\\u${i}`}function I(r,a){const d=Object.keys(a),i=d.length;for(let c=0;c<i;c++){
+const A=d[c],s=r.call(a,A,a[A]);s!==void 0?a[A]=s:delete a[A]}}function P(r,a,d,i=1/0){
+typeof r!="string"&&(r=String(r)),typeof a!="function"&&(a=void 0);const c=[],A=(i-
+1)*2;let s=0,o=0,e,n,u,t,f;function l(h){throw new j(`${h}
+At character ${o} in JSON: ${r}`)}function m(){e>=0||l("Premature end of JSON da\
+ta");const h=o-1;E.lastIndex=h,E.test(r)||l(`Unexpected ${b(e)}, expecting numbe\
+r, true, false or null`),o=E.lastIndex;let C;switch(e){case 102:C=!1;break;case 110:
+C=null;break;case 116:C=!0;break;default:const k=r.slice(h,o);C=d?d(k):+k}return e=
+r.charCodeAt(o++),C}function w(){let h="";for(;;){S.lastIndex=o,S.test(r);const g=S.
+lastIndex;switch(g>o&&(h+=r.slice(o,g),o=g),e=r.charCodeAt(o++),e){case 34:return e=
+r.charCodeAt(o++),h;case 92:if(e=r.charCodeAt(o++),e===117){const k=p[3][r.charCodeAt(
+o++)]+p[2][r.charCodeAt(o++)]+p[1][r.charCodeAt(o++)]+p[0][r.charCodeAt(o++)];if(k<
+y){h+=String.fromCharCode(k);continue}l("Invalid \\uXXXX escape in string")}const C=X[e];
+if(C){h+=C;continue}l(`Invalid escape sequence in string: ${b(e,"\\")}`);default:
+e>=0||l("Unterminated string"),l(`Invalid unescaped ${b(e)} in string`)}}}e:{do e=
+r.charCodeAt(o++);while(e<=32&&(e===32||e===10||e===13||e===9));switch(e){case 123:
+n={},t=void 0,u=!1;break;case 91:n=[],t=0,u=!0;break;case 34:f=w();break e;default:
+f=m();break e}do e=r.charCodeAt(o++);while(e<=32&&(e===32||e===10||e===13||e===9));
+o:for(;;){if(u)r:for(;;){if(e===93){do e=r.charCodeAt(o++);while(e<=32&&(e===32||
+e===10||e===13||e===9));if(a!==void 0&&I(a,n),f=n,s===0)break e;n=c[--s],t=c[--s],
+u=typeof t=="number",n[u?t++:t]=f;continue o}if(t!==0){e!==44&&l("Expected ',' o\
+r ']' but got "+b(e)+" after value in array");do e=r.charCodeAt(o++);while(e<=32&&
+(e===32||e===10||e===13||e===9))}switch(e){case 34:n[t++]=w();break;case 123:do e=
+r.charCodeAt(o++);while(e<=32&&(e===32||e===10||e===13||e===9));if(e===125){n[t++]=
+{},e=r.charCodeAt(o++);break}else{c[s++]=t,c[s++]=n,n={},t=void 0,u=!1;break r}case 91:
+do e=r.charCodeAt(o++);while(e<=32&&(e===32||e===10||e===13||e===9));if(e===93){
+n[t++]=[],e=r.charCodeAt(o++);break}else{c[s++]=t,c[s++]=n,n=[],t=0,u=!0;break r}default:
+n[t++]=m()}for(;e<=32&&(e===32||e===10||e===13||e===9);)e=r.charCodeAt(o++)}else
+r:for(;;){if(e===125){do e=r.charCodeAt(o++);while(e<=32&&(e===32||e===10||e===13||
+e===9));if(a!==void 0&&I(a,n),f=n,s===0)break e;n=c[--s],t=c[--s],u=typeof t=="n\
+umber",n[u?t++:t]=f;continue o}if(t!==void 0){e!==44&&l("Expected ',' or '}' but\
+ got "+b(e)+" after value in object");do e=r.charCodeAt(o++);while(e<=32&&(e===32||
+e===10||e===13||e===9))}for(e!==34&&l(`Expected '"' but got `+b(e)+" in object"),
+t=w();e<=32&&(e===32||e===10||e===13||e===9);)e=r.charCodeAt(o++);e!==58&&l("Exp\
+ected ':' but got "+b(e)+" after key in object");do e=r.charCodeAt(o++);while(e<=
+32&&(e===32||e===10||e===13||e===9));switch(e){case 34:n[t]=w();break;case 123:do
+e=r.charCodeAt(o++);while(e<=32&&(e===32||e===10||e===13||e===9));if(e===125){n[t]=
+{},e=r.charCodeAt(o++);break}else{c[s++]=t,c[s++]=n,n={},t=void 0,u=!1;break r}case 91:
+do e=r.charCodeAt(o++);while(e<=32&&(e===32||e===10||e===13||e===9));if(e===93){
+n[t]=[],e=r.charCodeAt(o++);break}else{c[s++]=t,c[s++]=n,n=[],t=0,u=!0;break r}default:
+n[t]=m()}for(;e<=32&&(e===32||e===10||e===13||e===9);)e=r.charCodeAt(o++)}s>A&&l(
+`Structure too deeply nested (current maximum is ${i})`)}}for(;e<=32&&(e===32||e===
+10||e===13||e===9);)e=r.charCodeAt(o++);return e>=0&&l("Unexpected data after en\
+d of JSON"),a!==void 0&&(f={"":f},I(a,f),f=f[""]),f}
