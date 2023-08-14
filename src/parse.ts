@@ -38,7 +38,8 @@ const
 
   // this array is indexed by the char code of an escape character 
   // e.g. \n -> 'n'.charCodeAt() === 110, so escapes[110] === '\n'
-  escapes = '.................................."............./.............................................\\......\b....\f........\n....\r..\t'.split('.'),
+  escapes = '.................................."............./.............................................\\......\b....\f........\n....\r..\t'
+    .split('.'),
 
   // these arrays are indexed by the char code of a hex digit, used for \uXXXX escapes
   badChar = 65536,  // = 0xffff + 1: signals a bad character, since it's out of range
@@ -105,25 +106,29 @@ export function parse(
     throw new JSONParseError(`${m}\nAt character ${at} in JSON: ${text}`);
   }
 
+  function containerDesc() {
+    return isArray === true ? 'in array' : isArray === false ? 'in object' : 'at top level';
+  }
+
   function word() {
-    if (!(ch >= 0)) error('Premature end of JSON data');
+    if (!(ch >= 0)) error(`Unexpected end of JSON input ${containerDesc()}`);
 
     const startAt = at - 1;  // the first digit/letter was already consumed, so go back 1
     wordRegExp.lastIndex = startAt;
     const matched = wordRegExp.test(text);
-    if (!matched) error(`Unexpected ${chDesc(ch)}, expecting number, true, false or null`);
+    if (!matched) error(`Unexpected ${chDesc(ch)}, expecting JSON value ${containerDesc()}`);
 
     at = wordRegExp.lastIndex;
 
     let val;
     switch (ch) {
-      case f: 
+      case f:
         val = false;
         break;
-      case n: 
+      case n:
         val = null;
         break;
-      case t: 
+      case t:
         val = true;
         break;
       default:
@@ -166,11 +171,11 @@ export function parse(
               str += String.fromCharCode(charCode);
               continue;
             }
-            error('Invalid \\uXXXX escape in string');
+            error(`Invalid \\uXXXX escape in string`);
           }
 
           const esc = escapes[ch];  // single-character escape
-          if (esc) {
+          if (esc) {  // i.e. esc !== '' && esc !== undefined
             str += esc;
             continue;
           }
@@ -229,7 +234,7 @@ export function parse(
           }
 
           if (key !== 0) {
-            if (ch !== comma) error("Expected ',' or ']' but got " + chDesc(ch) + " after value in array");
+            if (ch !== comma) error(`Unexpected ${chDesc(ch)}, expecting ',' or ']' after value in array`);
             do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
           }
 
@@ -293,18 +298,18 @@ export function parse(
           }
 
           if (key !== undefined) {
-            if (ch !== comma) error("Expected ',' or '}' but got " + chDesc(ch) + " after value in object");
+            if (ch !== comma) error(`Unexpected ${chDesc(ch)}, expecting ',' or '}' after value in object`);
             do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
           }
 
-          if (ch !== quote) error("Expected '\"' but got " + chDesc(ch) + " in object");
+          if (ch !== quote) error(`Unexpected ${chDesc(ch)}, expecting '}' or double-quoted key in object`);
 
           key = string();
           while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab)) ch = text.charCodeAt(at++);
 
-          if (ch !== colon) error("Expected ':' but got " + chDesc(ch) + " after key in object");          
+          if (ch !== colon) error(`Unexpected ${chDesc(ch)}, expecting ':' after key in object`);
           do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
-          
+
           switch (ch) {
             case quote:
               (container as Obj)[key] = string();
@@ -355,7 +360,7 @@ export function parse(
   }
 
   while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab)) ch = text.charCodeAt(at++);
-  if (ch >= 0) error('Unexpected data after end of JSON');
+  if (ch >= 0) error('Unexpected data after end of JSON input');
 
   if (reviver !== undefined) {
     value = { '': value };

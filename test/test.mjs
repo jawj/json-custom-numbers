@@ -119,7 +119,7 @@ if (!perfOnly) {
   console.log(col.bold(`\nRunning error messages test ...\n`));
 
   const testErr = (json, message) => {
-    return;
+    // return;
     let caught = undefined;
     try {
       parse(json);
@@ -133,18 +133,20 @@ if (!perfOnly) {
     }
   }
 
-  testErr('{', `Unexpected end of input, expecting '}' or first key in object`);
-  testErr('{x', `Unexpected 'x', expecting '}' or first key in object`);
+  testErr('', `Unexpected end of JSON input at top level`);
+  testErr('x', `Unexpected 'x', expecting JSON value at top level`);
+  testErr('{', `Unexpected end of input, expecting '}' or double-quoted key in object`);
+  testErr('{x', `Unexpected 'x', expecting '}' or double-quoted key in object`);
   testErr('{"x', `Unterminated string`);
   testErr('{"x"', `Unexpected end of input, expecting ':'`);
-  testErr('{"x":', `Unexpected end of input, expecting value in object`);
-  testErr('{"x":x', `Unexpected 'x', expecting value in object`);
-  testErr('{"x":1', `Unexpected end of input, expecting ',' or '}' in object`);
-  testErr('[', `Unexpected end of input, expecting ']' or first value in array`);
-  testErr('[1', `Unexpected end of input, expecting ',' or ']' in array`);
-  testErr('[1x', `Unexpected 'x', expecting ',' or ']' in array`);
-  testErr('[1,', `Unexpected end of input, expecting value in array`);
-  testErr('[1,x', `Unexpected 'x', expecting value in array`);
+  testErr('{"x":', `Unexpected end of JSON input in object`);
+  testErr('{"x":x', `Unexpected 'x', expecting JSON value in object`);
+  testErr('{"x":1', `Unexpected end of input, expecting ',' or '}' after value in object`);
+  testErr('[', `Unexpected end of JSON input in array`);
+  testErr('[1', `Unexpected end of input, expecting ',' or ']' after value in array`);
+  testErr('[1x', `Unexpected 'x', expecting ',' or ']' after value in array`);
+  testErr('[1,', `Unexpected end of JSON input in array`);
+  testErr('[1,x', `Unexpected 'x', expecting JSON value in array`);
   testErr('"abc', `Unterminated string`);
   testErr('"\u0000', `Invalid unescaped \\u0000 in string`);
   testErr('"\n', `Invalid unescaped \\n in string`);
@@ -156,16 +158,15 @@ if (!perfOnly) {
   testErr('"\\a"', `Invalid escape sequence in string: '\\a'`);
   testErr('"\\', `Invalid escape sequence in string: end of input`);
   testErr('~', `Unexpected '~', expecting JSON value`);
-  testErr('[1,2,~]', `Unexpected '~', expecting value in array`);
+  testErr('[1,2,~]', `Unexpected '~', expecting JSON value in array`);
   testErr('.1', `Unexpected '.', expecting JSON value`);
-  testErr('1.', `Unexpected '.', expecting end of input`);
-  testErr('01', `Unexpected '1', expecting end of input`);
-  testErr('[01]', `Unexpected '1', expecting ',' or ']' in array`);
-  testErr('[1,\u0000]', `Unexpected \\u0000, expecting value in array`);
+  testErr('1.', `Unexpected data after end of JSON input`);
+  testErr('01', `Unexpected data after end of JSON input`);
+  testErr('[01]', `Unexpected '1', expecting ',' or ']' after value in array`);
+  testErr('[1,\u0000]', `Unexpected \\u0000, expecting JSON value in array`);
   testErr('"\\×"', `Invalid escape sequence in string: '\\×', \\u00d7`);
   testErr(`"\\
   `, `Invalid escape sequence in string: \\n`);
-
 
   if (outcomes.fails > 0) process.exit(1);
 
@@ -175,9 +176,9 @@ if (!perfOnly) {
 const cpuUsage = (prev) => {
   if (process.cpuUsage) {
     const usage = process.cpuUsage(prev);
-    return prev ? (usage.user + usage.system) * .001 : usage;
+    return prev ? (usage.user + usage.system) : usage;
   } else {
-    const usage = performance.now ? performance.now() : Date.now();
+    const usage = 1000 * (performance.now ? performance.now() : Date.now());
     return usage - (prev ?? 0);
   }
 }
@@ -204,7 +205,7 @@ const perf = (reps, baseline, fn) => {
   }
   const t = median(timings);
   
-  let result = rjust((t * 1000).toFixed(1), 5) + 'μs';
+  let result = rjust(t.toFixed(1), 5) + 'μs';
   if (typeof baseline === 'number') {
     const factor = t / baseline;
     const highlight = factor < 1 ? col.green : factor > 10 ? col.red : factor > 5 ? col.yellow : x => x;

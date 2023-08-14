@@ -64,14 +64,17 @@ export function parse(text, reviver, numberParser, maxDepth = Infinity) {
     throw new JSONParseError(`${m}
 At character ${at} in JSON: ${text}`);
   }
+  function containerDesc() {
+    return isArray === true ? "in array" : isArray === false ? "in object" : "at top level";
+  }
   function word() {
     if (!(ch >= 0))
-      error("Premature end of JSON data");
+      error(`Unexpected end of JSON input ${containerDesc()}`);
     const startAt = at - 1;
     wordRegExp.lastIndex = startAt;
     const matched = wordRegExp.test(text);
     if (!matched)
-      error(`Unexpected ${chDesc(ch)}, expecting number, true, false or null`);
+      error(`Unexpected ${chDesc(ch)}, expecting JSON value ${containerDesc()}`);
     at = wordRegExp.lastIndex;
     let val;
     switch (ch) {
@@ -115,7 +118,7 @@ At character ${at} in JSON: ${text}`);
               str += String.fromCharCode(charCode);
               continue;
             }
-            error("Invalid \\uXXXX escape in string");
+            error(`Invalid \\uXXXX escape in string`);
           }
           const esc = escapes[ch];
           if (esc) {
@@ -178,7 +181,7 @@ At character ${at} in JSON: ${text}`);
               }
               if (key !== 0) {
                 if (ch !== 44)
-                  error("Expected ',' or ']' but got " + chDesc(ch) + " after value in array");
+                  error(`Unexpected ${chDesc(ch)}, expecting ',' or ']' after value in array`);
                 do {
                   ch = text.charCodeAt(at++);
                 } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
@@ -245,18 +248,18 @@ At character ${at} in JSON: ${text}`);
               }
               if (key !== void 0) {
                 if (ch !== 44)
-                  error("Expected ',' or '}' but got " + chDesc(ch) + " after value in object");
+                  error(`Unexpected ${chDesc(ch)}, expecting ',' or '}' after value in object`);
                 do {
                   ch = text.charCodeAt(at++);
                 } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
               }
               if (ch !== 34)
-                error(`Expected '"' but got ` + chDesc(ch) + " in object");
+                error(`Unexpected ${chDesc(ch)}, expecting '}' or double-quoted key in object`);
               key = string();
               while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9))
                 ch = text.charCodeAt(at++);
               if (ch !== 58)
-                error("Expected ':' but got " + chDesc(ch) + " after key in object");
+                error(`Unexpected ${chDesc(ch)}, expecting ':' after key in object`);
               do {
                 ch = text.charCodeAt(at++);
               } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
@@ -310,7 +313,7 @@ At character ${at} in JSON: ${text}`);
   while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9))
     ch = text.charCodeAt(at++);
   if (ch >= 0)
-    error("Unexpected data after end of JSON");
+    error("Unexpected data after end of JSON input");
   if (reviver !== void 0) {
     value = { "": value };
     reviveContainer(reviver, value);
