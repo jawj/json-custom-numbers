@@ -47,8 +47,9 @@ const
 
 type Obj = Record<string, any>;
 
+// set up hex lookup arrays, used to decode Unicode \uXXXX escapes
 for (let i = 0; i < 4; i++) {
-  const arr = hexLookup[i] = new Uint32Array(f + 1);
+  const arr = hexLookup[i] = new Uint32Array(103);
   const shift = i << 2;
   let j = 0;
   for (; j < 48; j++) arr[j] = badChar;
@@ -59,6 +60,7 @@ for (let i = 0; i < 4; i++) {
   for (; j < 103; j++) arr[j] = (j - 87) << shift;  // a - f
 }
 
+// describe a character in an error message
 function chDesc(ch: number, prefix = '') {
   if (!(ch >= 0)) return 'end of JSON input';
   if (ch > 31 && ch < 127) return `'${prefix}${String.fromCharCode(ch)}'`;
@@ -69,6 +71,7 @@ function chDesc(ch: number, prefix = '') {
   return (ch > 31 ? `'${prefix}${String.fromCharCode(ch)}', ` : '') + `\\u${paddedHexRep}`;
 }
 
+// apply reviver function to an object or array
 function reviveContainer(reviver: (key: string, value: any) => any, container: Record<string, any>) {
   const keys = Object.keys(container);
   const numKeys = keys.length;
@@ -83,7 +86,7 @@ function reviveContainer(reviver: (key: string, value: any) => any, container: R
 export function parse(
   text: string,
   reviver?: (key: string, value: any) => any,
-  numberParser?: (string: string) => any,
+  numberParser?: (string: string, key?: string | number | undefined) => any,
   maxDepth = Infinity,  // all native implementations fail with an out-of-memory error when depth is too large
 ) {
   if (typeof text !== 'string') text = String(text);  // force string
@@ -94,13 +97,13 @@ export function parse(
     maxStackPtr = (maxDepth - 1) * 2;  // 2 is the number of entries added to the stack per nested container
 
   let
-    stackPtr = 0,     // the stack pointer
-    at = 0,           // character index into text
-    ch: number,       // current character code
-    container,        // the current container
-    isArray: boolean, // is the current container an array? (if not, it's an object)
-    key: any,         // the current key (number or string)
-    value: any;       // the current value
+    stackPtr = 0,                     // the stack pointer
+    at = 0,                           // character index into text
+    ch: number,                       // current character code
+    container: Obj | any[],           // the current container
+    isArray: boolean,                 // is the current container an array? (if not, it's an object)
+    key: string | number | undefined, // the current key (number or string)
+    value: any;                       // the current value
 
   function error(m: string) {
     throw new JSONParseError(`${m}\nAt character ${at} in JSON: ${text}`);
@@ -133,7 +136,7 @@ export function parse(
         break;
       default:
         const str = text.slice(startAt, at);
-        val = numberParser ? numberParser(str) : +str;
+        val = numberParser ? numberParser(str, key) : +str;
     }
 
     ch = text.charCodeAt(at++);
@@ -230,7 +233,7 @@ export function parse(
             container = stack[--stackPtr];
             key = stack[--stackPtr];
             isArray = typeof key === 'number';
-            container[isArray ? key++ : key] = value;
+            (container as any)[isArray ? (key as number)++ : key as string] = value;
             continue parseloop;  // skips stackPtr check
           }
 
@@ -241,14 +244,14 @@ export function parse(
 
           switch (ch) {
             case quote:
-              (container as any[])[key++] = string();
+              (container as any[])[(key as number)++] = string();
               break;
 
             case openbrace:
               do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
 
               if (ch === closebrace) {
-                (container as any[])[key++] = {};
+                (container as any[])[(key as number)++] = {};
                 ch = text.charCodeAt(at++);
                 break;
 
@@ -265,7 +268,7 @@ export function parse(
               do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
 
               if (ch === closesquare) {
-                (container as any[])[key++] = [];
+                (container as any[])[(key as number)++] = [];
                 ch = text.charCodeAt(at++);
                 break;
 
@@ -279,7 +282,7 @@ export function parse(
               }
 
             default:
-              (container as any[])[key++] = word();
+              (container as any[])[(key as number)++] = word();
           }
 
           while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab)) ch = text.charCodeAt(at++);
@@ -297,7 +300,7 @@ export function parse(
             container = stack[--stackPtr];
             key = stack[--stackPtr];
             isArray = typeof key === 'number';
-            container[isArray ? key++ : key] = value;
+            (container as any)[isArray ? (key as number)++ : (key as string)] = value;
             continue parseloop;  // skips stackPtr check
           }
 

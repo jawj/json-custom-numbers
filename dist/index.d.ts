@@ -17,7 +17,7 @@
 export function parse(
   text: string,
   reviver?: (key: string, value: any) => any,
-  numberParser?: (string: string) => any,
+  numberParser?: (string: string, key?: string | number | undefined) => any,
   maxDepth?: number,
 ): any;
 

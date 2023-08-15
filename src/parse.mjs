@@ -12,7 +12,7 @@ export class JSONParseError extends Error {
 }
 const stringChunkRegExp = /[^"\\\u0000-\u001f]*/y, wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y, escapes = '.................................."............./.............................................\\......\b....\f........\n....\r..	'.split("."), badChar = 65536, hexLookup = [];
 for (let i = 0; i < 4; i++) {
-  const arr = hexLookup[i] = new Uint32Array(102 + 1);
+  const arr = hexLookup[i] = new Uint32Array(103);
   const shift = i << 2;
   let j = 0;
   for (; j < 48; j++)
@@ -89,7 +89,7 @@ At character ${at} in JSON: ${text}`);
         break;
       default:
         const str = text.slice(startAt, at);
-        val = numberParser ? numberParser(str) : +str;
+        val = numberParser ? numberParser(str, key) : +str;
     }
     ch = text.charCodeAt(at++);
     return val;

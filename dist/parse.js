@@ -25,8 +25,8 @@ At character ${o} in JSON: ${r}`)}function v(){return f===!0?"in array":f===!1?"
 in object":"at top level"}function $(){e>=0||u(`Unexpected end of JSON input ${v()}`);
 const h=o-1;I.lastIndex=h,I.test(r)||u(`Unexpected ${p(e)}, expecting JSON value\
  ${v()}`),o=I.lastIndex;let C;switch(e){case 102:C=!1;break;case 110:C=null;break;case 116:
-C=!0;break;default:const k=r.slice(h,o);C=d?d(k):+k}return e=r.charCodeAt(o++),C}
-function w(){let h="";for(;;){m.lastIndex=o,m.test(r);const g=m.lastIndex;switch(g>
+C=!0;break;default:const k=r.slice(h,o);C=d?d(k,n):+k}return e=r.charCodeAt(o++),
+C}function w(){let h="";for(;;){m.lastIndex=o,m.test(r);const g=m.lastIndex;switch(g>
 o&&(h+=r.slice(o,g),o=g),e=r.charCodeAt(o++),e){case 34:return e=r.charCodeAt(o++),
 h;case 92:if(e=r.charCodeAt(o++),e===117){const k=b[3][r.charCodeAt(o++)]+b[2][r.
 charCodeAt(o++)]+b[1][r.charCodeAt(o++)]+b[0][r.charCodeAt(o++)];if(k<y){h+=String.
