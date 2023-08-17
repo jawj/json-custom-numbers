@@ -64,37 +64,30 @@ export function parse(text, reviver, numberParser, maxDepth = Infinity) {
     throw new JSONParseError(`${m}
 At character ${at} in JSON: ${text}`);
   }
-  function containerDesc() {
-    return isArray === true ? "in array" : isArray === false ? "in object" : "at top level";
+  function depthError() {
+    error(`JSON structure is too deeply nested (current maximum depth: ${maxDepth})`);
   }
   function word() {
     if (!(ch >= 0))
-      error(`Unexpected end of JSON input ${containerDesc()}`);
+      error(`Unexpected end of JSON input ${isArray === true ? "in array" : isArray === false ? "in object" : "at top level"}`);
     const startAt = at - 1;
     wordRegExp.lastIndex = startAt;
     const matched = wordRegExp.test(text);
     if (!matched)
-      error(`Unexpected ${chDesc(ch)}, expecting JSON value ${containerDesc()}`);
+      error(`Unexpected ${chDesc(ch)}, expecting JSON value ${isArray === true ? "in array" : isArray === false ? "in object" : "at top level"}`);
     at = wordRegExp.lastIndex;
-    let val;
     switch (ch) {
       case 102:
-        val = false;
-        break;
+        return false;
       case 110:
-        val = null;
-        break;
+        return null;
       case 116:
-        val = true;
-        break;
+        return true;
       default:
         const str = text.slice(startAt, at);
-        val = numberParser ? numberParser(str, key) : +str;
+        return numberParser ? numberParser(str, key) : +str;
     }
-    ch = text.charCodeAt(at++);
-    return val;
   }
-  ;
   function string() {
     let str = "";
     for (; ; ) {
@@ -108,7 +101,6 @@ At character ${at} in JSON: ${text}`);
       ch = text.charCodeAt(at++);
       switch (ch) {
         case 34:
-          ch = text.charCodeAt(at++);
           return str;
         case 92:
           ch = text.charCodeAt(at++);
@@ -133,7 +125,6 @@ At character ${at} in JSON: ${text}`);
       }
     }
   }
-  ;
   parse: {
     do {
       ch = text.charCodeAt(at++);
@@ -156,162 +147,123 @@ At character ${at} in JSON: ${text}`);
         value = word();
         break parse;
     }
-    do {
-      ch = text.charCodeAt(at++);
-    } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
     parseloop:
       for (; ; ) {
         if (isArray) {
-          arrayloop:
-            for (; ; ) {
-              if (ch === 93) {
-                do {
-                  ch = text.charCodeAt(at++);
-                } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
-                if (reviver !== void 0)
-                  reviveContainer(reviver, container);
-                value = container;
-                if (stackPtr === 0)
-                  break parse;
-                container = stack[--stackPtr];
-                key = stack[--stackPtr];
-                isArray = typeof key === "number";
-                container[isArray ? key++ : key] = value;
-                continue parseloop;
-              }
-              if (key !== 0) {
-                if (ch !== 44)
-                  error(`Unexpected ${chDesc(ch)}, expecting ',' or ']' after value in array`);
-                do {
-                  ch = text.charCodeAt(at++);
-                } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
-              }
-              switch (ch) {
-                case 34:
-                  container[key++] = string();
-                  break;
-                case 123:
-                  do {
-                    ch = text.charCodeAt(at++);
-                  } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
-                  if (ch === 125) {
-                    container[key++] = {};
-                    ch = text.charCodeAt(at++);
-                    break;
-                  } else {
-                    stack[stackPtr++] = key;
-                    stack[stackPtr++] = container;
-                    container = {};
-                    key = void 0;
-                    isArray = false;
-                    break arrayloop;
-                  }
-                case 91:
-                  do {
-                    ch = text.charCodeAt(at++);
-                  } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
-                  if (ch === 93) {
-                    container[key++] = [];
-                    ch = text.charCodeAt(at++);
-                    break;
-                  } else {
-                    stack[stackPtr++] = key;
-                    stack[stackPtr++] = container;
-                    container = [];
-                    key = 0;
-                    isArray = true;
-                    break arrayloop;
-                  }
-                default:
-                  container[key++] = word();
-              }
-              while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9))
-                ch = text.charCodeAt(at++);
+          for (; ; ) {
+            do {
+              ch = text.charCodeAt(at++);
+            } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
+            if (ch === 93) {
+              if (reviver !== void 0)
+                reviveContainer(reviver, container);
+              value = container;
+              if (stackPtr === 0)
+                break parse;
+              container = stack[--stackPtr];
+              key = stack[--stackPtr];
+              isArray = typeof key === "number";
+              container[isArray ? key++ : key] = value;
+              continue parseloop;
             }
-        } else {
-          objectloop:
-            for (; ; ) {
-              if (ch === 125) {
-                do {
-                  ch = text.charCodeAt(at++);
-                } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
-                if (reviver !== void 0)
-                  reviveContainer(reviver, container);
-                value = container;
-                if (stackPtr === 0)
-                  break parse;
-                container = stack[--stackPtr];
-                key = stack[--stackPtr];
-                isArray = typeof key === "number";
-                container[isArray ? key++ : key] = value;
-                continue parseloop;
-              }
-              if (key !== void 0) {
-                if (ch !== 44)
-                  error(`Unexpected ${chDesc(ch)}, expecting ',' or '}' after value in object`);
-                do {
-                  ch = text.charCodeAt(at++);
-                } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
-              }
-              if (ch !== 34)
-                error(`Unexpected ${chDesc(ch)}, expecting '}' or double-quoted key in object`);
-              key = string();
-              while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9))
-                ch = text.charCodeAt(at++);
-              if (ch !== 58)
-                error(`Unexpected ${chDesc(ch)}, expecting ':' after key in object`);
+            if (key !== 0) {
+              if (ch !== 44)
+                error(`Unexpected ${chDesc(ch)}, expecting ',' or ']' after value in array`);
               do {
                 ch = text.charCodeAt(at++);
               } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
-              switch (ch) {
-                case 34:
-                  container[key] = string();
-                  break;
-                case 123:
-                  do {
-                    ch = text.charCodeAt(at++);
-                  } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
-                  if (ch === 125) {
-                    container[key] = {};
-                    ch = text.charCodeAt(at++);
-                    break;
-                  } else {
-                    stack[stackPtr++] = key;
-                    stack[stackPtr++] = container;
-                    container = {};
-                    key = void 0;
-                    isArray = false;
-                    break objectloop;
-                  }
-                case 91:
-                  do {
-                    ch = text.charCodeAt(at++);
-                  } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
-                  if (ch === 93) {
-                    container[key] = [];
-                    ch = text.charCodeAt(at++);
-                    break;
-                  } else {
-                    stack[stackPtr++] = key;
-                    stack[stackPtr++] = container;
-                    container = [];
-                    key = 0;
-                    isArray = true;
-                    break objectloop;
-                  }
-                default:
-                  container[key] = word();
-              }
-              while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9))
-                ch = text.charCodeAt(at++);
             }
+            switch (ch) {
+              case 34:
+                container[key++] = string();
+                continue;
+              case 123:
+                if (stackPtr === maxStackPtr)
+                  depthError();
+                stack[stackPtr++] = key;
+                stack[stackPtr++] = container;
+                container = {};
+                key = void 0;
+                isArray = false;
+                continue parseloop;
+              case 91:
+                if (stackPtr === maxStackPtr)
+                  depthError();
+                stack[stackPtr++] = key;
+                stack[stackPtr++] = container;
+                container = [];
+                key = 0;
+                continue;
+              default:
+                container[key++] = word();
+            }
+          }
+        } else {
+          for (; ; ) {
+            do {
+              ch = text.charCodeAt(at++);
+            } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
+            if (ch === 125) {
+              if (reviver !== void 0)
+                reviveContainer(reviver, container);
+              value = container;
+              if (stackPtr === 0)
+                break parse;
+              container = stack[--stackPtr];
+              key = stack[--stackPtr];
+              isArray = typeof key === "number";
+              container[isArray ? key++ : key] = value;
+              continue parseloop;
+            }
+            if (key !== void 0) {
+              if (ch !== 44)
+                error(`Unexpected ${chDesc(ch)}, expecting ',' or '}' after value in object`);
+              do {
+                ch = text.charCodeAt(at++);
+              } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
+            }
+            if (ch !== 34)
+              error(`Unexpected ${chDesc(ch)}, expecting '}' or double-quoted key in object`);
+            key = string();
+            do {
+              ch = text.charCodeAt(at++);
+            } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
+            if (ch !== 58)
+              error(`Unexpected ${chDesc(ch)}, expecting ':' after key in object`);
+            do {
+              ch = text.charCodeAt(at++);
+            } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
+            switch (ch) {
+              case 34:
+                container[key] = string();
+                continue;
+              case 123:
+                if (stackPtr === maxStackPtr)
+                  depthError();
+                stack[stackPtr++] = key;
+                stack[stackPtr++] = container;
+                container = {};
+                key = void 0;
+                continue;
+              case 91:
+                if (stackPtr === maxStackPtr)
+                  depthError();
+                stack[stackPtr++] = key;
+                stack[stackPtr++] = container;
+                container = [];
+                key = 0;
+                isArray = true;
+                continue parseloop;
+              default:
+                container[key] = word();
+            }
+          }
         }
-        if (stackPtr > maxStackPtr)
-          error(`Structure too deeply nested (maximum is set to ${maxDepth})`);
       }
   }
-  while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9))
+  do {
     ch = text.charCodeAt(at++);
+  } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
   if (ch >= 0)
     error("Unexpected data after end of JSON input");
   if (reviver !== void 0) {

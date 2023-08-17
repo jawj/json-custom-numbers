@@ -1,6 +1,6 @@
-"use strict";var S=Object.defineProperty;var j=Object.getOwnPropertyDescriptor;var J=Object.getOwnPropertyNames;var N=Object.prototype.hasOwnProperty;var E=(r,a)=>{for(var d in a)S(r,d,{get:a[d],enumerable:!0})},R=(r,a,d,i)=>{if(a&&
-typeof a=="object"||typeof a=="function")for(let c of J(a))!N.call(r,c)&&c!==d&&
-S(r,c,{get:()=>a[c],enumerable:!(i=j(a,c))||i.enumerable});return r};var X=r=>R(S({},"__esModule",{value:!0}),r);var D={};E(D,{JSONParseError:()=>O,parse:()=>P});module.exports=X(D);/**
+"use strict";var S=Object.defineProperty;var v=Object.getOwnPropertyDescriptor;var J=Object.getOwnPropertyNames;var N=Object.prototype.hasOwnProperty;var E=(n,t)=>{for(var f in t)S(n,f,{get:t[f],enumerable:!0})},x=(n,t,f,o)=>{if(t&&
+typeof t=="object"||typeof t=="function")for(let i of J(t))!N.call(n,i)&&i!==f&&
+S(n,i,{get:()=>t[i],enumerable:!(o=v(t,i))||o.enumerable});return n};var R=n=>x(S({},"__esModule",{value:!0}),n);var P={};E(P,{JSONParseError:()=>j,parse:()=>q});module.exports=R(P);/**
  * https://github.com/jawj/json-custom-numbers
  * @copyright Copyright (c) 2023 George MacKerron
  * @license MIT
@@ -8,57 +8,50 @@ S(r,c,{get:()=>a[c],enumerable:!(i=j(a,c))||i.enumerable});return r};var X=r=>R(
  * This file implements a non-recursive JSON parser that's intended to
  * precisely match native `JSON.parse` behaviour but also allow for custom
  * number parsing.
- */class O extends Error{}const m=/[^"\\\u0000-\u001f]*/y,I=/-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y,
-q=`.................................."............./............................\
+ */class j extends Error{}const m=/[^"\\\u0000-\u001f]*/y,I=/-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y,
+X=`.................................."............./............................\
 .................\\......\b....\f........
-....\r..	`.split("."),y=65536,b=[];for(let r=0;r<4;r++){const a=b[r]=new Uint32Array(
-103),d=r<<2;let i=0;for(;i<48;i++)a[i]=y;for(;i<58;i++)a[i]=i-48<<d;for(;i<65;i++)
-a[i]=y;for(;i<71;i++)a[i]=i-55<<d;for(;i<97;i++)a[i]=y;for(;i<103;i++)a[i]=i-87<<
-d}function p(r,a=""){if(!(r>=0))return"end of JSON input";if(r>31&&r<127)return`\
-'${a}${String.fromCharCode(r)}'`;if(r===10)return"\\n";if(r===9)return"\\t";const d=r.
-toString(16),i="0000".slice(d.length)+d;return(r>31?`'${a}${String.fromCharCode(
-r)}', `:"")+`\\u${i}`}function U(r,a){const d=Object.keys(a),i=d.length;for(let c=0;c<
-i;c++){const A=d[c],s=r.call(a,A,a[A]);s!==void 0?a[A]=s:delete a[A]}}function P(r,a,d,i=1/0){
-typeof r!="string"&&(r=String(r)),typeof a!="function"&&(a=void 0);const c=[],A=(i-
-1)*2;let s=0,o=0,e,t,f,n,l;function u(h){throw new O(`${h}
-At character ${o} in JSON: ${r}`)}function v(){return f===!0?"in array":f===!1?"\
-in object":"at top level"}function $(){e>=0||u(`Unexpected end of JSON input ${v()}`);
-const h=o-1;I.lastIndex=h,I.test(r)||u(`Unexpected ${p(e)}, expecting JSON value\
- ${v()}`),o=I.lastIndex;let C;switch(e){case 102:C=!1;break;case 110:C=null;break;case 116:
-C=!0;break;default:const k=r.slice(h,o);C=d?d(k,n):+k}return e=r.charCodeAt(o++),
-C}function w(){let h="";for(;;){m.lastIndex=o,m.test(r);const g=m.lastIndex;switch(g>
-o&&(h+=r.slice(o,g),o=g),e=r.charCodeAt(o++),e){case 34:return e=r.charCodeAt(o++),
-h;case 92:if(e=r.charCodeAt(o++),e===117){const k=b[3][r.charCodeAt(o++)]+b[2][r.
-charCodeAt(o++)]+b[1][r.charCodeAt(o++)]+b[0][r.charCodeAt(o++)];if(k<y){h+=String.
-fromCharCode(k);continue}u("Invalid \\uXXXX escape in string")}const C=q[e];if(C){
-h+=C;continue}u(`Invalid escape sequence in string: ${p(e,"\\")}`);default:e>=0||
-u("Unterminated string"),u(`Invalid unescaped ${p(e)} in string`)}}}e:{do e=r.charCodeAt(
-o++);while(e<=32&&(e===32||e===10||e===13||e===9));switch(e){case 123:t={},n=void 0,
-f=!1;break;case 91:t=[],n=0,f=!0;break;case 34:l=w();break e;default:l=$();break e}
-do e=r.charCodeAt(o++);while(e<=32&&(e===32||e===10||e===13||e===9));o:for(;;){if(f)
-r:for(;;){if(e===93){do e=r.charCodeAt(o++);while(e<=32&&(e===32||e===10||e===13||
-e===9));if(a!==void 0&&U(a,t),l=t,s===0)break e;t=c[--s],n=c[--s],f=typeof n=="n\
-umber",t[f?n++:n]=l;continue o}if(n!==0){e!==44&&u(`Unexpected ${p(e)}, expectin\
-g ',' or ']' after value in array`);do e=r.charCodeAt(o++);while(e<=32&&(e===32||
-e===10||e===13||e===9))}switch(e){case 34:t[n++]=w();break;case 123:do e=r.charCodeAt(
-o++);while(e<=32&&(e===32||e===10||e===13||e===9));if(e===125){t[n++]={},e=r.charCodeAt(
-o++);break}else{c[s++]=n,c[s++]=t,t={},n=void 0,f=!1;break r}case 91:do e=r.charCodeAt(
-o++);while(e<=32&&(e===32||e===10||e===13||e===9));if(e===93){t[n++]=[],e=r.charCodeAt(
-o++);break}else{c[s++]=n,c[s++]=t,t=[],n=0,f=!0;break r}default:t[n++]=$()}for(;e<=
-32&&(e===32||e===10||e===13||e===9);)e=r.charCodeAt(o++)}else r:for(;;){if(e===125){
-do e=r.charCodeAt(o++);while(e<=32&&(e===32||e===10||e===13||e===9));if(a!==void 0&&
-U(a,t),l=t,s===0)break e;t=c[--s],n=c[--s],f=typeof n=="number",t[f?n++:n]=l;continue o}
-if(n!==void 0){e!==44&&u(`Unexpected ${p(e)}, expecting ',' or '}' after value i\
-n object`);do e=r.charCodeAt(o++);while(e<=32&&(e===32||e===10||e===13||e===9))}
-for(e!==34&&u(`Unexpected ${p(e)}, expecting '}' or double-quoted key in object`),
-n=w();e<=32&&(e===32||e===10||e===13||e===9);)e=r.charCodeAt(o++);e!==58&&u(`Une\
-xpected ${p(e)}, expecting ':' after key in object`);do e=r.charCodeAt(o++);while(e<=
-32&&(e===32||e===10||e===13||e===9));switch(e){case 34:t[n]=w();break;case 123:do
-e=r.charCodeAt(o++);while(e<=32&&(e===32||e===10||e===13||e===9));if(e===125){t[n]=
-{},e=r.charCodeAt(o++);break}else{c[s++]=n,c[s++]=t,t={},n=void 0,f=!1;break r}case 91:
-do e=r.charCodeAt(o++);while(e<=32&&(e===32||e===10||e===13||e===9));if(e===93){
-t[n]=[],e=r.charCodeAt(o++);break}else{c[s++]=n,c[s++]=t,t=[],n=0,f=!0;break r}default:
-t[n]=$()}for(;e<=32&&(e===32||e===10||e===13||e===9);)e=r.charCodeAt(o++)}s>A&&u(
-`Structure too deeply nested (maximum is set to ${i})`)}}for(;e<=32&&(e===32||e===
-10||e===13||e===9);)e=r.charCodeAt(o++);return e>=0&&u("Unexpected data after en\
-d of JSON input"),a!==void 0&&(l={"":l},U(a,l),l=l[""]),l}
+....\r..	`.split("."),k=65536,y=[];for(let n=0;n<4;n++){const t=y[n]=new Uint32Array(
+103),f=n<<2;let o=0;for(;o<48;o++)t[o]=k;for(;o<58;o++)t[o]=o-48<<f;for(;o<65;o++)
+t[o]=k;for(;o<71;o++)t[o]=o-55<<f;for(;o<97;o++)t[o]=k;for(;o<103;o++)t[o]=o-87<<
+f}function C(n,t=""){if(!(n>=0))return"end of JSON input";if(n>31&&n<127)return`\
+'${t}${String.fromCharCode(n)}'`;if(n===10)return"\\n";if(n===9)return"\\t";const f=n.
+toString(16),o="0000".slice(f.length)+f;return(n>31?`'${t}${String.fromCharCode(
+n)}', `:"")+`\\u${o}`}function U(n,t){const f=Object.keys(t),o=f.length;for(let i=0;i<
+o;i++){const h=f[i],s=n.call(t,h,t[h]);s!==void 0?t[h]=s:delete t[h]}}function q(n,t,f,o=1/0){
+typeof n!="string"&&(n=String(n)),typeof t!="function"&&(t=void 0);const i=[],h=(o-
+1)*2;let s=0,c=0,e,a,d,r,u;function l(p){throw new j(`${p}
+At character ${c} in JSON: ${n}`)}function w(){l(`JSON structure is too deeply n\
+ested (current maximum depth: ${o})`)}function b(){e>=0||l(`Unexpected end of JS\
+ON input ${d===!0?"in array":d===!1?"in object":"at top level"}`);const p=c-1;switch(I.
+lastIndex=p,I.test(n)||l(`Unexpected ${C(e)}, expecting JSON value ${d===!0?"in \
+array":d===!1?"in object":"at top level"}`),c=I.lastIndex,e){case 102:return!1;case 110:
+return null;case 116:return!0;default:const g=n.slice(p,c);return f?f(g,r):+g}}function A(){
+let p="";for(;;){m.lastIndex=c,m.test(n);const $=m.lastIndex;switch($>c&&(p+=n.slice(
+c,$),c=$),e=n.charCodeAt(c++),e){case 34:return p;case 92:if(e=n.charCodeAt(c++),
+e===117){const O=y[3][n.charCodeAt(c++)]+y[2][n.charCodeAt(c++)]+y[1][n.charCodeAt(
+c++)]+y[0][n.charCodeAt(c++)];if(O<k){p+=String.fromCharCode(O);continue}l("Inva\
+lid \\uXXXX escape in string")}const g=X[e];if(g){p+=g;continue}l(`Invalid escap\
+e sequence in string: ${C(e,"\\")}`);default:e>=0||l("Unterminated string"),l(`I\
+nvalid unescaped ${C(e)} in string`)}}}e:{do e=n.charCodeAt(c++);while(e<=32&&(e===
+32||e===10||e===13||e===9));switch(e){case 123:a={},r=void 0,d=!1;break;case 91:
+a=[],r=0,d=!0;break;case 34:u=A();break e;default:u=b();break e}n:for(;;)if(d)for(;;){
+do e=n.charCodeAt(c++);while(e<=32&&(e===32||e===10||e===13||e===9));if(e===93){
+if(t!==void 0&&U(t,a),u=a,s===0)break e;a=i[--s],r=i[--s],d=typeof r=="number",a[d?
+r++:r]=u;continue n}if(r!==0){e!==44&&l(`Unexpected ${C(e)}, expecting ',' or ']\
+' after value in array`);do e=n.charCodeAt(c++);while(e<=32&&(e===32||e===10||e===
+13||e===9))}switch(e){case 34:a[r++]=A();continue;case 123:s===h&&w(),i[s++]=r,i[s++]=
+a,a={},r=void 0,d=!1;continue n;case 91:s===h&&w(),i[s++]=r,i[s++]=a,a=[],r=0;continue;default:
+a[r++]=b()}}else for(;;){do e=n.charCodeAt(c++);while(e<=32&&(e===32||e===10||e===
+13||e===9));if(e===125){if(t!==void 0&&U(t,a),u=a,s===0)break e;a=i[--s],r=i[--s],
+d=typeof r=="number",a[d?r++:r]=u;continue n}if(r!==void 0){e!==44&&l(`Unexpecte\
+d ${C(e)}, expecting ',' or '}' after value in object`);do e=n.charCodeAt(c++);while(e<=
+32&&(e===32||e===10||e===13||e===9))}e!==34&&l(`Unexpected ${C(e)}, expecting '}\
+' or double-quoted key in object`),r=A();do e=n.charCodeAt(c++);while(e<=32&&(e===
+32||e===10||e===13||e===9));e!==58&&l(`Unexpected ${C(e)}, expecting ':' after k\
+ey in object`);do e=n.charCodeAt(c++);while(e<=32&&(e===32||e===10||e===13||e===
+9));switch(e){case 34:a[r]=A();continue;case 123:s===h&&w(),i[s++]=r,i[s++]=a,a=
+{},r=void 0;continue;case 91:s===h&&w(),i[s++]=r,i[s++]=a,a=[],r=0,d=!0;continue n;default:
+a[r]=b()}}}do e=n.charCodeAt(c++);while(e<=32&&(e===32||e===10||e===13||e===9));
+return e>=0&&l("Unexpected data after end of JSON input"),t!==void 0&&(u={"":u},
+U(t,u),u=u[""]),u}
