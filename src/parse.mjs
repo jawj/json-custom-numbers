@@ -69,8 +69,7 @@ export function parse(text, reviver, numberParser, maxDepth = Infinity) {
     text = String(text);
   if (typeof reviver !== "function")
     reviver = void 0;
-  const stack = [], maxStackPtr = maxDepth + maxDepth - 2;
-  let stackPtr = 0, at = 0, ch, container, isArray, key, value;
+  let at = 0, ch, container, isArray, key, value;
   function err(m) {
     throw new JSONParseError(`${m}
 At character ${at} in JSON: ${text}`);
@@ -163,6 +162,9 @@ At character ${at} in JSON: ${text}`);
         value = word();
         break parse;
     }
+    const stack = [];
+    let stackPtr = 0;
+    const maxStackPtr = maxDepth + maxDepth - 2;
     parseloop:
       for (; ; ) {
         if (isArray === true) {

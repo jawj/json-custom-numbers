@@ -109,15 +109,7 @@ export function parse(
   if (typeof text !== 'string') text = String(text);  // force string
   if (typeof reviver !== 'function') reviver = undefined;  // ignore non-function revivers, like JSON.parse does
 
-  const
-    stack: any[] = [],
-    // - two entries are added to the stack per nested container
-    // - because topmost container + key are not on the stack, real depth is stackPtr + 2
-    // - therefore:
-    maxStackPtr = maxDepth + maxDepth - 2;
-
   let
-    stackPtr = 0,                     // the stack pointer
     at = 0,                           // character index into text
     ch: number,                       // current character code
     container: Obj | any[],           // the current container
@@ -228,6 +220,14 @@ export function parse(
         value = word();
         break parse;
     }
+
+    const stack: any[] = [];
+    let stackPtr = 0;
+
+    // - two entries are added to the stack per nested container
+    // - because topmost container + key are not on the stack, real depth is stackPtr + 2
+    // - therefore:
+    const maxStackPtr = maxDepth + maxDepth - 2;
 
     parseloop: for (; ;) {
       if (isArray === true) {
