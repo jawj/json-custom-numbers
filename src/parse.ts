@@ -43,21 +43,38 @@ const
 
   // these arrays are indexed by the char code of a hex digit, used for \uXXXX escapes
   badChar = 65536,  // = 0xffff + 1: signals a bad character, since it's out of range
-  hexLookup: Uint32Array[] = [];
+  hl1 = new Uint32Array(103),
+  hl2 = new Uint32Array(103),
+  hl3 = new Uint32Array(103),
+  hl4 = new Uint32Array(103);;
 
 type Obj = Record<string, any>;
 
 // set up hex lookup arrays, used to decode Unicode \uXXXX escapes
-for (let i = 0; i < 4; i++) {
-  const arr = hexLookup[i] = new Uint32Array(103);
-  const shift = i << 2;
-  let j = 0;
-  for (; j < 48; j++) arr[j] = badChar;
-  for (; j < 58; j++) arr[j] = (j - 48) << shift;  // 0 - 9
-  for (; j < 65; j++) arr[j] = badChar;
-  for (; j < 71; j++) arr[j] = (j - 55) << shift;  // A - F
-  for (; j < 97; j++) arr[j] = badChar;
-  for (; j < 103; j++) arr[j] = (j - 87) << shift;  // a - f
+let j = 0;
+for (; j < 48; j++) hl1[j] = hl2[j] = hl3[j] = hl4[j] = badChar;
+for (; j < 58; j++) {
+  const x = j - 48;  // 0 - 9
+  hl1[j] = x << 12;
+  hl2[j] = x << 8;
+  hl3[j] = x << 4;
+  hl4[j] = x;
+}
+for (; j < 65; j++) hl1[j] = hl2[j] = hl3[j] = hl4[j] = badChar;
+for (; j < 71; j++) {
+  const x = j - 55;  // A - F
+  hl1[j] = x << 12;
+  hl2[j] = x << 8;
+  hl3[j] = x << 4;
+  hl4[j] = x;
+}
+for (; j < 97; j++) hl1[j] = hl2[j] = hl3[j] = hl4[j] = badChar;
+for (; j < 103; j++) {
+  const x = j - 87;  // a - f
+  hl1[j] = x << 12;
+  hl2[j] = x << 8;
+  hl3[j] = x << 4;
+  hl4[j] = x;
 }
 
 // describe a character in an error message
@@ -151,10 +168,10 @@ export function parse(
           ch = text.charCodeAt(at++);
           if (ch === u) {  // Unicode \uXXXX escape
             const charCode =
-              hexLookup[3][text.charCodeAt(at++)] +
-              hexLookup[2][text.charCodeAt(at++)] +
-              hexLookup[1][text.charCodeAt(at++)] +
-              hexLookup[0][text.charCodeAt(at++)];
+              hl1[text.charCodeAt(at++)] +
+              hl2[text.charCodeAt(at++)] +
+              hl3[text.charCodeAt(at++)] +
+              hl4[text.charCodeAt(at++)];
 
             if (charCode < badChar) {  // (NaN also fails this test)
               str += String.fromCharCode(charCode);

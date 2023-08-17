@@ -10,23 +10,35 @@
  */
 export class JSONParseError extends Error {
 }
-const stringChunkRegExp = /[^"\\\u0000-\u001f]*/y, wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y, escapes = '.................................."............./.............................................\\......\b....\f........\n....\r..	'.split("."), badChar = 65536, hexLookup = [];
-for (let i = 0; i < 4; i++) {
-  const arr = hexLookup[i] = new Uint32Array(103);
-  const shift = i << 2;
-  let j = 0;
-  for (; j < 48; j++)
-    arr[j] = badChar;
-  for (; j < 58; j++)
-    arr[j] = j - 48 << shift;
-  for (; j < 65; j++)
-    arr[j] = badChar;
-  for (; j < 71; j++)
-    arr[j] = j - 55 << shift;
-  for (; j < 97; j++)
-    arr[j] = badChar;
-  for (; j < 103; j++)
-    arr[j] = j - 87 << shift;
+const stringChunkRegExp = /[^"\\\u0000-\u001f]*/y, wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y, escapes = '.................................."............./.............................................\\......\b....\f........\n....\r..	'.split("."), badChar = 65536, hl1 = new Uint32Array(103), hl2 = new Uint32Array(103), hl3 = new Uint32Array(103), hl4 = new Uint32Array(103);
+;
+let j = 0;
+for (; j < 48; j++)
+  hl1[j] = hl2[j] = hl3[j] = hl4[j] = badChar;
+for (; j < 58; j++) {
+  const x = j - 48;
+  hl1[j] = x << 12;
+  hl2[j] = x << 8;
+  hl3[j] = x << 4;
+  hl4[j] = x;
+}
+for (; j < 65; j++)
+  hl1[j] = hl2[j] = hl3[j] = hl4[j] = badChar;
+for (; j < 71; j++) {
+  const x = j - 55;
+  hl1[j] = x << 12;
+  hl2[j] = x << 8;
+  hl3[j] = x << 4;
+  hl4[j] = x;
+}
+for (; j < 97; j++)
+  hl1[j] = hl2[j] = hl3[j] = hl4[j] = badChar;
+for (; j < 103; j++) {
+  const x = j - 87;
+  hl1[j] = x << 12;
+  hl2[j] = x << 8;
+  hl3[j] = x << 4;
+  hl4[j] = x;
 }
 function chDesc(ch, prefix = "") {
   if (!(ch >= 0))
@@ -103,7 +115,7 @@ At character ${at} in JSON: ${text}`);
         case 92:
           ch = text.charCodeAt(at++);
           if (ch === 117) {
-            const charCode = hexLookup[3][text.charCodeAt(at++)] + hexLookup[2][text.charCodeAt(at++)] + hexLookup[1][text.charCodeAt(at++)] + hexLookup[0][text.charCodeAt(at++)];
+            const charCode = hl1[text.charCodeAt(at++)] + hl2[text.charCodeAt(at++)] + hl3[text.charCodeAt(at++)] + hl4[text.charCodeAt(at++)];
             if (charCode < badChar) {
               str += String.fromCharCode(charCode);
               continue;
