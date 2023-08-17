@@ -10,35 +10,20 @@
  */
 export class JSONParseError extends Error {
 }
-const stringChunkRegExp = /[^"\\\u0000-\u001f]*/y, wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y, escapes = '.................................."............./.............................................\\......\b....\f........\n....\r..	'.split("."), badChar = 65536, hl1 = new Uint32Array(103), hl2 = new Uint32Array(103), hl3 = new Uint32Array(103), hl4 = new Uint32Array(103);
-let j = 0;
-for (; j < 48; j++)
-  hl1[j] = hl2[j] = hl3[j] = hl4[j] = badChar;
-for (; j < 58; j++) {
-  const x = j - 48;
-  hl1[j] = x << 12;
-  hl2[j] = x << 8;
-  hl3[j] = x << 4;
-  hl4[j] = x;
-}
-for (; j < 65; j++)
-  hl1[j] = hl2[j] = hl3[j] = hl4[j] = badChar;
-for (; j < 71; j++) {
-  const x = j - 55;
-  hl1[j] = x << 12;
-  hl2[j] = x << 8;
-  hl3[j] = x << 4;
-  hl4[j] = x;
-}
-for (; j < 97; j++)
-  hl1[j] = hl2[j] = hl3[j] = hl4[j] = badChar;
-for (; j < 103; j++) {
-  const x = j - 87;
-  hl1[j] = x << 12;
-  hl2[j] = x << 8;
-  hl3[j] = x << 4;
-  hl4[j] = x;
-}
+const stringChunkRegExp = /[^"\\\u0000-\u001f]*/y, wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y, escapes = '.................................."............./.............................................\\......\b....\f........\n....\r..	'.split("."), hlArr = () => new Uint32Array(103), hl1 = hlArr(), hl2 = hlArr(), hl3 = hlArr(), hl4 = hlArr(), badChar = 65536;
+let i = 0;
+for (; i < 48; i++)
+  hl1[i] = hl2[i] = hl3[i] = hl4[i] = badChar;
+for (; i < 58; i++)
+  hl1[i] = (hl2[i] = (hl3[i] = (hl4[i] = i - 48) << 4) << 4) << 4;
+for (; i < 65; i++)
+  hl1[i] = hl2[i] = hl3[i] = hl4[i] = badChar;
+for (; i < 71; i++)
+  hl1[i] = (hl2[i] = (hl3[i] = (hl4[i] = i - 55) << 4) << 4) << 4;
+for (; i < 97; i++)
+  hl1[i] = hl2[i] = hl3[i] = hl4[i] = badChar;
+for (; i < 103; i++)
+  hl1[i] = (hl2[i] = (hl3[i] = (hl4[i] = i - 87) << 4) << 4) << 4;
 function chDesc(ch, prefix = "") {
   if (!(ch >= 0))
     return "end of JSON input";
@@ -55,8 +40,8 @@ function chDesc(ch, prefix = "") {
 function revive(reviver, container) {
   const keys = Object.keys(container);
   const numKeys = keys.length;
-  for (let i = 0; i < numKeys; i++) {
-    const k = keys[i];
+  for (let i2 = 0; i2 < numKeys; i2++) {
+    const k = keys[i2];
     const v = reviver.call(container, k, container[k]);
     if (v !== void 0)
       container[k] = v;
@@ -77,14 +62,14 @@ At character ${at} in JSON: ${text}`);
   function tooDeep() {
     err(`JSON structure is too deeply nested (current max depth: ${maxDepth})`);
   }
-  function expected(expected2) {
-    err(`Unexpected ${chDesc(ch)}, expecting ${expected2} ${isArray === true ? "in array" : isArray === false ? "in object" : "at top level"}`);
+  function expected(exp) {
+    err(`Unexpected ${chDesc(ch)}, expecting ${exp} ${isArray === true ? "in array" : isArray === false ? "in object" : "at top level"}`);
   }
   function word() {
     const startAt = at - 1;
     wordRegExp.lastIndex = startAt;
     const matched = wordRegExp.test(text);
-    if (!matched)
+    if (matched !== true)
       expected("JSON value");
     at = wordRegExp.lastIndex;
     switch (ch) {

@@ -10,6 +10,8 @@
 
 "use strict";
 
+type Obj = Record<string, any>;
+
 export class JSONParseError extends Error { }
 
 const
@@ -42,40 +44,21 @@ const
     .split('.'),
 
   // these arrays are indexed by the char code of a hex digit, used for \uXXXX escapes
-  badChar = 65536,  // = 0xffff + 1: signals a bad character, since it's out of range
-  hl1 = new Uint32Array(103),
-  hl2 = new Uint32Array(103),
-  hl3 = new Uint32Array(103),
-  hl4 = new Uint32Array(103);
+  hlArr = () => new Uint32Array(103),  // minifies smaller
+  hl1 = hlArr(),
+  hl2 = hlArr(),
+  hl3 = hlArr(),
+  hl4 = hlArr(),
+  badChar = 65536;  // = 0xffff + 1: signals a bad character, since it's out of range
 
-type Obj = Record<string, any>;
-
-// set up hex lookup arrays, used to decode Unicode \uXXXX escapes
-let j = 0;
-for (; j < 48; j++) hl1[j] = hl2[j] = hl3[j] = hl4[j] = badChar;
-for (; j < 58; j++) {
-  const x = j - 48;  // 0 - 9
-  hl1[j] = x << 12;
-  hl2[j] = x << 8;
-  hl3[j] = x << 4;
-  hl4[j] = x;
-}
-for (; j < 65; j++) hl1[j] = hl2[j] = hl3[j] = hl4[j] = badChar;
-for (; j < 71; j++) {
-  const x = j - 55;  // A - F
-  hl1[j] = x << 12;
-  hl2[j] = x << 8;
-  hl3[j] = x << 4;
-  hl4[j] = x;
-}
-for (; j < 97; j++) hl1[j] = hl2[j] = hl3[j] = hl4[j] = badChar;
-for (; j < 103; j++) {
-  const x = j - 87;  // a - f
-  hl1[j] = x << 12;
-  hl2[j] = x << 8;
-  hl3[j] = x << 4;
-  hl4[j] = x;
-}
+// set up hex lookup arrays
+let i = 0;
+for (; i < 48; i++) hl1[i] = hl2[i] = hl3[i] = hl4[i] = badChar;
+for (; i < 58; i++) hl1[i] = (hl2[i] = (hl3[i] = (hl4[i] = i - 48) << 4) << 4) << 4;  // 0 - 9
+for (; i < 65; i++) hl1[i] = hl2[i] = hl3[i] = hl4[i] = badChar;
+for (; i < 71; i++) hl1[i] = (hl2[i] = (hl3[i] = (hl4[i] = i - 55) << 4) << 4) << 4;  // A - F
+for (; i < 97; i++) hl1[i] = hl2[i] = hl3[i] = hl4[i] = badChar;
+for (; i < 103; i++) hl1[i] = (hl2[i] = (hl3[i] = (hl4[i] = i - 87) << 4) << 4) << 4;  // a - f
 
 // describe a character in an error message
 function chDesc(ch: number, prefix = '') {
@@ -125,15 +108,15 @@ export function parse(
     err(`JSON structure is too deeply nested (current max depth: ${maxDepth})`);
   }
 
-  function expected(expected: string) {
-    err(`Unexpected ${chDesc(ch)}, expecting ${expected} ${isArray === true ? 'in array' : isArray === false ? 'in object' : 'at top level'}`);
+  function expected(exp: string) {
+    err(`Unexpected ${chDesc(ch)}, expecting ${exp} ${isArray === true ? 'in array' : isArray === false ? 'in object' : 'at top level'}`);
   }
 
   function word() {
     const startAt = at - 1;  // the first digit/letter was already consumed, so go back 1
     wordRegExp.lastIndex = startAt;
     const matched = wordRegExp.test(text);
-    if (!matched) expected('JSON value');
+    if (matched !== true) expected('JSON value');
     at = wordRegExp.lastIndex;
 
     switch (ch) {
@@ -237,6 +220,7 @@ export function parse(
 
           if (ch === closesquare) {
             if (reviver !== undefined) revive(reviver, container);
+
             value = container;
             if (stackPtr === 0) break parse;
 
@@ -294,6 +278,7 @@ export function parse(
 
           if (ch === closebrace) {
             if (reviver !== undefined) revive(reviver, container);
+
             value = container;
             if (stackPtr === 0) break parse;
 
