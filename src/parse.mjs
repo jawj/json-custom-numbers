@@ -52,7 +52,7 @@ function chDesc(ch, prefix = "") {
   const paddedHexRep = "0000".slice(hexRep.length) + hexRep;
   return (ch > 31 ? `'${prefix}${String.fromCharCode(ch)}', ` : "") + `\\u${paddedHexRep}`;
 }
-function reviveContainer(reviver, container) {
+function revive(reviver, container) {
   const keys = Object.keys(container);
   const numKeys = keys.length;
   for (let i = 0; i < numKeys; i++) {
@@ -76,7 +76,7 @@ export function parse(text, reviver, numberParser, maxDepth = Infinity) {
 At character ${at} in JSON: ${text}`);
   }
   function tooDeep() {
-    err(`JSON structure is too deeply nested (current maximum depth: ${maxDepth})`);
+    err(`JSON structure is too deeply nested (current max depth: ${maxDepth})`);
   }
   function expected(expected2) {
     err(`Unexpected ${chDesc(ch)}, expecting ${expected2} ${isArray === true ? "in array" : isArray === false ? "in object" : "at top level"}`);
@@ -165,22 +165,27 @@ At character ${at} in JSON: ${text}`);
     }
     parseloop:
       for (; ; ) {
-        if (isArray) {
+        if (isArray === true) {
           for (; ; ) {
             do {
               ch = text.charCodeAt(at++);
             } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
             if (ch === 93) {
               if (reviver !== void 0)
-                reviveContainer(reviver, container);
+                revive(reviver, container);
               value = container;
               if (stackPtr === 0)
                 break parse;
               container = stack[--stackPtr];
               key = stack[--stackPtr];
               isArray = typeof key === "number";
-              container[isArray ? key++ : key] = value;
-              continue parseloop;
+              if (isArray === true) {
+                container[key++] = value;
+                continue;
+              } else {
+                container[key] = value;
+                continue parseloop;
+              }
             }
             if (key !== 0) {
               if (ch !== 44)
@@ -221,15 +226,20 @@ At character ${at} in JSON: ${text}`);
             } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
             if (ch === 125) {
               if (reviver !== void 0)
-                reviveContainer(reviver, container);
+                revive(reviver, container);
               value = container;
               if (stackPtr === 0)
                 break parse;
               container = stack[--stackPtr];
               key = stack[--stackPtr];
               isArray = typeof key === "number";
-              container[isArray ? key++ : key] = value;
-              continue parseloop;
+              if (isArray === true) {
+                container[key++] = value;
+                continue parseloop;
+              } else {
+                container[key] = value;
+                continue;
+              }
             }
             if (key !== void 0) {
               if (ch !== 44)
@@ -284,7 +294,7 @@ At character ${at} in JSON: ${text}`);
     err("Unexpected data after end of JSON input");
   if (reviver !== void 0) {
     value = { "": value };
-    reviveContainer(reviver, value);
+    revive(reviver, value);
     value = value[""];
   }
   return value;

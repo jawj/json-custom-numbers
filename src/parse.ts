@@ -89,7 +89,7 @@ function chDesc(ch: number, prefix = '') {
 }
 
 // apply reviver function to an object or array
-function reviveContainer(reviver: (key: string, value: any) => any, container: Record<string, any>) {
+function revive(reviver: (key: string, value: any) => any, container: Record<string, any>) {
   const keys = Object.keys(container);
   const numKeys = keys.length;
   for (let i = 0; i < numKeys; i++) {
@@ -111,8 +111,9 @@ export function parse(
 
   const
     stack: any[] = [],
-    // * two entries are added to the stack per nested container
-    // * because topmost container and key are not on the stack, the real depth is stackPtr + 2
+    // - two entries are added to the stack per nested container
+    // - because topmost container + key are not on the stack, real depth is stackPtr + 2
+    // - therefore:
     maxStackPtr = maxDepth + maxDepth - 2;
 
   let
@@ -129,7 +130,7 @@ export function parse(
   }
 
   function tooDeep() {
-    err(`JSON structure is too deeply nested (current maximum depth: ${maxDepth})`);
+    err(`JSON structure is too deeply nested (current max depth: ${maxDepth})`);
   }
 
   function expected(expected: string) {
@@ -229,21 +230,28 @@ export function parse(
     }
 
     parseloop: for (; ;) {
-      if (isArray) {
+      if (isArray === true) {
         // array loop
         for (; ;) {
           do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
 
           if (ch === closesquare) {
-            if (reviver !== undefined) reviveContainer(reviver, container);
+            if (reviver !== undefined) revive(reviver, container);
             value = container;
             if (stackPtr === 0) break parse;
 
             container = stack[--stackPtr];
             key = stack[--stackPtr];
             isArray = typeof key === 'number';
-            (container as any)[isArray ? (key as number)++ : key as string] = value;
-            continue parseloop;
+
+            if (isArray === true) {
+              (container as any)[(key as number)++] = value;
+              continue;  // still in an array: no need to break array loop
+
+            } else {
+              (container as any)[key as string] = value;
+              continue parseloop;
+            }
           }
 
           if (key !== 0) {
@@ -285,15 +293,22 @@ export function parse(
           do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
 
           if (ch === closebrace) {
-            if (reviver !== undefined) reviveContainer(reviver, container);
+            if (reviver !== undefined) revive(reviver, container);
             value = container;
             if (stackPtr === 0) break parse;
 
             container = stack[--stackPtr];
             key = stack[--stackPtr];
             isArray = typeof key === 'number';
-            (container as any)[isArray ? (key as number)++ : (key as string)] = value;
-            continue parseloop;
+
+            if (isArray === true) {
+              (container as any)[(key as number)++] = value;
+              continue parseloop;
+
+            } else {
+              (container as any)[key as string] = value;
+              continue;  // still in an object: no need to break object loop
+            }
           }
 
           if (key !== undefined) {
@@ -344,7 +359,7 @@ export function parse(
 
   if (reviver !== undefined) {
     value = { '': value };
-    reviveContainer(reviver, value);
+    revive(reviver, value);
     value = value[''];
   }
 

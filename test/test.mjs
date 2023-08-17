@@ -167,7 +167,7 @@ if (!perfOnly) {
   testErr('"\\×"', `Invalid escape sequence in string: '\\×', \\u00d7`);
   testErr(`"\\
   `, `Invalid escape sequence in string: \\n`);
-  testErr('[[[[1]]]]', 'JSON structure is too deeply nested (current maximum depth: 3)');
+  testErr('[[[[1]]]]', 'JSON structure is too deeply nested (current max depth: 3)');
   
   if (outcomes.fails > 0) process.exit(1);
 
