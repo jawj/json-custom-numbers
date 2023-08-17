@@ -68,8 +68,6 @@ At character ${at} in JSON: ${text}`);
     error(`JSON structure is too deeply nested (current maximum depth: ${maxDepth})`);
   }
   function word() {
-    if (!(ch >= 0))
-      error(`Unexpected end of JSON input ${isArray === true ? "in array" : isArray === false ? "in object" : "at top level"}`);
     const startAt = at - 1;
     wordRegExp.lastIndex = startAt;
     const matched = wordRegExp.test(text);

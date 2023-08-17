@@ -133,19 +133,19 @@ if (!perfOnly) {
     }
   }
 
-  testErr('', `Unexpected end of JSON input at top level`);
+  testErr('', `Unexpected end of JSON input, expecting JSON value at top level`);
   testErr('x', `Unexpected 'x', expecting JSON value at top level`);
   testErr('{', `Unexpected end of JSON input, expecting '}' or double-quoted key in object`);
   testErr('{x', `Unexpected 'x', expecting '}' or double-quoted key in object`);
   testErr('{"x', `Unterminated string`);
   testErr('{"x"', `Unexpected end of JSON input, expecting ':'`);
-  testErr('{"x":', `Unexpected end of JSON input in object`);
+  testErr('{"x":', `Unexpected end of JSON input, expecting JSON value in object`);
   testErr('{"x":x', `Unexpected 'x', expecting JSON value in object`);
   testErr('{"x":1', `Unexpected end of JSON input, expecting ',' or '}' after value in object`);
-  testErr('[', `Unexpected end of JSON input in array`);
+  testErr('[', `Unexpected end of JSON input, expecting JSON value in array`);
   testErr('[1', `Unexpected end of JSON input, expecting ',' or ']' after value in array`);
   testErr('[1x', `Unexpected 'x', expecting ',' or ']' after value in array`);
-  testErr('[1,', `Unexpected end of JSON input in array`);
+  testErr('[1,', `Unexpected end of JSON input, expecting JSON value in array`);
   testErr('[1,x', `Unexpected 'x', expecting JSON value in array`);
   testErr('"abc', `Unterminated string`);
   testErr('"\u0000', `Invalid unescaped \\u0000 in string`);

@@ -114,8 +114,6 @@ export function parse(
   }
 
   function word() {
-    if (!(ch >= 0)) error(`Unexpected end of JSON input ${isArray === true ? 'in array' : isArray === false ? 'in object' : 'at top level'}`);
-
     const startAt = at - 1;  // the first digit/letter was already consumed, so go back 1
     wordRegExp.lastIndex = startAt;
     const matched = wordRegExp.test(text);
@@ -249,7 +247,7 @@ export function parse(
               container = [];
               key = 0;
               // isArray is already true
-              continue;
+              continue;  // still in an array: no need to break array loop
 
             default:
               (container as any[])[(key as number)++] = word();
@@ -298,7 +296,7 @@ export function parse(
               container = {};
               key = undefined;
               // isArray is already false
-              continue;
+              continue;  // still in an object: no need to break object loop
 
             case opensquare:
               if (stackPtr === maxStackPtr) depthError();
