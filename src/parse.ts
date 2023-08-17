@@ -46,7 +46,7 @@ const
   hl1 = new Uint32Array(103),
   hl2 = new Uint32Array(103),
   hl3 = new Uint32Array(103),
-  hl4 = new Uint32Array(103);;
+  hl4 = new Uint32Array(103);
 
 type Obj = Record<string, any>;
 
@@ -111,7 +111,9 @@ export function parse(
 
   const
     stack: any[] = [],
-    maxStackPtr = (maxDepth - 1) * 2;  // 2 is the number of entries added to the stack per nested container
+    // * two entries are added to the stack per nested container
+    // * because topmost container and key are not on the stack, the real depth is stackPtr + 2
+    maxStackPtr = maxDepth + maxDepth - 2;
 
   let
     stackPtr = 0,                     // the stack pointer
@@ -122,19 +124,23 @@ export function parse(
     key: string | number | undefined, // the current key (number or string)
     value: any;                       // the current value
 
-  function error(m: string) {
+  function err(m: string) {
     throw new JSONParseError(`${m}\nAt character ${at} in JSON: ${text}`);
   }
 
-  function depthError() {
-    error(`JSON structure is too deeply nested (current maximum depth: ${maxDepth})`);
+  function tooDeep() {
+    err(`JSON structure is too deeply nested (current maximum depth: ${maxDepth})`);
+  }
+
+  function expected(expected: string) {
+    err(`Unexpected ${chDesc(ch)}, expecting ${expected} ${isArray === true ? 'in array' : isArray === false ? 'in object' : 'at top level'}`);
   }
 
   function word() {
     const startAt = at - 1;  // the first digit/letter was already consumed, so go back 1
     wordRegExp.lastIndex = startAt;
     const matched = wordRegExp.test(text);
-    if (!matched) error(`Unexpected ${chDesc(ch)}, expecting JSON value ${isArray === true ? 'in array' : isArray === false ? 'in object' : 'at top level'}`);
+    if (!matched) expected('JSON value');
     at = wordRegExp.lastIndex;
 
     switch (ch) {
@@ -177,7 +183,7 @@ export function parse(
               str += String.fromCharCode(charCode);
               continue;
             }
-            error(`Invalid \\uXXXX escape in string`);
+            err(`Invalid \\uXXXX escape in string`);
           }
 
           const esc = escapes[ch];  // single-character escape
@@ -185,12 +191,12 @@ export function parse(
             str += esc;
             continue;
           }
-          error(`Invalid escape sequence in string: ${chDesc(ch, '\\')}`);
+          err(`Invalid escape sequence in string: ${chDesc(ch, '\\')}`);
 
         default:
           // something is wrong
-          if (!(ch >= 0)) error('Unterminated string');
-          error(`Invalid unescaped ${chDesc(ch)} in string`);
+          if (!(ch >= 0)) err('Unterminated string');
+          err(`Invalid unescaped ${chDesc(ch)} in string`);
       }
     }
   }
@@ -200,12 +206,14 @@ export function parse(
 
     switch (ch) {
       case openbrace:
+        if (maxDepth === 0) tooDeep();
         container = {};
         key = undefined;
         isArray = false;
         break;
 
       case opensquare:
+        if (maxDepth === 0) tooDeep();
         container = [];
         key = 0;
         isArray = true;
@@ -239,7 +247,7 @@ export function parse(
           }
 
           if (key !== 0) {
-            if (ch !== comma) error(`Unexpected ${chDesc(ch)}, expecting ',' or ']' after value in array`);
+            if (ch !== comma) expected("',' or ']' after value");
             do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
           }
 
@@ -249,7 +257,7 @@ export function parse(
               continue;
 
             case openbrace:
-              if (stackPtr === maxStackPtr) depthError();
+              if (stackPtr === maxStackPtr) tooDeep();
               stack[stackPtr++] = key;
               stack[stackPtr++] = container;
               container = {};
@@ -258,7 +266,7 @@ export function parse(
               continue parseloop;
 
             case opensquare:
-              if (stackPtr === maxStackPtr) depthError();
+              if (stackPtr === maxStackPtr) tooDeep();
               stack[stackPtr++] = key;
               stack[stackPtr++] = container;
               container = [];
@@ -289,16 +297,15 @@ export function parse(
           }
 
           if (key !== undefined) {
-            if (ch !== comma) error(`Unexpected ${chDesc(ch)}, expecting ',' or '}' after value in object`);
+            if (ch !== comma) expected("',' or '}' after value");
             do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
           }
 
-          if (ch !== quote) error(`Unexpected ${chDesc(ch)}, expecting '}' or double-quoted key in object`);
-
+          if (ch !== quote) expected("'}' or double-quoted key");
           key = string();
           do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
 
-          if (ch !== colon) error(`Unexpected ${chDesc(ch)}, expecting ':' after key in object`);
+          if (ch !== colon) expected("':' after key");
           do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
 
           switch (ch) {
@@ -307,7 +314,7 @@ export function parse(
               continue;
 
             case openbrace:
-              if (stackPtr === maxStackPtr) depthError();
+              if (stackPtr === maxStackPtr) tooDeep();
               stack[stackPtr++] = key;
               stack[stackPtr++] = container;
               container = {};
@@ -316,7 +323,7 @@ export function parse(
               continue;  // still in an object: no need to break object loop
 
             case opensquare:
-              if (stackPtr === maxStackPtr) depthError();
+              if (stackPtr === maxStackPtr) tooDeep();
               stack[stackPtr++] = key;
               stack[stackPtr++] = container;
               container = [];
@@ -333,7 +340,7 @@ export function parse(
   }
 
   do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
-  if (ch >= 0) error('Unexpected data after end of JSON input');
+  if (ch >= 0) err('Unexpected data after end of JSON input');
 
   if (reviver !== undefined) {
     value = { '': value };

@@ -11,7 +11,6 @@
 export class JSONParseError extends Error {
 }
 const stringChunkRegExp = /[^"\\\u0000-\u001f]*/y, wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y, escapes = '.................................."............./.............................................\\......\b....\f........\n....\r..	'.split("."), badChar = 65536, hl1 = new Uint32Array(103), hl2 = new Uint32Array(103), hl3 = new Uint32Array(103), hl4 = new Uint32Array(103);
-;
 let j = 0;
 for (; j < 48; j++)
   hl1[j] = hl2[j] = hl3[j] = hl4[j] = badChar;
@@ -70,21 +69,24 @@ export function parse(text, reviver, numberParser, maxDepth = Infinity) {
     text = String(text);
   if (typeof reviver !== "function")
     reviver = void 0;
-  const stack = [], maxStackPtr = (maxDepth - 1) * 2;
+  const stack = [], maxStackPtr = maxDepth + maxDepth - 2;
   let stackPtr = 0, at = 0, ch, container, isArray, key, value;
-  function error(m) {
+  function err(m) {
     throw new JSONParseError(`${m}
 At character ${at} in JSON: ${text}`);
   }
-  function depthError() {
-    error(`JSON structure is too deeply nested (current maximum depth: ${maxDepth})`);
+  function tooDeep() {
+    err(`JSON structure is too deeply nested (current maximum depth: ${maxDepth})`);
+  }
+  function expected(expected2) {
+    err(`Unexpected ${chDesc(ch)}, expecting ${expected2} ${isArray === true ? "in array" : isArray === false ? "in object" : "at top level"}`);
   }
   function word() {
     const startAt = at - 1;
     wordRegExp.lastIndex = startAt;
     const matched = wordRegExp.test(text);
     if (!matched)
-      error(`Unexpected ${chDesc(ch)}, expecting JSON value ${isArray === true ? "in array" : isArray === false ? "in object" : "at top level"}`);
+      expected("JSON value");
     at = wordRegExp.lastIndex;
     switch (ch) {
       case 102:
@@ -120,18 +122,18 @@ At character ${at} in JSON: ${text}`);
               str += String.fromCharCode(charCode);
               continue;
             }
-            error(`Invalid \\uXXXX escape in string`);
+            err(`Invalid \\uXXXX escape in string`);
           }
           const esc = escapes[ch];
           if (esc) {
             str += esc;
             continue;
           }
-          error(`Invalid escape sequence in string: ${chDesc(ch, "\\")}`);
+          err(`Invalid escape sequence in string: ${chDesc(ch, "\\")}`);
         default:
           if (!(ch >= 0))
-            error("Unterminated string");
-          error(`Invalid unescaped ${chDesc(ch)} in string`);
+            err("Unterminated string");
+          err(`Invalid unescaped ${chDesc(ch)} in string`);
       }
     }
   }
@@ -141,11 +143,15 @@ At character ${at} in JSON: ${text}`);
     } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
     switch (ch) {
       case 123:
+        if (maxDepth === 0)
+          tooDeep();
         container = {};
         key = void 0;
         isArray = false;
         break;
       case 91:
+        if (maxDepth === 0)
+          tooDeep();
         container = [];
         key = 0;
         isArray = true;
@@ -178,7 +184,7 @@ At character ${at} in JSON: ${text}`);
             }
             if (key !== 0) {
               if (ch !== 44)
-                error(`Unexpected ${chDesc(ch)}, expecting ',' or ']' after value in array`);
+                expected("',' or ']' after value");
               do {
                 ch = text.charCodeAt(at++);
               } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
@@ -189,7 +195,7 @@ At character ${at} in JSON: ${text}`);
                 continue;
               case 123:
                 if (stackPtr === maxStackPtr)
-                  depthError();
+                  tooDeep();
                 stack[stackPtr++] = key;
                 stack[stackPtr++] = container;
                 container = {};
@@ -198,7 +204,7 @@ At character ${at} in JSON: ${text}`);
                 continue parseloop;
               case 91:
                 if (stackPtr === maxStackPtr)
-                  depthError();
+                  tooDeep();
                 stack[stackPtr++] = key;
                 stack[stackPtr++] = container;
                 container = [];
@@ -227,19 +233,19 @@ At character ${at} in JSON: ${text}`);
             }
             if (key !== void 0) {
               if (ch !== 44)
-                error(`Unexpected ${chDesc(ch)}, expecting ',' or '}' after value in object`);
+                expected("',' or '}' after value");
               do {
                 ch = text.charCodeAt(at++);
               } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
             }
             if (ch !== 34)
-              error(`Unexpected ${chDesc(ch)}, expecting '}' or double-quoted key in object`);
+              expected("'}' or double-quoted key");
             key = string();
             do {
               ch = text.charCodeAt(at++);
             } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
             if (ch !== 58)
-              error(`Unexpected ${chDesc(ch)}, expecting ':' after key in object`);
+              expected("':' after key");
             do {
               ch = text.charCodeAt(at++);
             } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
@@ -249,7 +255,7 @@ At character ${at} in JSON: ${text}`);
                 continue;
               case 123:
                 if (stackPtr === maxStackPtr)
-                  depthError();
+                  tooDeep();
                 stack[stackPtr++] = key;
                 stack[stackPtr++] = container;
                 container = {};
@@ -257,7 +263,7 @@ At character ${at} in JSON: ${text}`);
                 continue;
               case 91:
                 if (stackPtr === maxStackPtr)
-                  depthError();
+                  tooDeep();
                 stack[stackPtr++] = key;
                 stack[stackPtr++] = container;
                 container = [];
@@ -275,7 +281,7 @@ At character ${at} in JSON: ${text}`);
     ch = text.charCodeAt(at++);
   } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
   if (ch >= 0)
-    error("Unexpected data after end of JSON input");
+    err("Unexpected data after end of JSON input");
   if (reviver !== void 0) {
     value = { "": value };
     reviveContainer(reviver, value);
