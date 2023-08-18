@@ -125,6 +125,7 @@ if (!perfOnly) {
       parse(json, undefined, undefined, 3);
     } catch (err) {
       caught = err;
+      // console.log(caught.message);
     }
     if (!caught || caught.message.split('\n')[0] !== message) {
       console.log('Expected error: ' + message);
@@ -133,11 +134,13 @@ if (!perfOnly) {
     }
   }
 
-  testErr('', `Unexpected end of JSON input, expecting JSON value at top level`);
-  testErr('x', `Unexpected 'x', expecting JSON value at top level`);
+  testErr('', `Unexpected end of JSON input, expecting JSON value`);
+  testErr('x', `Unexpected 'x', expecting JSON value`);
   testErr('{', `Unexpected end of JSON input, expecting '}' or double-quoted key in object`);
+  testErr('{"' + 'x'.repeat(1000) + '":"123",\n  "y": x123456789 }', `Unexpected 'x', expecting JSON value in object`);
+  testErr('{"' + 'x'.repeat(1000) + '":"123","y":x123456789}', `Unexpected 'x', expecting JSON value in object`);
   testErr('{x', `Unexpected 'x', expecting '}' or double-quoted key in object`);
-  testErr('{"x', `Unterminated string`);
+  testErr('{"x', `Unterminated string in object`);
   testErr('{"x"', `Unexpected end of JSON input, expecting ':' after key in object`);
   testErr('{"x":', `Unexpected end of JSON input, expecting JSON value in object`);
   testErr('{"x":x', `Unexpected 'x', expecting JSON value in object`);
@@ -147,6 +150,7 @@ if (!perfOnly) {
   testErr('[1x', `Unexpected 'x', expecting ',' or ']' after value in array`);
   testErr('[1,', `Unexpected end of JSON input, expecting JSON value in array`);
   testErr('[1,x', `Unexpected 'x', expecting JSON value in array`);
+  testErr('["x', `Unterminated string in array`);
   testErr('"abc', `Unterminated string`);
   testErr('"\u0000', `Invalid unescaped \\u0000 in string`);
   testErr('"\n', `Invalid unescaped \\n in string`);
@@ -155,19 +159,19 @@ if (!perfOnly) {
   testErr('"\\uaaa"', `Invalid \\uXXXX escape in string`);
   testErr('"\\uaaag"', `Invalid \\uXXXX escape in string`);
   testErr('"\\uaaa', `Invalid \\uXXXX escape in string`);
-  testErr('"\\a"', `Invalid escape sequence in string: '\\a'`);
-  testErr('"\\', `Invalid escape sequence in string: end of JSON input`);
-  testErr('~', `Unexpected '~', expecting JSON value at top level`);
+  testErr('"\\a"', `Invalid escape sequence: '\\a' in string`);
+  testErr('"\\', `Invalid escape sequence: end of JSON input in string`);
+  testErr('~', `Unexpected '~', expecting JSON value`);
   testErr('[1,2,~]', `Unexpected '~', expecting JSON value in array`);
-  testErr('.1', `Unexpected '.', expecting JSON value at top level`);
+  testErr('.1', `Unexpected '.', expecting JSON value`);
   testErr('1.', `Unexpected data after end of JSON input`);
   testErr('01', `Unexpected data after end of JSON input`);
   testErr('[01]', `Unexpected '1', expecting ',' or ']' after value in array`);
   testErr('[1,\u0000]', `Unexpected \\u0000, expecting JSON value in array`);
-  testErr('"\\×"', `Invalid escape sequence in string: '\\×', \\u00d7`);
+  testErr('"\\×"', `Invalid escape sequence: '\\×' or \\u00d7 in string`);
   testErr(`"\\
-  `, `Invalid escape sequence in string: \\n`);
-  testErr('[[[[1]]]]', 'JSON structure is too deeply nested (current max depth: 3)');
+  `, `Invalid escape sequence: \\n in string`);
+  testErr('[100,[100,[100,[1]]]]', 'JSON structure too deeply nested (current max depth: 3) in array');
   
   if (outcomes.fails > 0) process.exit(1);
 

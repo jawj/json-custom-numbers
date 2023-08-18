@@ -12,8 +12,6 @@
 
 type Obj = Record<string, any>;
 
-export class JSONParseError extends Error { }
-
 const
   /* <cut> -- sed will cut this section and esbuild will define constants as literals */
   tab = 9,
@@ -68,7 +66,7 @@ function chDesc(ch: number, prefix = '') {
   if (ch === tab) return '\\t';
   const hexRep = ch.toString(16);
   const paddedHexRep = '0000'.slice(hexRep.length) + hexRep;
-  return (ch > 31 ? `'${prefix}${String.fromCharCode(ch)}', ` : '') + `\\u${paddedHexRep}`;
+  return (ch > 31 ? `'${prefix}${String.fromCharCode(ch)}' or ` : '') + `\\u${paddedHexRep}`;
 }
 
 // apply reviver function to an object or array
@@ -81,6 +79,23 @@ function revive(reviver: (key: string, value: any) => any, container: Record<str
     if (v !== undefined) container[k] = v;
     else delete container[k];
   }
+}
+
+// extract a line of up to 80 chars and point to the error position
+function errContext(text: string, at: number, isArray: boolean | undefined) {
+  const
+    containerType = isArray === true ? ' in array' : isArray === false ? ' in object' : '',
+    textUpTo = text.slice(0, at),
+    lineUpTo = textUpTo.match(/[^\n]{0,69}$/)![0],
+    ellipsisLineUpTo = lineUpTo.length < textUpTo.length ? '...' + lineUpTo : lineUpTo,
+    pos = at - (textUpTo.length - ellipsisLineUpTo.length),
+    textAfter = text.slice(at),
+    lineAfter = textAfter.match(/[^\n]{0,5}/)![0],
+    lineAfterEllipsis = lineAfter.length < textAfter.length ? lineAfter + '...' : lineAfter,
+    line = ellipsisLineUpTo + lineAfterEllipsis,
+    extractPointer = ' '.repeat(pos < 1 ? 0 : pos - 1) + '^';
+
+  return `${containerType}\nAt position ${at} in JSON:\n${line}\n${extractPointer}`;
 }
 
 export function parse(
@@ -100,16 +115,17 @@ export function parse(
     key: string | number | undefined, // the current key; undefined -> at top-level or just started new object
     value: any;                       // the current value
 
+
   function err(m: string) {
-    throw new JSONParseError(`${m}\nAt character ${at} in JSON: ${text}`);
+    throw new SyntaxError(m + errContext(text, at, isArray));
   }
 
   function tooDeep() {
-    err(`JSON structure is too deeply nested (current max depth: ${maxDepth})`);
+    err(`JSON structure too deeply nested (current max depth: ${maxDepth})`);
   }
 
   function expected(exp: string) {
-    err(`Unexpected ${chDesc(ch)}, expecting ${exp} ${isArray === true ? 'in array' : isArray === false ? 'in object' : 'at top level'}`);
+    err(`Unexpected ${chDesc(ch)}, expecting ${exp}`);
   }
 
   function word() {
@@ -167,11 +183,11 @@ export function parse(
             str += esc;
             continue;
           }
-          err(`Invalid escape sequence in string: ${chDesc(ch, '\\')}`);
+          err(`Invalid escape sequence: ${chDesc(ch, '\\')} in string`);
 
         default:
           // something is wrong
-          if (!(ch >= 0)) err('Unterminated string');
+          if (!(ch >= 0)) err(`Unterminated string`);
           err(`Invalid unescaped ${chDesc(ch)} in string`);
       }
     }

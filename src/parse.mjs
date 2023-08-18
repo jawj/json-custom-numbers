@@ -8,8 +8,6 @@
  * precisely match native `JSON.parse` behaviour but also allow for custom
  * number parsing.
  */
-export class JSONParseError extends Error {
-}
 const stringChunkRegExp = /[^"\\\u0000-\u001f]*/y, wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y, escapes = '.................................."............./.............................................\\......\b....\f........\n....\r..	'.split("."), hlArr = () => new Uint32Array(103), hl1 = hlArr(), hl2 = hlArr(), hl3 = hlArr(), hl4 = hlArr(), badChar = 65536;
 let i = 0;
 for (; i < 48; i++)
@@ -35,7 +33,7 @@ function chDesc(ch, prefix = "") {
     return "\\t";
   const hexRep = ch.toString(16);
   const paddedHexRep = "0000".slice(hexRep.length) + hexRep;
-  return (ch > 31 ? `'${prefix}${String.fromCharCode(ch)}', ` : "") + `\\u${paddedHexRep}`;
+  return (ch > 31 ? `'${prefix}${String.fromCharCode(ch)}' or ` : "") + `\\u${paddedHexRep}`;
 }
 function revive(reviver, container) {
   const keys = Object.keys(container);
@@ -49,6 +47,13 @@ function revive(reviver, container) {
       delete container[k];
   }
 }
+function errContext(text, at, isArray) {
+  const containerType = isArray === true ? " in array" : isArray === false ? " in object" : "", textUpTo = text.slice(0, at), lineUpTo = textUpTo.match(/[^\n]{0,69}$/)[0], ellipsisLineUpTo = lineUpTo.length < textUpTo.length ? "..." + lineUpTo : lineUpTo, pos = at - (textUpTo.length - ellipsisLineUpTo.length), textAfter = text.slice(at), lineAfter = textAfter.match(/[^\n]{0,5}/)[0], lineAfterEllipsis = lineAfter.length < textAfter.length ? lineAfter + "..." : lineAfter, line = ellipsisLineUpTo + lineAfterEllipsis, extractPointer = " ".repeat(pos < 1 ? 0 : pos - 1) + "^";
+  return `${containerType}
+At position ${at} in JSON:
+${line}
+${extractPointer}`;
+}
 export function parse(text, reviver, numberParser, maxDepth = Infinity) {
   if (typeof text !== "string")
     text = String(text);
@@ -56,14 +61,13 @@ export function parse(text, reviver, numberParser, maxDepth = Infinity) {
     reviver = void 0;
   let at = 0, ch, container, isArray, key, value;
   function err(m) {
-    throw new JSONParseError(`${m}
-At character ${at} in JSON: ${text}`);
+    throw new SyntaxError(m + errContext(text, at, isArray));
   }
   function tooDeep() {
-    err(`JSON structure is too deeply nested (current max depth: ${maxDepth})`);
+    err(`JSON structure too deeply nested (current max depth: ${maxDepth})`);
   }
   function expected(exp) {
-    err(`Unexpected ${chDesc(ch)}, expecting ${exp} ${isArray === true ? "in array" : isArray === false ? "in object" : "at top level"}`);
+    err(`Unexpected ${chDesc(ch)}, expecting ${exp}`);
   }
   function word() {
     const startAt = at - 1;
@@ -113,10 +117,10 @@ At character ${at} in JSON: ${text}`);
             str += esc;
             continue;
           }
-          err(`Invalid escape sequence in string: ${chDesc(ch, "\\")}`);
+          err(`Invalid escape sequence: ${chDesc(ch, "\\")} in string`);
         default:
           if (!(ch >= 0))
-            err("Unterminated string");
+            err(`Unterminated string`);
           err(`Invalid unescaped ${chDesc(ch)} in string`);
       }
     }
