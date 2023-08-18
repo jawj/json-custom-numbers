@@ -93,9 +93,9 @@ function errContext(text: string, at: number, isArray: boolean | undefined) {
     lineAfter = textAfter.match(/[^\n]{0,5}/)![0],
     lineAfterEllipsis = lineAfter.length < textAfter.length ? lineAfter + '...' : lineAfter,
     line = ellipsisLineUpTo + lineAfterEllipsis,
-    extractPointer = ' '.repeat(pos < 1 ? 0 : pos - 1) + '^';
+    pointer = ' '.repeat(pos < 1 ? 0 : pos - 1) + '^';
 
-  return `${containerType}\nAt position ${at} in JSON:\n${line}\n${extractPointer}`;
+  return `${containerType}\nAt position ${at} in JSON:\n${line}\n${pointer}`;
 }
 
 export function parse(
