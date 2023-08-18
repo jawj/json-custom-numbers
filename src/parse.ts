@@ -96,8 +96,8 @@ export function parse(
     at = 0,                           // character index into text
     ch: number,                       // current character code
     container: Obj | any[],           // the current container
-    isArray: boolean,                 // is the current container an array? (if not, it's an object)
-    key: string | number | undefined, // the current key (number or string)
+    isArray: boolean | undefined,     // container is: true -> array; false -> object; undefined -> none (at top level)
+    key: string | number | undefined, // the current key; undefined -> at top-level or just started new object
     value: any;                       // the current value
 
   function err(m: string) {
