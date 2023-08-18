@@ -85,7 +85,7 @@ export function parse(text, reviver, numberParser, maxDepth = Infinity) {
         return true;
       default:
         const str = text.slice(startAt, at);
-        return numberParser ? numberParser(str, key) : +str;
+        return numberParser ? numberParser.call(container, key, str) : +str;
     }
   }
   function string() {

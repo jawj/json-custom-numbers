@@ -6,9 +6,9 @@
  * @param reviver A function that transforms the results. This function is
  * called for each member of the object. If a member contains nested objects,
  * the nested objects are transformed before the parent object is.
- * @param numberParser A function that parses numbers. Receives a string 
- * representation of the number. If no function is provided, behaviour matches
- * `JSON.parse()`.
+ * @param numberParser A function that parses numbers. Receives a key or array
+ * index (if not at top level) and the string representation of the number. If
+ * no function is provided, behaviour matches `JSON.parse()`.
  * @param maxDepth Maximum allowable depth of object nesting. By default,
  * matching native implementations, no explicit limit is imposed. This
  * parameter thus defaults to `Infinity`, so that depth is limited only by
@@ -17,7 +17,7 @@
 export function parse(
   text: string,
   reviver?: (key: string, value: any) => any,
-  numberParser?: (string: string, key?: string | number | undefined) => any,
+  numberParser?: (key: string | number | undefined, str: string) => any,
   maxDepth?: number,
 ): any;
 
@@ -29,10 +29,10 @@ export function parse(
  * function that transforms the results.
  * @param indent Adds indentation, white space and line break characters to the
  * return-value JSON text to make it easier to read.
- * @param customSerializer A function that receives each (key, value, typeof
- * value) to be stringified. If the function returns no value, the original
- * value is stringified as usual. If it returns a string, that string is used
- * directly as the serialized representation.
+ * @param customSerializer A function that receives (key, value, typeof value)
+ * for each value to be stringified. If the function returns no value, the 
+ * original value is stringified as usual. If it returns a string, that string
+ * is used directly as the serialized representation.
  * @param maxDepth Maximum allowable depth of object nesting. Native
  * implementations are recursive and limited by the call stack, which means the
  * effective maximum depth may vary (between 3,374 and 40,000 across different

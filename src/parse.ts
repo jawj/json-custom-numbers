@@ -101,7 +101,7 @@ function errContext(text: string, at: number, isArray: boolean | undefined) {
 export function parse(
   text: string,
   reviver?: (key: string, value: any) => any,
-  numberParser?: (string: string, key?: string | number | undefined) => any,
+  numberParser?: (key: string | number | undefined, str: string) => any,
   maxDepth = Infinity,  // all native implementations fail with an out-of-memory error when depth is too large
 ) {
   if (typeof text !== 'string') text = String(text);  // force string
@@ -141,7 +141,7 @@ export function parse(
       case t: return true;
       default:
         const str = text.slice(startAt, at);
-        return numberParser ? numberParser(str, key) : +str;
+        return numberParser ? numberParser.call(container, key, str) : +str;
     }
   }
 

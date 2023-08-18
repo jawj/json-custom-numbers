@@ -32,7 +32,7 @@ s+K(n,i,d))}h(C,"err");function g(){C(`JSON structure too deeply nested (current
  max depth: ${u})`)}h(g,"tooDeep");function A(s){C(`Unexpected ${E(e)}, expectin\
 g ${s}`)}h(A,"expected");function U(){const s=i-1;switch(v.lastIndex=s,v.test(n)!==
 !0&&A("JSON value"),i=v.lastIndex,e){case 102:return!1;case 110:return null;case 116:
-return!0;default:const p=n.slice(s,i);return l?l(p,c):+p}}h(U,"word");function b(){
+return!0;default:const p=n.slice(s,i);return l?l.call(r,c,p):+p}}h(U,"word");function b(){
 let s="";for(;;){O.lastIndex=i,O.test(n);const f=O.lastIndex;switch(f>i&&(s+=n.slice(
 i,f),i=f),e=n.charCodeAt(i++),e){case 34:return s;case 92:if(e=n.charCodeAt(i++),
 e===117){const N=w[n.charCodeAt(i++)]+y[n.charCodeAt(i++)]+k[n.charCodeAt(i++)]+

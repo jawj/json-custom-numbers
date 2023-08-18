@@ -1,3 +1,3 @@
-const { parse, JSONParseError } = require('./parse.js');
+const { parse } = require('./parse.js');
 const { stringify } = require('./stringify.js');
-module.exports = { parse, stringify, JSONParseError };
+module.exports = { parse, stringify };

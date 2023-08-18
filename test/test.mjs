@@ -97,7 +97,7 @@ if (!perfOnly) {
 
   const bigNumJson = "[9007199254740991, 9007199254740991.1, 900719925474099.1e1, 9007199254740993]";
 
-  function nr(s) {
+  function nr(k, s) {
     const n = +s;
     if (n >= Number.MIN_SAFE_INTEGER && n <= Number.MAX_SAFE_INTEGER) return n;
     if (s.indexOf('.') !== -1 || s.indexOf('e') !== -1 && s.indexOf('E') !== -1) return n;
