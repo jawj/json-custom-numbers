@@ -15,6 +15,7 @@
     "test": "npm run compile && node test/test.mjs",
     "testPerf": "npm run compile && node test/test.mjs --perf-only",
     "testConf": "npm run compile && node test/test.mjs --conf-only",
+    "trace": "npm run compile && node --trace-opt --trace-deopt test/perfTrace.mjs",
     "buildCjs": "npm run compile && esbuild src/*.mjs --platform=neutral --target=es2015 --minify --keep-names --line-limit=80 --format=cjs --outdir=dist",
     "wrapEsm": "npx gen-esm-wrapper dist/index.js dist/index.mjs",
     "compile": "npm run compileParse && npm run compileStringify",

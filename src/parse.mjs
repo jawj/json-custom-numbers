@@ -8,7 +8,7 @@
  * precisely match native `JSON.parse` behaviour but also allow for custom
  * number parsing.
  */
-const stringChunkRegExp = /[^"\\\u0000-\u001f]*/y, wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y, escapes = '.................................."............./.............................................\\......\b....\f........\n....\r..	'.split("."), hlArr = () => new Uint32Array(103), hl1 = hlArr(), hl2 = hlArr(), hl3 = hlArr(), hl4 = hlArr(), badChar = 65536;
+const stringChunkRegExp = /[^"\\\u0000-\u001f]*/y, wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y, trailingWhitespaceRegExp = /[ \n\t\r]*$/y, escapes = '.................................."............./.............................................\\......\b....\f........\n....\r..	'.split("."), hlArr = () => new Uint32Array(103), hl1 = hlArr(), hl2 = hlArr(), hl3 = hlArr(), hl4 = hlArr(), badChar = 65536;
 let i = 0;
 for (; i < 48; i++)
   hl1[i] = hl2[i] = hl3[i] = hl4[i] = badChar;
@@ -48,11 +48,11 @@ function revive(reviver, container) {
   }
 }
 function errContext(text, at, isArray) {
-  const containerType = isArray === true ? " in array" : isArray === false ? " in object" : "", textUpTo = text.slice(0, at), lineUpTo = textUpTo.match(/[^\n]{0,69}$/)[0], ellipsisLineUpTo = lineUpTo.length < textUpTo.length ? "..." + lineUpTo : lineUpTo, pos = at - (textUpTo.length - ellipsisLineUpTo.length), textAfter = text.slice(at), lineAfter = textAfter.match(/[^\n]{0,5}/)[0], lineAfterEllipsis = lineAfter.length < textAfter.length ? lineAfter + "..." : lineAfter, line = ellipsisLineUpTo + lineAfterEllipsis, extractPointer = " ".repeat(pos < 1 ? 0 : pos - 1) + "^";
+  const containerType = isArray === true ? " in array" : isArray === false ? " in object" : "", textUpTo = text.slice(0, at), lineUpTo = textUpTo.match(/[^\n]{0,69}$/)[0], ellipsisLineUpTo = lineUpTo.length < textUpTo.length ? "..." + lineUpTo : lineUpTo, pos = at - (textUpTo.length - ellipsisLineUpTo.length), textAfter = text.slice(at), lineAfter = textAfter.match(/[^\n]{0,5}/)[0], lineAfterEllipsis = lineAfter.length < textAfter.length ? lineAfter + "..." : lineAfter, line = ellipsisLineUpTo + lineAfterEllipsis, pointer = " ".repeat(pos < 1 ? 0 : pos - 1) + "^";
   return `${containerType}
 At position ${at} in JSON:
 ${line}
-${extractPointer}`;
+${pointer}`;
 }
 export function parse(text, reviver, numberParser, maxDepth = Infinity) {
   if (typeof text !== "string")
@@ -278,10 +278,8 @@ export function parse(text, reviver, numberParser, maxDepth = Infinity) {
         }
       }
   }
-  do {
-    ch = text.charCodeAt(at++);
-  } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
-  if (ch >= 0)
+  trailingWhitespaceRegExp.lastIndex = at;
+  if (trailingWhitespaceRegExp.test(text) === false)
     err("Unexpected data after end of JSON input");
   if (reviver !== void 0) {
     value = { "": value };

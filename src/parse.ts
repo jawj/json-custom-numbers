@@ -35,6 +35,7 @@ const
   // these 'sticky' RegExps are used to parse (1) strings and (2) numbers, true/false and null
   stringChunkRegExp = /[^"\\\u0000-\u001f]*/y,
   wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y,
+  trailingWhitespaceRegExp = /[ \n\t\r]*$/y,
 
   // this array is indexed by the char code of an escape character 
   // e.g. \n -> 'n'.charCodeAt() === 110, so escapes[110] === '\n'
@@ -355,8 +356,8 @@ export function parse(
     }
   }
 
-  do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
-  if (ch >= 0) err('Unexpected data after end of JSON input');
+  trailingWhitespaceRegExp.lastIndex = at;
+  if (trailingWhitespaceRegExp.test(text) === false) err('Unexpected data after end of JSON input');
 
   if (reviver !== undefined) {
     value = { '': value };
