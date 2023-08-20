@@ -32,7 +32,6 @@ const
   closebrace = 125,
   /* </cut> */
 
-  // these 'sticky' RegExps are used to parse (1) strings and (2) numbers, true/false and null
   stringChunkRegExp = /[^"\\\u0000-\u001f]*/y,
   wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y,
   trailingWhitespaceRegExp = /[ \n\t\r]*$/y,
@@ -115,7 +114,6 @@ export function parse(
     isArray: boolean | undefined,     // container is: true -> array; false -> object; undefined -> none (at top level)
     key: string | number | undefined, // the current key; undefined -> at top-level or just started new object
     value: any;                       // the current value
-
 
   function err(m: string) {
     throw new SyntaxError(m + errContext(text, at, isArray));
