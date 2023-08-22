@@ -8,18 +8,18 @@
  * precisely match native `JSON.parse` behaviour but also allow for custom
  * number parsing.
  */
-const stringChunkRegExp = /[^"\\\u0000-\u001f]*/y, wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y, trailingWhitespaceRegExp = /[ \n\t\r]*$/y, escapes = '.................................."............./.............................................\\......\b....\f........\n....\r..	'.split("."), hlArr = () => new Uint32Array(103), hl1 = hlArr(), hl2 = hlArr(), hl3 = hlArr(), hl4 = hlArr(), badChar = 65536;
+const stringChunkRegExp = /[^"\\\u0000-\u001f]*/y, wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y, trailingWhitespaceRegExp = /[ \n\t\r]*$/y, escapes = '.................................."............./.............................................\\......\b....\f........\n....\r..	'.split("."), hlArr = () => new Uint32Array(103), hl1 = hlArr(), hl2 = hlArr(), hl3 = hlArr(), hl4 = hlArr();
 let i = 0;
 for (; i < 48; i++)
-  hl1[i] = hl2[i] = hl3[i] = hl4[i] = badChar;
+  hl1[i] = hl2[i] = hl3[i] = hl4[i] = 65536;
 for (; i < 58; i++)
   hl1[i] = (hl2[i] = (hl3[i] = (hl4[i] = i - 48) << 4) << 4) << 4;
 for (; i < 65; i++)
-  hl1[i] = hl2[i] = hl3[i] = hl4[i] = badChar;
+  hl1[i] = hl2[i] = hl3[i] = hl4[i] = 65536;
 for (; i < 71; i++)
   hl1[i] = (hl2[i] = (hl3[i] = (hl4[i] = i - 55) << 4) << 4) << 4;
 for (; i < 97; i++)
-  hl1[i] = hl2[i] = hl3[i] = hl4[i] = badChar;
+  hl1[i] = hl2[i] = hl3[i] = hl4[i] = 65536;
 for (; i < 103; i++)
   hl1[i] = (hl2[i] = (hl3[i] = (hl4[i] = i - 87) << 4) << 4) << 4;
 function chDesc(ch, prefix = "") {
@@ -90,40 +90,47 @@ export function parse(text, reviver, numberParser, maxDepth = Infinity) {
   }
   function string() {
     let str = "";
-    for (; ; ) {
-      stringChunkRegExp.lastIndex = at;
-      stringChunkRegExp.test(text);
-      const lastIndex = stringChunkRegExp.lastIndex;
-      if (lastIndex > at) {
-        str += text.slice(at, lastIndex);
-        at = lastIndex;
-      }
-      ch = text.charCodeAt(at++);
-      switch (ch) {
-        case 34:
-          return str;
-        case 92:
-          ch = text.charCodeAt(at++);
-          if (ch === 117) {
-            const charCode = hl1[text.charCodeAt(at++)] + hl2[text.charCodeAt(at++)] + hl3[text.charCodeAt(at++)] + hl4[text.charCodeAt(at++)];
-            if (charCode < badChar) {
-              str += String.fromCharCode(charCode);
-              continue;
-            }
-            err(`Invalid \\uXXXX escape in string`);
+    stringloop:
+      for (; ; ) {
+        stringChunkRegExp.lastIndex = at;
+        stringChunkRegExp.test(text);
+        const lastIndex = stringChunkRegExp.lastIndex;
+        if (lastIndex > at) {
+          str += text.slice(at, lastIndex);
+          at = lastIndex;
+        }
+        ch = text.charCodeAt(at++);
+        for (; ; ) {
+          switch (ch) {
+            case 34:
+              return str;
+            case 92:
+              ch = text.charCodeAt(at++);
+              if (ch === 117) {
+                const charCode = hl1[text.charCodeAt(at++)] + hl2[text.charCodeAt(at++)] + hl3[text.charCodeAt(at++)] + hl4[text.charCodeAt(at++)];
+                if (charCode < 65536) {
+                  str += String.fromCharCode(charCode);
+                  break;
+                }
+                err(`Invalid \\uXXXX escape in string`);
+              }
+              const esc = escapes[ch];
+              if (esc !== "" && esc !== void 0) {
+                str += esc;
+                break;
+              }
+              err(`Invalid escape sequence: ${chDesc(ch, "\\")} in string`);
+            default:
+              if (!(ch >= 0))
+                err(`Unterminated string`);
+              err(`Invalid unescaped ${chDesc(ch)} in string`);
           }
-          const esc = escapes[ch];
-          if (esc) {
-            str += esc;
-            continue;
-          }
-          err(`Invalid escape sequence: ${chDesc(ch, "\\")} in string`);
-        default:
-          if (!(ch >= 0))
-            err(`Unterminated string`);
-          err(`Invalid unescaped ${chDesc(ch)} in string`);
+          ch = text.charCodeAt(at);
+          if (ch !== 92 && ch !== 34 && ch >= 32)
+            continue stringloop;
+          at++;
+        }
       }
-    }
   }
   parse: {
     do {

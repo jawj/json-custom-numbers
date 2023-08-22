@@ -30,6 +30,7 @@ const
   u = 117,
   openbrace = 123,
   closebrace = 125,
+  badChar = 65536,  // = 0xffff + 1: signals a bad character, since it's out of range
   /* </cut> */
 
   stringChunkRegExp = /[^"\\\u0000-\u001f]*/y,
@@ -46,8 +47,7 @@ const
   hl1 = hlArr(),
   hl2 = hlArr(),
   hl3 = hlArr(),
-  hl4 = hlArr(),
-  badChar = 65536;  // = 0xffff + 1: signals a bad character, since it's out of range
+  hl4 = hlArr();
 
 // set up hex lookup arrays
 let i = 0;
@@ -146,7 +146,7 @@ export function parse(
 
   function string() {  // note: it's on you to check that ch == '"'.charCodeAt() before you call this
     let str = '';
-    for (; ;) {
+    stringloop: for (; ;) {
       stringChunkRegExp.lastIndex = at;  // find next chunk without \ or " or invalid chars
       stringChunkRegExp.test(text);
       const lastIndex = stringChunkRegExp.lastIndex;
@@ -157,37 +157,45 @@ export function parse(
       }
 
       ch = text.charCodeAt(at++);  // what comes after it?
-      switch (ch) {
-        case quote:
-          return str;
+      for (; ;) {
+        switch (ch) {
+          case quote:
+            return str;
 
-        case backslash:
-          ch = text.charCodeAt(at++);
-          if (ch === u) {  // Unicode \uXXXX escape
-            const charCode =
-              hl1[text.charCodeAt(at++)] +
-              hl2[text.charCodeAt(at++)] +
-              hl3[text.charCodeAt(at++)] +
-              hl4[text.charCodeAt(at++)];
+          case backslash:
+            ch = text.charCodeAt(at++);
+            if (ch === u) {  // Unicode \uXXXX escape
+              const charCode =
+                hl1[text.charCodeAt(at++)] +
+                hl2[text.charCodeAt(at++)] +
+                hl3[text.charCodeAt(at++)] +
+                hl4[text.charCodeAt(at++)];
 
-            if (charCode < badChar) {  // (NaN also fails this test)
-              str += String.fromCharCode(charCode);
-              continue;
+              if (charCode < badChar) {  // (NaN also fails this test)
+                str += String.fromCharCode(charCode);
+                break; //continue;
+              }
+              err(`Invalid \\uXXXX escape in string`);
             }
-            err(`Invalid \\uXXXX escape in string`);
-          }
 
-          const esc = escapes[ch];  // single-character escape
-          if (esc) {  // i.e. esc !== '' && esc !== undefined
-            str += esc;
-            continue;
-          }
-          err(`Invalid escape sequence: ${chDesc(ch, '\\')} in string`);
+            const esc = escapes[ch];  // single-character escape
+            if (esc !== '' && esc !== undefined) {
+              str += esc;
+              break; //continue;
+            }
+            err(`Invalid escape sequence: ${chDesc(ch, '\\')} in string`);
 
-        default:
-          // something is wrong
-          if (!(ch >= 0)) err(`Unterminated string`);
-          err(`Invalid unescaped ${chDesc(ch)} in string`);
+          default:
+            // something is wrong
+            if (!(ch >= 0)) err(`Unterminated string`);
+            err(`Invalid unescaped ${chDesc(ch)} in string`);
+        }
+
+        ch = text.charCodeAt(at);  // no ++!
+        if (ch !== backslash && ch !== quote && ch >= space) continue stringloop;
+
+        // looping here accelerates repeated escapes
+        at++;
       }
     }
   }

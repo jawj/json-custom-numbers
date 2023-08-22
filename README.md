@@ -48,9 +48,9 @@ On Node.js:
 
 * The best case is JSON that's all long strings with few escape sequences, or all deeply nested structures. On these sorts of inputs, this library may be slightly **faster** than `JSON.parse()`.
 
-* The worst case is nothing but string escapes. On these inputs, the library may be around 4x slower than `JSON.parse()`.
+* The worst case is nothing but short numeric values. On these inputs, the library may be around 3x slower than `JSON.parse()`.
 
-* Real-world cases will generally fall somewhere between these extremes.
+* Real-world cases generally fall somewhere between these extremes.
 
 Tests are included to compare the performance of this library, [Crockford's reference implementation](https://github.com/douglascrockford/JSON-js/blob/03157639c7a7cddd2e9f032537f346f1a87c0f6d/json_parse.js), and the [json-bigint](https://www.npmjs.com/package/json-bigint) and [lossless-json](https://www.npmjs.com/package/lossless-json) libraries against native `JSON.parse` across a range of inputs. 
 
@@ -62,17 +62,17 @@ Here's some example output, from Node.js 20.0 on a 2020 Intel MacBook Pro.
 
 ```
 test               x   reps |  native |     this library |        crockford |      json-bigint |    lossless-json
-01_typical_3kb     x  10000 |  11.5μs |  22.5μs  (x1.96) |  57.5μs  (x5.00) |  42.8μs  (x3.72) |  62.4μs  (x5.42)
-02_typical_28kb    x   1000 |  94.9μs | 281.2μs  (x2.96) | 588.6μs  (x6.20) | 481.9μs  (x5.08) | 617.6μs  (x6.51)
-03_mixed_83b       x  50000 |   1.9μs |   3.3μs  (x1.77) |   6.1μs  (x3.27) |   6.5μs  (x3.52) |   5.8μs  (x3.13)
-04_short_numbers   x  50000 |   1.9μs |   6.2μs  (x3.25) |   8.8μs  (x4.57) |   9.0μs  (x4.71) |   7.9μs  (x4.13)
-05_long_numbers    x  50000 |   1.8μs |   2.9μs  (x1.57) |   8.1μs  (x4.40) |  12.9μs  (x7.01) |   4.6μs  (x2.49)
-06_short_strings   x  50000 |   1.9μs |   2.2μs  (x1.14) |   3.7μs  (x1.97) |   3.8μs  (x2.00) |   3.4μs  (x1.79)
-07_long_strings    x   2500 |  52.8μs |  39.4μs  (x0.75) | 744.5μs (x14.10) | 526.4μs  (x9.97) | 448.1μs  (x8.49)
-08_string_escapes  x 100000 |   1.0μs |   3.8μs  (x3.88) |  10.4μs (x10.61) |   9.8μs  (x9.98) |   5.8μs  (x5.88)
-09_bool_null       x 100000 |   0.9μs |   2.2μs  (x2.37) |   3.7μs  (x4.00) |   3.8μs  (x4.13) |   5.7μs  (x6.22)
-10_package_json    x  25000 |   4.6μs |   7.7μs  (x1.65) |  33.2μs  (x7.15) |  27.8μs  (x5.99) |  24.8μs  (x5.34)
-11_deep_nesting    x   1000 | 293.9μs | 283.5μs  (x0.96) | 521.6μs  (x1.77) | 500.4μs  (x1.70) | 597.3μs  (x2.03)
+01_typical_3kb     x  10000 |  11.3μs |  22.2μs  (x1.96) |  57.6μs  (x5.08) |  44.2μs  (x3.90) |  59.5μs  (x5.25)
+02_typical_28kb    x   1000 | 100.6μs | 280.6μs  (x2.79) | 559.8μs  (x5.56) | 452.6μs  (x4.50) | 596.2μs  (x5.92)
+03_mixed_83b       x  50000 |   1.9μs |   3.0μs  (x1.60) |   6.4μs  (x3.43) |   6.6μs  (x3.54) |   5.4μs  (x2.91)
+04_short_numbers   x  50000 |   1.9μs |   6.2μs  (x3.20) |   9.1μs  (x4.70) |   9.0μs  (x4.66) |   8.3μs  (x4.30)
+05_long_numbers    x  50000 |   1.8μs |   2.9μs  (x1.57) |   8.4μs  (x4.55) |  13.0μs  (x7.07) |   4.1μs  (x2.22)
+06_short_strings   x  50000 |   1.8μs |   2.2μs  (x1.22) |   3.0μs  (x1.70) |   3.5μs  (x1.99) |   3.5μs  (x1.94)
+07_long_strings    x   2500 |  54.8μs |  40.2μs  (x0.73) | 772.4μs (x14.09) | 526.2μs  (x9.60) | 478.5μs  (x8.73)
+08_string_escapes  x 100000 |   1.0μs |   1.9μs  (x1.98) |  10.7μs (x11.17) |   9.8μs (x10.21) |   5.4μs  (x5.60)
+09_bool_null       x 100000 |   0.9μs |   2.2μs  (x2.35) |   3.8μs  (x4.11) |   3.7μs  (x3.98) |   5.5μs  (x5.98)
+10_package_json    x  25000 |   4.8μs |   7.8μs  (x1.63) |  34.0μs  (x7.12) |  26.5μs  (x5.55) |  24.2μs  (x5.07)
+11_deep_nesting    x   1000 | 264.9μs | 243.4μs  (x0.92) | 505.6μs  (x1.91) | 485.6μs  (x1.83) | 602.4μs  (x2.27)
 ```
 
 ### Stringify
