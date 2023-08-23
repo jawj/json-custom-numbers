@@ -76,17 +76,11 @@ export function parse(text, reviver, numberParser, maxDepth = Infinity) {
     if (matched !== true)
       expected("JSON value");
     at = wordRegExp.lastIndex;
-    switch (ch) {
-      case 102:
-        return false;
-      case 110:
-        return null;
-      case 116:
-        return true;
-      default:
-        const str = text.slice(startAt, at);
-        return numberParser ? numberParser.call(container, key, str) : +str;
+    if (ch < 102) {
+      const str = text.slice(startAt, at);
+      return numberParser ? numberParser.call(container, key, str) : +str;
     }
+    return ch === 110 ? null : ch === 116;
   }
   function string() {
     let str = "";
@@ -126,7 +120,7 @@ export function parse(text, reviver, numberParser, maxDepth = Infinity) {
               err(`Invalid unescaped ${chDesc(ch)} in string`);
           }
           ch = text.charCodeAt(at);
-          if (ch !== 92 && ch !== 34 && ch >= 32)
+          if (ch !== 92 && ch !== 34)
             continue stringloop;
           at++;
         }

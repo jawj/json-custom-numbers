@@ -134,14 +134,12 @@ export function parse(
     if (matched !== true) expected('JSON value');
     at = wordRegExp.lastIndex;
 
-    switch (ch) {
-      case f: return false;
-      case n: return null;
-      case t: return true;
-      default:
-        const str = text.slice(startAt, at);
-        return numberParser ? numberParser.call(container, key, str) : +str;
+    if (ch < f) {
+      const str = text.slice(startAt, at);
+      return numberParser ? numberParser.call(container, key, str) : +str;
     }
+
+    return ch === n ? null : ch === t;
   }
 
   function string() {  // note: it's on you to check that ch == '"'.charCodeAt() before you call this
@@ -191,10 +189,13 @@ export function parse(
             err(`Invalid unescaped ${chDesc(ch)} in string`);
         }
 
+        // we peek ahead to see if there's another escape or end-of-string coming
+        // (this roughly doubles speed on repeated escapes, which is the worst case)
         ch = text.charCodeAt(at);  // no ++!
-        if (ch !== backslash && ch !== quote && ch >= space) continue stringloop;
 
-        // looping here accelerates repeated escapes
+        // note: we don't check for isNaN(ch) or ch < 32, since that would speed up error cases at the expense of non-error cases
+        if (ch !== backslash && ch !== quote) continue stringloop;
+
         at++;
       }
     }

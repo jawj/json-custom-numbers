@@ -30,34 +30,33 @@ ${A}`}p(L,"errContext");function P(n,o,l,d=1/0){typeof n!="string"&&(n=String(n)
 typeof o!="function"&&(o=void 0);let i=0,e,r,u,c,a;function g(s){throw new SyntaxError(
 s+L(n,i,u))}p(g,"err");function C(){g(`JSON structure too deeply nested (current\
  max depth: ${d})`)}p(C,"tooDeep");function A(s){g(`Unexpected ${E(e)}, expectin\
-g ${s}`)}p(A,"expected");function m(){const s=i-1;switch(v.lastIndex=s,v.test(n)!==
-!0&&A("JSON value"),i=v.lastIndex,e){case 102:return!1;case 110:return null;case 116:
-return!0;default:const h=n.slice(s,i);return l?l.call(r,c,h):+h}}p(m,"word");function b(){
-let s="";e:for(;;){U.lastIndex=i,U.test(n);const f=U.lastIndex;for(f>i&&(s+=n.slice(
-i,f),i=f),e=n.charCodeAt(i++);;){switch(e){case 34:return s;case 92:if(e=n.charCodeAt(
-i++),e===117){const J=y[n.charCodeAt(i++)]+k[n.charCodeAt(i++)]+w[n.charCodeAt(i++)]+
-$[n.charCodeAt(i++)];if(J<65536){s+=String.fromCharCode(J);break}g("Invalid \\uXX\
-XX escape in string")}const h=K[e];if(h!==""&&h!==void 0){s+=h;break}g(`Invalid \
-escape sequence: ${E(e,"\\")} in string`);default:e>=0||g("Unterminated string"),
-g(`Invalid unescaped ${E(e)} in string`)}if(e=n.charCodeAt(i),e!==92&&e!==34&&e>=
-32)continue e;i++}}}p(b,"string");e:{do e=n.charCodeAt(i++);while(e<=32&&(e===32||
-e===10||e===13||e===9));switch(e){case 123:d===0&&C(),r={},c=void 0,u=!1;break;case 91:
-d===0&&C(),r=[],c=0,u=!0;break;case 34:a=b();break e;default:a=m();break e}const s=[];
-let f=0;const h=d+d-2;n:for(;;)if(u===!0)for(;;){do e=n.charCodeAt(i++);while(e<=
-32&&(e===32||e===10||e===13||e===9));if(e===93){if(o!==void 0&&O(o,r),a=r,f===0)
-break e;if(r=s[--f],c=s[--f],u=typeof c=="number",u===!0){r[c++]=a;continue}else{
-r[c]=a;continue n}}if(c!==0){e!==44&&A("',' or ']' after value");do e=n.charCodeAt(
-i++);while(e<=32&&(e===32||e===10||e===13||e===9))}switch(e){case 34:r[c++]=b();
-continue;case 123:f===h&&C(),s[f++]=c,s[f++]=r,r={},c=void 0,u=!1;continue n;case 91:
-f===h&&C(),s[f++]=c,s[f++]=r,r=[],c=0;continue;default:r[c++]=m()}}else for(;;){
-do e=n.charCodeAt(i++);while(e<=32&&(e===32||e===10||e===13||e===9));if(e===125){
-if(o!==void 0&&O(o,r),a=r,f===0)break e;if(r=s[--f],c=s[--f],u=typeof c=="number",
-u===!0){r[c++]=a;continue n}else{r[c]=a;continue}}if(c!==void 0){e!==44&&A("',' \
-or '}' after value");do e=n.charCodeAt(i++);while(e<=32&&(e===32||e===10||e===13||
-e===9))}e!==34&&A("'}' or double-quoted key"),c=b();do e=n.charCodeAt(i++);while(e<=
-32&&(e===32||e===10||e===13||e===9));e!==58&&A("':' after key");do e=n.charCodeAt(
-i++);while(e<=32&&(e===32||e===10||e===13||e===9));switch(e){case 34:r[c]=b();continue;case 123:
-f===h&&C(),s[f++]=c,s[f++]=r,r={},c=void 0;continue;case 91:f===h&&C(),s[f++]=c,
-s[f++]=r,r=[],c=0,u=!0;continue n;default:r[c]=m()}}}return N.lastIndex=i,N.test(
-n)===!1&&g("Unexpected data after end of JSON input"),o!==void 0&&(a={"":a},O(o,
-a),a=a[""]),a}p(P,"parse");
+g ${s}`)}p(A,"expected");function m(){const s=i-1;if(v.lastIndex=s,v.test(n)!==!0&&
+A("JSON value"),i=v.lastIndex,e<102){const h=n.slice(s,i);return l?l.call(r,c,h):
++h}return e===110?null:e===116}p(m,"word");function b(){let s="";e:for(;;){U.lastIndex=
+i,U.test(n);const f=U.lastIndex;for(f>i&&(s+=n.slice(i,f),i=f),e=n.charCodeAt(i++);;){
+switch(e){case 34:return s;case 92:if(e=n.charCodeAt(i++),e===117){const J=y[n.charCodeAt(
+i++)]+k[n.charCodeAt(i++)]+w[n.charCodeAt(i++)]+$[n.charCodeAt(i++)];if(J<65536){
+s+=String.fromCharCode(J);break}g("Invalid \\uXXXX escape in string")}const h=K[e];
+if(h!==""&&h!==void 0){s+=h;break}g(`Invalid escape sequence: ${E(e,"\\")} in st\
+ring`);default:e>=0||g("Unterminated string"),g(`Invalid unescaped ${E(e)} in st\
+ring`)}if(e=n.charCodeAt(i),e!==92&&e!==34)continue e;i++}}}p(b,"string");e:{do e=
+n.charCodeAt(i++);while(e<=32&&(e===32||e===10||e===13||e===9));switch(e){case 123:
+d===0&&C(),r={},c=void 0,u=!1;break;case 91:d===0&&C(),r=[],c=0,u=!0;break;case 34:
+a=b();break e;default:a=m();break e}const s=[];let f=0;const h=d+d-2;n:for(;;)if(u===
+!0)for(;;){do e=n.charCodeAt(i++);while(e<=32&&(e===32||e===10||e===13||e===9));
+if(e===93){if(o!==void 0&&O(o,r),a=r,f===0)break e;if(r=s[--f],c=s[--f],u=typeof c==
+"number",u===!0){r[c++]=a;continue}else{r[c]=a;continue n}}if(c!==0){e!==44&&A("\
+',' or ']' after value");do e=n.charCodeAt(i++);while(e<=32&&(e===32||e===10||e===
+13||e===9))}switch(e){case 34:r[c++]=b();continue;case 123:f===h&&C(),s[f++]=c,s[f++]=
+r,r={},c=void 0,u=!1;continue n;case 91:f===h&&C(),s[f++]=c,s[f++]=r,r=[],c=0;continue;default:
+r[c++]=m()}}else for(;;){do e=n.charCodeAt(i++);while(e<=32&&(e===32||e===10||e===
+13||e===9));if(e===125){if(o!==void 0&&O(o,r),a=r,f===0)break e;if(r=s[--f],c=s[--f],
+u=typeof c=="number",u===!0){r[c++]=a;continue n}else{r[c]=a;continue}}if(c!==void 0){
+e!==44&&A("',' or '}' after value");do e=n.charCodeAt(i++);while(e<=32&&(e===32||
+e===10||e===13||e===9))}e!==34&&A("'}' or double-quoted key"),c=b();do e=n.charCodeAt(
+i++);while(e<=32&&(e===32||e===10||e===13||e===9));e!==58&&A("':' after key");do
+e=n.charCodeAt(i++);while(e<=32&&(e===32||e===10||e===13||e===9));switch(e){case 34:
+r[c]=b();continue;case 123:f===h&&C(),s[f++]=c,s[f++]=r,r={},c=void 0;continue;case 91:
+f===h&&C(),s[f++]=c,s[f++]=r,r=[],c=0,u=!0;continue n;default:r[c]=m()}}}return N.
+lastIndex=i,N.test(n)===!1&&g("Unexpected data after end of JSON input"),o!==void 0&&
+(a={"":a},O(o,a),a=a[""]),a}p(P,"parse");
