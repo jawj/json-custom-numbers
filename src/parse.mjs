@@ -153,7 +153,7 @@ export function parse(text, reviver, numberParser, maxDepth = Infinity) {
         break parse;
     }
     const maxStackPtr = maxDepth + maxDepth - 2, stack = [], isIndented = detectIndentRegExp.test(text);
-    let stackPtr = 0, bigIndent = false;
+    let stackPtr = 0;
     parseloop:
       for (; ; ) {
         if (isArray === true) {

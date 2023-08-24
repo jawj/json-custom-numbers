@@ -238,9 +238,7 @@ export function parse(  // this is duplicated and processed during compile
       stack: any[] = [],
       isIndented = detectIndentRegExp.test(text);
 
-    let
-      stackPtr = 0,
-      bigIndent = false;
+    let stackPtr = 0;
 
     parseloop: for (; ;) {
       if (isArray === true) {
