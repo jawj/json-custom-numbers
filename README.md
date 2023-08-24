@@ -42,7 +42,7 @@ I've put some effort into optimising performance, and this library is substantia
 Performance comparisons depend both on the JavaScript engine and on the nature of the JSON data to be parsed/generated. If you figure out how to make either `parse()` or `stringify()` reliably faster, I'd be glad to hear about it.
 
 
-### Parse performance
+### Parse
 
 In Node.js:
 
@@ -99,7 +99,7 @@ test               x   reps |   native |      this library |         crockford |
 ```
 
 
-### Stringify performance
+### Stringify
 
 The numbers for `stringify()` follow a more or less similar pattern, but performance differences between `JSON.stringify()`, this library and other libraries are generally smaller:
 
