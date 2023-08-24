@@ -42,59 +42,104 @@ I've put some effort into optimising performance, and this library is substantia
 Performance comparisons depend both on the JavaScript engine and on the nature of the JSON data to be parsed/generated. If you figure out how to make either `parse()` or `stringify()` reliably faster, I'd be glad to hear about it.
 
 
-### Parse
+### Parse performance
 
-On Node.js:
+In Node.js:
 
-* The best case is JSON that's all long strings with few escape sequences, or all deeply nested structures. On these sorts of inputs, this library may be slightly **faster** than `JSON.parse()`.
+* In the best cases (all long strings with few escape sequences, or all deeply nested structures), this library may be slightly **faster** than `JSON.parse()`.
 
-* More usually, this library is up to 3x slower than `JSON.parse()`. This compares favourably with alternative packages, which can be up to 10x slower.
+* More usually, this library is 1.5 – 3x slower than `JSON.parse()`. This compares favourably with alternative packages, which can be up to 10x slower.
+
+In Bun:
+
+* This library is usually in the range 2 – 5x slower than `JSON.parse()`. This still compares favourably with alternative packages, which can be up to 20x slower.
+
+* These numbers are worse than for Node.js both because Bun's native `JSON.parse()` is faster and because Bun runs this library slower.
 
 Tests are included to compare the performance of this library, [Crockford's reference implementation](https://github.com/douglascrockford/JSON-js/blob/03157639c7a7cddd2e9f032537f346f1a87c0f6d/json_parse.js), and the [json-bigint](https://www.npmjs.com/package/json-bigint) and [lossless-json](https://www.npmjs.com/package/lossless-json) libraries against native `JSON.parse` across a range of inputs. 
 
 Reported timings represent a single `parse()` operation, and are the median of 50 trials of `reps`/50 operations each. Numbers in parentheses are the multiple of the time taken by native `JSON.parse()`.
 
-Here's some example output, from Node.js 20.0 on a 2020 Intel MacBook Pro.
-
 **Lower numbers are better**
 
+Node.js 20.0.0 on a 2020 Intel MacBook Pro:
+
 ```
-test               x   reps |  native |     this library |        crockford |      json-bigint |    lossless-json
-01_typical_3kb     x  10000 |  11.2μs |  22.1μs  (x1.97) |  56.5μs  (x5.05) |  43.4μs  (x3.89) |  62.5μs  (x5.59)
-02_typical_28kb    x   1000 |  97.6μs | 283.1μs  (x2.90) | 562.2μs  (x5.76) | 464.5μs  (x4.76) | 620.8μs  (x6.36)
-03_mixed_83b       x  50000 |   1.9μs |   3.0μs  (x1.56) |   6.3μs  (x3.33) |   6.7μs  (x3.51) |   5.9μs  (x3.09)
-04_short_numbers   x  50000 |   2.0μs |   6.0μs  (x2.98) |   8.9μs  (x4.47) |   8.7μs  (x4.34) |   8.0μs  (x4.01)
-05_long_numbers    x  50000 |   1.8μs |   2.9μs  (x1.57) |   8.6μs  (x4.73) |  13.2μs  (x7.25) |   4.8μs  (x2.66)
-06_short_strings   x  50000 |   2.0μs |   2.2μs  (x1.13) |   3.4μs  (x1.72) |   3.8μs  (x1.93) |   3.4μs  (x1.73)
-07_long_strings    x   2500 |  53.1μs |  39.6μs  (x0.75) | 743.3μs (x14.00) | 524.6μs  (x9.88) | 451.4μs  (x8.50)
-08_string_escapes  x 100000 |   1.0μs |   1.9μs  (x1.98) |  10.1μs (x10.48) |   9.9μs (x10.33) |   5.9μs  (x6.10)
-09_bool_null       x 100000 |   0.9μs |   2.2μs  (x2.37) |   4.0μs  (x4.39) |   3.8μs  (x4.15) |   5.4μs  (x5.85)
-10_package_json    x  25000 |   4.8μs |   7.7μs  (x1.62) |  35.2μs  (x7.37) |  29.7μs  (x6.21) |  25.4μs  (x5.30)
-11_deep_nesting    x   1000 | 292.9μs | 276.5μs  (x0.94) | 573.5μs  (x1.96) | 563.1μs  (x1.92) | 603.1μs  (x2.06)
+test               x   reps |   native |      this library |         crockford |       json-bigint |     lossless-json
+01_typical_3kb     x  10000 |   11.4μs |   21.9μs  (x1.92) |   60.3μs  (x5.29) |   44.4μs  (x3.89) |   60.7μs  (x5.32)
+02_typical_28kb    x   1000 |   99.0μs |  289.8μs  (x2.93) |  580.6μs  (x5.86) |  465.5μs  (x4.70) |  621.0μs  (x6.27)
+03_mixed_83b       x  50000 |    1.8μs |    3.1μs  (x1.71) |    6.3μs  (x3.41) |    6.5μs  (x3.51) |    5.8μs  (x3.13)
+04_short_numbers   x  50000 |    1.9μs |    6.2μs  (x3.32) |    8.6μs  (x4.63) |    8.7μs  (x4.66) |    7.9μs  (x4.26)
+05_long_numbers    x  50000 |    1.8μs |    2.9μs  (x1.59) |    8.3μs  (x4.57) |   12.9μs  (x7.10) |    4.7μs  (x2.56)
+06_short_strings   x  50000 |    1.9μs |    2.4μs  (x1.25) |    3.4μs  (x1.75) |    3.8μs  (x2.00) |    3.5μs  (x1.80)
+07_long_strings    x   2500 |   54.7μs |   39.7μs  (x0.73) |  765.8μs (x14.00) |  529.6μs  (x9.68) |  455.9μs  (x8.33)
+08_string_escapes  x 100000 |    1.0μs |    1.9μs  (x2.02) |   10.6μs (x11.02) |    9.9μs (x10.29) |    5.9μs  (x6.13)
+09_bool_null       x 100000 |    0.9μs |    2.4μs  (x2.57) |    3.9μs  (x4.20) |    4.1μs  (x4.41) |    5.4μs  (x5.83)
+10_package_json    x  25000 |    4.8μs |    8.0μs  (x1.68) |   36.2μs  (x7.56) |   29.5μs  (x6.16) |   25.4μs  (x5.31)
+11_deep_nesting    x   1000 |  292.1μs |  280.7μs  (x0.96) |  533.7μs  (x1.83) |  504.6μs  (x1.73) |  606.0μs  (x2.07)
+12_deep_indent     x   1000 |  362.1μs |  570.6μs  (x1.58) | 2249.7μs  (x6.21) | 2233.6μs  (x6.17) | 1667.0μs  (x4.60)
 ```
 
-### Stringify
+Bun 0.8.0 on a 2020 Intel MacBook Pro:
+
+```
+test               x   reps |   native |      this library |         crockford |       json-bigint |     lossless-json
+01_typical_3kb     x  10000 |   12.9μs |   26.7μs  (x2.06) |   57.0μs  (x4.41) |   49.0μs  (x3.79) |   57.3μs  (x4.43)
+02_typical_28kb    x   1000 |  101.5μs |  383.3μs  (x3.78) |  676.8μs  (x6.67) |  513.9μs  (x5.06) |  789.8μs  (x7.78)
+03_mixed_83b       x  50000 |    1.7μs |    4.6μs  (x2.73) |    6.4μs  (x3.76) |    6.8μs  (x4.02) |    6.5μs  (x3.81)
+04_short_numbers   x  50000 |    1.9μs |    8.7μs  (x4.52) |   12.3μs  (x6.42) |   11.9μs  (x6.18) |    7.9μs  (x4.10)
+05_long_numbers    x  50000 |    1.1μs |    3.3μs  (x3.02) |   10.2μs  (x9.43) |   13.3μs (x12.27) |    4.6μs  (x4.24)
+06_short_strings   x  50000 |    1.9μs |    5.7μs  (x3.07) |    4.3μs  (x2.28) |    4.4μs  (x2.33) |    3.9μs  (x2.11)
+07_long_strings    x   2500 |   36.0μs |   47.6μs  (x1.32) | 1122.4μs (x31.17) |  437.9μs (x12.16) |  753.1μs (x20.91)
+08_string_escapes  x 100000 |    1.0μs |    3.0μs  (x3.02) |    7.0μs  (x7.16) |    6.9μs  (x7.06) |    6.1μs  (x6.20)
+09_bool_null       x 100000 |    0.8μs |    2.4μs  (x3.00) |    4.2μs  (x5.22) |    4.2μs  (x5.25) |    8.0μs (x10.00)
+10_package_json    x  25000 |    4.8μs |    9.3μs  (x1.94) |   38.5μs  (x8.06) |   29.6μs  (x6.19) |   28.9μs  (x6.05)
+11_deep_nesting    x   1000 |  152.2μs |  564.0μs  (x3.71) |  664.8μs  (x4.37) |  610.2μs  (x4.01) |  793.1μs  (x5.21)
+12_deep_indent     x   1000 |  222.9μs | 1236.1μs  (x5.55) | 2101.9μs  (x9.43) | 1981.0μs  (x8.89) | 1714.7μs  (x7.69)
+```
+
+
+### Stringify performance
 
 The numbers for `stringify()` follow a more or less similar pattern, but performance differences between `JSON.stringify()`, this library and other libraries are generally smaller:
 
 **Lower numbers are better**
 
+Node.js 20.0.0 on a 2020 Intel MacBook Pro:
+
 ```
-test               x   reps |  native |     this library |        crockford |      json-bigint |    lossless-json
-01_typical_3kb     x  10000 |   8.2μs |  16.4μs  (x2.00) |  24.4μs  (x2.99) |  25.6μs  (x3.14) |  26.9μs  (x3.29)
-02_typical_28kb    x   1000 |  59.5μs | 145.8μs  (x2.45) | 199.6μs  (x3.35) | 217.8μs  (x3.66) | 275.8μs  (x4.63)
-03_mixed_83b       x  50000 |   1.5μs |   2.7μs  (x1.82) |   4.0μs  (x2.71) |   4.4μs  (x3.00) |   3.2μs  (x2.18)
-04_short_numbers   x  50000 |   2.1μs |   3.6μs  (x1.71) |   4.6μs  (x2.17) |   5.6μs  (x2.67) |   7.1μs  (x3.39)
-05_long_numbers    x  50000 |   2.0μs |   1.1μs  (x0.54) |   1.5μs  (x0.74) |   1.8μs  (x0.88) |   3.4μs  (x1.69)
-06_short_strings   x  50000 |   1.1μs |   2.8μs  (x2.46) |   3.0μs  (x2.70) |   3.6μs  (x3.23) |   3.7μs  (x3.32)
-07_long_strings    x   2500 |  97.7μs | 105.3μs  (x1.08) |  76.8μs  (x0.79) |  77.2μs  (x0.79) |  99.4μs  (x1.02)
-08_string_escapes  x 100000 |   0.5μs |   0.6μs  (x1.23) |   3.4μs  (x6.50) |   3.4μs  (x6.54) |   0.6μs  (x1.08)
-09_bool_null       x 100000 |   1.0μs |   1.6μs  (x1.50) |   2.5μs  (x2.40) |   2.9μs  (x2.81) |   4.1μs  (x3.98)
-10_package_json    x  25000 |   4.1μs |   6.6μs  (x1.63) |   7.8μs  (x1.93) |   8.5μs  (x2.09) |   9.7μs  (x2.39)
-11_deep_nesting    x   1000 | 151.9μs | 353.2μs  (x2.33) | 438.8μs  (x2.89) | 491.3μs  (x3.23) | 345.5μs  (x2.27)
+test               x   reps |   native |      this library |         crockford |       json-bigint |     lossless-json
+01_typical_3kb     x  10000 |    8.2μs |   16.6μs  (x2.03) |   24.0μs  (x2.93) |   26.7μs  (x3.25) |   27.2μs  (x3.32)
+02_typical_28kb    x   1000 |   59.0μs |  147.8μs  (x2.50) |  204.1μs  (x3.46) |  222.5μs  (x3.77) |  284.2μs  (x4.81)
+03_mixed_83b       x  50000 |    1.5μs |    2.7μs  (x1.80) |    3.9μs  (x2.61) |    4.1μs  (x2.77) |    3.2μs  (x2.18)
+04_short_numbers   x  50000 |    2.1μs |    3.6μs  (x1.73) |    4.5μs  (x2.16) |    5.6μs  (x2.68) |    7.1μs  (x3.39)
+05_long_numbers    x  50000 |    2.0μs |    1.1μs  (x0.54) |    1.5μs  (x0.74) |    1.8μs  (x0.87) |    3.4μs  (x1.67)
+06_short_strings   x  50000 |    1.1μs |    2.8μs  (x2.46) |    3.2μs  (x2.79) |    3.8μs  (x3.32) |    3.7μs  (x3.21)
+07_long_strings    x   2500 |   97.9μs |  111.4μs  (x1.14) |   78.2μs  (x0.80) |   77.7μs  (x0.79) |  100.7μs  (x1.03)
+08_string_escapes  x 100000 |    0.5μs |    0.6μs  (x1.19) |    3.4μs  (x6.30) |    3.4μs  (x6.33) |    0.6μs  (x1.04)
+09_bool_null       x 100000 |    1.1μs |    1.6μs  (x1.48) |    2.5μs  (x2.33) |    2.9μs  (x2.72) |    4.2μs  (x3.85)
+10_package_json    x  25000 |    4.4μs |    6.6μs  (x1.50) |    8.1μs  (x1.83) |    8.7μs  (x1.96) |   10.2μs  (x2.30)
+11_deep_nesting    x   1000 |  155.6μs |  358.3μs  (x2.30) |  451.4μs  (x2.90) |  502.8μs  (x3.23) |  356.3μs  (x2.29)
+12_deep_indent     x   1000 |  160.3μs |  364.8μs  (x2.28) |  455.8μs  (x2.84) |  503.7μs  (x3.14) |  357.6μs  (x2.23)
 ```
 
-In contrast with the situation for parsing, this library's `stringify()` is not faster than every alternative library in every case. This comes down to the approach taken to string escaping: I've optimised for the average and worst cases, rather than the best.
+Bun 0.8.0 on a 2020 Intel MacBook Pro:
+
+```
+test               x   reps |   native |      this library |         crockford |       json-bigint |     lossless-json
+01_typical_3kb     x  10000 |   10.5μs |   18.2μs  (x1.74) |   36.4μs  (x3.48) |   35.7μs  (x3.42) |   19.9μs  (x1.90)
+02_typical_28kb    x   1000 |   93.6μs |  195.2μs  (x2.09) |  380.7μs  (x4.07) |  435.6μs  (x4.65) |  246.2μs  (x2.63)
+03_mixed_83b       x  50000 |    1.8μs |    2.5μs  (x1.40) |    4.5μs  (x2.49) |    5.4μs  (x2.95) |    3.2μs  (x1.74)
+04_short_numbers   x  50000 |    4.2μs |    4.0μs  (x0.94) |    5.5μs  (x1.31) |    7.0μs  (x1.65) |    8.0μs  (x1.89)
+05_long_numbers    x  50000 |    1.2μs |    1.4μs  (x1.24) |    1.9μs  (x1.64) |    2.3μs  (x2.02) |    2.4μs  (x2.07)
+06_short_strings   x  50000 |    0.5μs |    2.0μs  (x3.63) |    4.7μs  (x8.63) |    6.3μs (x11.74) |    2.6μs  (x4.89)
+07_long_strings    x   2500 |   34.1μs |   45.9μs  (x1.34) |  108.3μs  (x3.17) |  107.3μs  (x3.14) |   32.8μs  (x0.96)
+08_string_escapes  x 100000 |    0.6μs |    0.6μs  (x1.07) |    3.6μs  (x6.39) |    3.8μs  (x6.79) |    0.4μs  (x0.71)
+09_bool_null       x 100000 |    0.5μs |    1.8μs  (x3.38) |    3.1μs  (x5.96) |    3.7μs  (x7.12) |    3.3μs  (x6.27)
+10_package_json    x  25000 |    5.5μs |    5.3μs  (x0.96) |   12.3μs  (x2.23) |   14.8μs  (x2.69) |    6.7μs  (x1.22)
+11_deep_nesting    x   1000 |  184.0μs |  352.8μs  (x1.92) |  768.6μs  (x4.18) |  955.2μs  (x5.19) |  326.6μs  (x1.78)
+12_deep_indent     x   1000 |  174.1μs |  361.8μs  (x2.08) |  799.3μs  (x4.59) |  969.6μs  (x5.57) |  348.8μs  (x2.00)
+```
 
 
 ## Installation and use

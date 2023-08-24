@@ -210,7 +210,7 @@ const perf = (reps, baseline, fn) => {
   }
   const t = median(timings);
   
-  let result = rjust(t.toFixed(1), 5) + 'μs';
+  let result = rjust(t.toFixed(1), 6) + 'μs';
   if (typeof baseline === 'number') {
     const factor = t / baseline;
     const highlight = factor < 1 ? col.green : factor > 10 ? col.red : factor > 5 ? col.yellow : x => x;
@@ -221,7 +221,7 @@ const perf = (reps, baseline, fn) => {
 
 if (!confOnly) {
   console.log(col.bold(`Running perf tests ...\n`));
-  console.log(col.bold(`test               x   reps |  native |     this library |        crockford |      json-bigint |    lossless-json`));
+  console.log(col.bold(`test               x   reps |   native |      this library |         crockford |       json-bigint |     lossless-json`));
 
   for (const filename of filenames) {
     if (!filename.startsWith('perf_')) continue;
@@ -316,7 +316,7 @@ if (!perfOnly) {
 
 if (!confOnly) {
   console.log(col.bold(`Running perf tests ...\n`));
-  console.log(col.bold(`test               x   reps |  native |     this library |        crockford |      json-bigint |    lossless-json`));
+  console.log(col.bold(`test               x   reps |   native |      this library |         crockford |       json-bigint |     lossless-json`));
 
   for (const filename of filenames) {
     if (!filename.startsWith('perf_')) continue;

@@ -36,6 +36,8 @@ const
   stringChunkRegExp = /[^"\\\u0000-\u001f]*/y,
   wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y,
   trailingWhitespaceRegExp = /[ \n\t\r]*$/y,
+  detectIndentRegExp = /^.{0,32}\n[ \t]/,
+  wsRegExp = /[ \n\t\r]*/y,
 
   // this array is indexed by the char code of an escape character 
   // e.g. \n -> 'n'.charCodeAt() === 110, so escapes[110] === '\n'
@@ -98,7 +100,7 @@ function errContext(text: string, at: number, isArray: boolean | undefined) {
   return `${containerType}\nAt position ${at} in JSON:\n${line}\n${pointer}`;
 }
 
-export function parse(
+export function parse(  // this is duplicated and processed during compile
   text: string,
   reviver?: (key: string, value: any) => any,
   numberParser?: (key: string | number | undefined, str: string) => any,
@@ -228,18 +230,23 @@ export function parse(
         break parse;
     }
 
-    const stack: any[] = [];
-    let stackPtr = 0;
+    const
+      // - two entries are added to the stack per nested container
+      // - because topmost container + key are not on the stack, real depth is stackPtr + 2
+      // - therefore:
+      maxStackPtr = maxDepth + maxDepth - 2,
+      stack: any[] = [],
+      isIndented = detectIndentRegExp.test(text);
 
-    // - two entries are added to the stack per nested container
-    // - because topmost container + key are not on the stack, real depth is stackPtr + 2
-    // - therefore:
-    const maxStackPtr = maxDepth + maxDepth - 2;
+    let
+      stackPtr = 0,
+      bigIndent = false;
 
     parseloop: for (; ;) {
       if (isArray === true) {
         // array loop
         for (; ;) {
+          if (isIndented === true && stackPtr > 2) { wsRegExp.lastIndex = at; wsRegExp.test(text); at = wsRegExp.lastIndex; }
           do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
 
           if (ch === closesquare) {
@@ -264,6 +271,7 @@ export function parse(
 
           if (key !== 0) {
             if (ch !== comma) expected("',' or ']' after value");
+            if (isIndented === true && stackPtr > 2) { wsRegExp.lastIndex = at; wsRegExp.test(text); at = wsRegExp.lastIndex; }
             do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
           }
 
@@ -298,6 +306,7 @@ export function parse(
       } else {
         // object loop
         for (; ;) {
+          if (isIndented === true && stackPtr > 2) { wsRegExp.lastIndex = at; wsRegExp.test(text); at = wsRegExp.lastIndex; }
           do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
 
           if (ch === closebrace) {
@@ -322,13 +331,14 @@ export function parse(
 
           if (key !== undefined) {
             if (ch !== comma) expected("',' or '}' after value");
+            if (isIndented === true && stackPtr > 2) { wsRegExp.lastIndex = at; wsRegExp.test(text); at = wsRegExp.lastIndex; }
             do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
           }
 
           if (ch !== quote) expected("'}' or double-quoted key");
           key = string();
-          do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
 
+          do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
           if (ch !== colon) expected("':' after key");
           do { ch = text.charCodeAt(at++) } while (ch <= space && (ch === space || ch === newline || ch === cr || ch === tab));
 

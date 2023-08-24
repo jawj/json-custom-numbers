@@ -8,7 +8,7 @@
  * precisely match native `JSON.parse` behaviour but also allow for custom
  * number parsing.
  */
-const stringChunkRegExp = /[^"\\\u0000-\u001f]*/y, wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y, trailingWhitespaceRegExp = /[ \n\t\r]*$/y, escapes = '.................................."............./.............................................\\......\b....\f........\n....\r..	'.split("."), hlArr = () => new Uint32Array(103), hl1 = hlArr(), hl2 = hlArr(), hl3 = hlArr(), hl4 = hlArr();
+const stringChunkRegExp = /[^"\\\u0000-\u001f]*/y, wordRegExp = /-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null/y, trailingWhitespaceRegExp = /[ \n\t\r]*$/y, detectIndentRegExp = /^.{0,32}\n[ \t]/, wsRegExp = /[ \n\t\r]*/y, escapes = '.................................."............./.............................................\\......\b....\f........\n....\r..	'.split("."), hlArr = () => new Uint32Array(103), hl1 = hlArr(), hl2 = hlArr(), hl3 = hlArr(), hl4 = hlArr();
 let i = 0;
 for (; i < 48; i++)
   hl1[i] = hl2[i] = hl3[i] = hl4[i] = 65536;
@@ -152,13 +152,17 @@ export function parse(text, reviver, numberParser, maxDepth = Infinity) {
         value = word();
         break parse;
     }
-    const stack = [];
-    let stackPtr = 0;
-    const maxStackPtr = maxDepth + maxDepth - 2;
+    const maxStackPtr = maxDepth + maxDepth - 2, stack = [], isIndented = detectIndentRegExp.test(text);
+    let stackPtr = 0, bigIndent = false;
     parseloop:
       for (; ; ) {
         if (isArray === true) {
           for (; ; ) {
+            if (isIndented === true && stackPtr > 2) {
+              wsRegExp.lastIndex = at;
+              wsRegExp.test(text);
+              at = wsRegExp.lastIndex;
+            }
             do {
               ch = text.charCodeAt(at++);
             } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
@@ -182,6 +186,11 @@ export function parse(text, reviver, numberParser, maxDepth = Infinity) {
             if (key !== 0) {
               if (ch !== 44)
                 expected("',' or ']' after value");
+              if (isIndented === true && stackPtr > 2) {
+                wsRegExp.lastIndex = at;
+                wsRegExp.test(text);
+                at = wsRegExp.lastIndex;
+              }
               do {
                 ch = text.charCodeAt(at++);
               } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
@@ -213,6 +222,11 @@ export function parse(text, reviver, numberParser, maxDepth = Infinity) {
           }
         } else {
           for (; ; ) {
+            if (isIndented === true && stackPtr > 2) {
+              wsRegExp.lastIndex = at;
+              wsRegExp.test(text);
+              at = wsRegExp.lastIndex;
+            }
             do {
               ch = text.charCodeAt(at++);
             } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
@@ -236,6 +250,11 @@ export function parse(text, reviver, numberParser, maxDepth = Infinity) {
             if (key !== void 0) {
               if (ch !== 44)
                 expected("',' or '}' after value");
+              if (isIndented === true && stackPtr > 2) {
+                wsRegExp.lastIndex = at;
+                wsRegExp.test(text);
+                at = wsRegExp.lastIndex;
+              }
               do {
                 ch = text.charCodeAt(at++);
               } while (ch <= 32 && (ch === 32 || ch === 10 || ch === 13 || ch === 9));
