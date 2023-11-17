@@ -173,7 +173,7 @@ export function parse(  // this is duplicated and processed during compile
 
               if (charCode < badChar) {  // (NaN also fails this test)
                 str += String.fromCharCode(charCode);
-                break; //continue;
+                break;
               }
               err(`Invalid \\uXXXX escape in string`);
             }
@@ -181,7 +181,7 @@ export function parse(  // this is duplicated and processed during compile
             const esc = escapes[ch];  // single-character escape
             if (esc !== '' && esc !== undefined) {
               str += esc;
-              break; //continue;
+              break;
             }
             err(`Invalid escape sequence: ${chDesc(ch, '\\')} in string`);
 
