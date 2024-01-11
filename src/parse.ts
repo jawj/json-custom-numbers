@@ -100,14 +100,24 @@ function errContext(text: string, at: number, isArray: boolean | undefined) {
   return `${containerType}\nAt position ${at} in JSON:\n${line}\n${pointer}`;
 }
 
+const defaultOptions = {
+  maxDepth: Infinity,  // all native implementations fail with an out-of-memory error when depth is too large
+};
+
+type ParseOptionsObject = Partial<typeof defaultOptions>;
+
 export function parse(  // this is duplicated and processed during compile
   text: string,
   reviver?: (key: string, value: any) => any,
   numberParser?: (key: string | number | undefined, str: string) => any,
-  maxDepth = Infinity,  // all native implementations fail with an out-of-memory error when depth is too large
+  options?: number | ParseOptionsObject,  // `number` is retained for backwards-compatibility
 ) {
   if (typeof text !== 'string') text = String(text);  // force string
   if (typeof reviver !== 'function') reviver = undefined;  // ignore non-function revivers, like JSON.parse does
+
+  const maxDepth = options === undefined ? defaultOptions.maxDepth :
+    typeof options === 'number' ? options :
+      options.maxDepth ?? defaultOptions.maxDepth;
 
   let
     at = 0,                           // character index into text

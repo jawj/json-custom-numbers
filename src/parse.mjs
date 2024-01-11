@@ -54,11 +54,16 @@ At position ${at} in JSON:
 ${line}
 ${pointer}`;
 }
-export function parse(text, reviver, numberParser, maxDepth = Infinity) {
+const defaultOptions = {
+  maxDepth: Infinity
+  // all native implementations fail with an out-of-memory error when depth is too large
+};
+export function parse(text, reviver, numberParser, options) {
   if (typeof text !== "string")
     text = String(text);
   if (typeof reviver !== "function")
     reviver = void 0;
+  const maxDepth = options === void 0 ? defaultOptions.maxDepth : typeof options === "number" ? options : options.maxDepth ?? defaultOptions.maxDepth;
   let at = 0, ch, container, isArray, key, value;
   function err(m) {
     throw new SyntaxError(m + errContext(text, at, isArray));

@@ -8,8 +8,16 @@
  * precisely match native `JSON.stringify` behaviour but also allow for custom
  * stringifying of numbers.
  */
-const escapableTest = /["\\\u0000-\u001f]/, hasOwn = Object.prototype.hasOwnProperty;
-export function stringify(value, replacer, space, customSerializer, maxDepth = 5e4) {
+const escapableTest = /["\\\u0000-\u001f]/, hasOwn = Object.prototype.hasOwnProperty, defaultOptions = {
+  maxDepth: 5e4,
+  // at the time of writing, Bun and Safari's maximum (via call stack limits) is 40,000, and all others are lower
+  skipToJSON: false
+};
+export function stringify(value, replacer, space, customSerializer, options = {}) {
+  if (typeof options === "number")
+    options = { maxDepth: options };
+  options = { ...defaultOptions, ...options };
+  const { maxDepth, skipToJSON } = options;
   let repFunc;
   let repArray;
   if (replacer !== void 0) {
@@ -47,7 +55,7 @@ export function stringify(value, replacer, space, customSerializer, maxDepth = 5
       value = container[key];
     }
     let typeofValue = typeof value;
-    if (value && typeofValue === "object" && typeof value.toJSON === "function") {
+    if (skipToJSON === false && value && typeofValue === "object" && typeof value.toJSON === "function") {
       value = value.toJSON(key);
       typeofValue = typeof value;
     }
@@ -93,7 +101,7 @@ export function stringify(value, replacer, space, customSerializer, maxDepth = 5
           }
           break;
         case "bigint":
-          throw new TypeError("Do not know how to serialize a BigInt");
+          throw new TypeError("Do not know how to serialize a BigInt: please provide a custom serializer function");
         default:
           appendStr = void 0;
       }

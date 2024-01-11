@@ -12,15 +12,24 @@
 
 const
   escapableTest = /["\\\u0000-\u001f]/,
-  hasOwn = Object.prototype.hasOwnProperty;
+  hasOwn = Object.prototype.hasOwnProperty,
+  defaultOptions = {
+    maxDepth: 50000,  // at the time of writing, Bun and Safari's maximum (via call stack limits) is 40,000, and all others are lower
+    skipToJSON: false,
+  };
+
+type StringifyOptionsObject = Partial<typeof defaultOptions>;
 
 export function stringify(
   value: any,
   replacer?: (string | number)[] | ((key: string, value: any) => any) | null,
   space?: number | string,
   customSerializer?: (key: string, value: any, typeofValue: string) => string,
-  maxDepth = 50000,  // at the time of writing, Bun and Safari's maximum (via call stack limits) is 40,000, and all others are lower
+  options: number | StringifyOptionsObject = {},  // `number` is retained for backwards-compatibility
 ) {
+  if (typeof options === 'number') options = { maxDepth: options };
+  options = { ...defaultOptions, ...options };
+  const { maxDepth, skipToJSON } = options as typeof defaultOptions;
 
   let repFunc: ((key: string, value: any) => any) | undefined;
   let repArray: string[] | undefined;
@@ -92,7 +101,7 @@ export function stringify(
 
     let typeofValue = typeof value;
 
-    if (value && typeofValue === 'object' && typeof value.toJSON === 'function') {
+    if (skipToJSON === false && value && typeofValue === 'object' && typeof value.toJSON === 'function') {
       value = value.toJSON(key);
       typeofValue = typeof value;
     }
@@ -148,7 +157,7 @@ export function stringify(
           break;
 
         case 'bigint':
-          throw new TypeError('Do not know how to serialize a BigInt');
+          throw new TypeError('Do not know how to serialize a BigInt: please provide a custom serializer function');
 
         default:
           appendStr = undefined;

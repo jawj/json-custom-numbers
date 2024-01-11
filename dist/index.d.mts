@@ -1,3 +1,4 @@
+// DO NOT EDIT: automatic copy of index.d.ts
 
 export interface ParseOptions {
   maxDepth?: number;
