@@ -38,7 +38,7 @@
     "colors": "^1.4.0",
     "esbuild": "^0.18.11",
     "json-bigint": "^1.0.0",
-    "lossless-json": "^2.0.10"
+    "lossless-json": "^4.0.1"
   },
   "keywords": [
     "json",
