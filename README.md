@@ -152,7 +152,7 @@ Import:
 
 `import { parse, stringify } from 'json-custom-numbers';`
 
-For usage, see the examples below and the [type definitions](dist/index.d.ts).
+For usage, see the examples below and the [type definitions](index.d.ts).
 
 
 ### Parsing to `BigInt`
@@ -208,7 +208,7 @@ stringify(9007199254740993n, undefined, undefined, customSerializer);  // => 900
 
 The code is in `src/parse.ts` and `src/stringify.ts`.
 
-Currently, there are two build stages: the first creates `.mjs` files in `src`, while the second creates minified `.js` files in `dist`. The only `package.json` scripts you're likely to need to call directly are `build` and `test`/`testConf`/`testPerf`.
+Currently, there are two build stages: the first creates `.mjs` files in `src`, while the second creates minified `.js` files in the root folder. The only `package.json` scripts you're likely to need to call directly are `build` and `test`/`testConf`/`testPerf`.
 
 
 ## License
