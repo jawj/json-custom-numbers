@@ -1,6 +1,6 @@
 # JSON custom numbers
 
-This package implements JSON `parse` and `stringify` functions to support custom number parsing and stringification. A key place you might need this is when interfacing with JSON in Postgres and using Postgres's `bigint`/`int8` or `decimal`/``numeric` types, which can overflow a JavaScript number.
+This package implements JSON `parse` and `stringify` functions to support custom number parsing and stringification. A key place you might need this is when interfacing with JSON in Postgres and using Postgres's `bigint`/`int8` or `decimal`/`numeric` types, [which can overflow a JavaScript number](https://neon.tech/blog/parsing-json-from-postgres-in-js).
 
 Similar packages exist, but this one has some attractive features:
 
